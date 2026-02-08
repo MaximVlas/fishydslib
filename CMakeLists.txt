@@ -198,7 +198,12 @@ target_include_directories(discordc
 
 # Examples
 if(FISHYDS_ENABLE_EXAMPLES)
-    add_subdirectory(examples)
+    set(_ex_dir "${CMAKE_CURRENT_SOURCE_DIR}/examples")
+    if(EXISTS "${_ex_dir}/CMakeLists.txt")
+        add_subdirectory(examples)
+    else()
+        message(STATUS "Examples enabled, but '${_ex_dir}' is missing or has no CMakeLists.txt - skipping examples")
+    endif()
 endif()
 
 # Tests
