@@ -1,1 +1,0 @@
-/usr/bin/cc -fsanitize=address -fno-omit-frame-pointer -g -Wl,--dependency-file=CMakeFiles/test_json.dir/link.d CMakeFiles/test_json.dir/test_json.c.o CMakeFiles/test_json.dir/test_json_main.c.o -o test_json  ../libdiscordc.a libtest_utils.a ../libdiscordc.a /usr/lib/libcurl.so -lwebsockets -lcap -lsystemd -lyyjson /usr/lib/libz.so -lglib-2.0
