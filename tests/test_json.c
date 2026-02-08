@@ -403,6 +403,45 @@ int test_json_main(void) {
     TEST_ASSERT_STR_EQ("general", dc_string_cstr(&channel.name), "channel name parsed");
     dc_channel_free(&channel);
 
+    const char* channel_overwrites_json =
+        "{\"id\":\"556\",\"type\":0,\"name\":\"general\","
+        "\"permission_overwrites\":["
+        "{\"id\":\"100\",\"type\":0,\"allow\":\"8\",\"deny\":\"0\"},"
+        "{\"id\":\"500\",\"type\":1,\"allow\":null,\"deny\":\"4\"}"
+        "]}";
+    TEST_ASSERT_EQ(DC_OK, dc_channel_init(&channel), "init channel overwrites");
+    TEST_ASSERT_EQ(DC_OK, dc_channel_from_json(channel_overwrites_json, &channel),
+                   "parse channel overwrites json");
+    TEST_ASSERT_EQ(2u, dc_vec_length(&channel.permission_overwrites), "channel overwrites count");
+    {
+        const dc_permission_overwrite_t* ow0 = dc_vec_at(&channel.permission_overwrites, (size_t)0);
+        TEST_ASSERT_NEQ(NULL, ow0, "overwrite[0] not null");
+        TEST_ASSERT_EQ(100ULL, ow0->id, "overwrite[0] id");
+        TEST_ASSERT_EQ(DC_PERMISSION_OVERWRITE_TYPE_ROLE, ow0->type, "overwrite[0] type");
+        TEST_ASSERT_EQ(8ULL, ow0->allow, "overwrite[0] allow");
+        TEST_ASSERT_EQ(0ULL, ow0->deny, "overwrite[0] deny");
+
+        const dc_permission_overwrite_t* ow1 = dc_vec_at(&channel.permission_overwrites, (size_t)1);
+        TEST_ASSERT_NEQ(NULL, ow1, "overwrite[1] not null");
+        TEST_ASSERT_EQ(500ULL, ow1->id, "overwrite[1] id");
+        TEST_ASSERT_EQ(DC_PERMISSION_OVERWRITE_TYPE_MEMBER, ow1->type, "overwrite[1] type");
+        TEST_ASSERT_EQ(0ULL, ow1->allow, "overwrite[1] allow default");
+        TEST_ASSERT_EQ(4ULL, ow1->deny, "overwrite[1] deny");
+    }
+
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&result), "init channel overwrites to_json result");
+    TEST_ASSERT_EQ(DC_OK, dc_channel_to_json(&channel, &result), "channel overwrites to json");
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&result), &doc),
+                   "parse serialized channel overwrites");
+    {
+        yyjson_val* ovs = yyjson_obj_get(doc.root, "permission_overwrites");
+        TEST_ASSERT_NEQ(NULL, ovs, "serialized permission_overwrites exists");
+        TEST_ASSERT_EQ(2u, yyjson_arr_size(ovs), "serialized overwrites size");
+    }
+    dc_json_doc_free(&doc);
+    dc_string_free(&result);
+    dc_channel_free(&channel);
+
     const char* channel_missing_id = "{\"type\":0}";
     TEST_ASSERT_EQ(DC_OK, dc_channel_init(&channel), "init channel missing id");
     TEST_ASSERT_EQ(DC_ERROR_NOT_FOUND, dc_channel_from_json(channel_missing_id, &channel), "channel missing id");

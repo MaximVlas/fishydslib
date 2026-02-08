@@ -112,6 +112,45 @@ static dc_status_t dc_json_parse_snowflake_array(yyjson_val* arr, dc_vec_t* out)
     return DC_OK;
 }
 
+static dc_status_t dc_json_parse_permission_overwrites(yyjson_val* arr, dc_vec_t* out) {
+    if (!arr || !out) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_arr(arr)) return DC_ERROR_INVALID_FORMAT;
+
+    yyjson_arr_iter iter = yyjson_arr_iter_with(arr);
+    yyjson_val* val = NULL;
+    while ((val = yyjson_arr_iter_next(&iter))) {
+        if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+        dc_permission_overwrite_t ow;
+        memset(&ow, 0, sizeof(ow));
+
+        dc_status_t st = dc_json_get_snowflake(val, "id", &ow.id);
+        if (st != DC_OK) return st;
+
+        int64_t type_i64 = 0;
+        st = dc_json_get_int64(val, "type", &type_i64);
+        if (st != DC_OK) return st;
+        int type_int = 0;
+        st = dc_int64_to_int_checked(type_i64, &type_int);
+        if (st != DC_OK) return st;
+        if (type_int != 0 && type_int != 1) return DC_ERROR_INVALID_FORMAT;
+        ow.type = (dc_permission_overwrite_type_t)type_int;
+
+        uint64_t allow = 0;
+        st = dc_json_get_permission_opt(val, "allow", &allow, 0ULL);
+        if (st != DC_OK) return st;
+        uint64_t deny = 0;
+        st = dc_json_get_permission_opt(val, "deny", &deny, 0ULL);
+        if (st != DC_OK) return st;
+        ow.allow = allow;
+        ow.deny = deny;
+
+        st = dc_vec_push(out, &ow);
+        if (st != DC_OK) return st;
+    }
+    return DC_OK;
+}
+
 static dc_status_t dc_channel_forum_tag_init(dc_channel_forum_tag_t* tag) {
     if (!tag) return DC_ERROR_NULL_POINTER;
     memset(tag, 0, sizeof(*tag));
@@ -764,6 +803,12 @@ dc_status_t dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channe
     st = dc_json_get_snowflake_optional_field(val, "application_id", &channel->application_id);
     if (st != DC_OK) return st;
 
+    yyjson_val* overwrites_val = yyjson_obj_get(val, "permission_overwrites");
+    if (overwrites_val && !yyjson_is_null(overwrites_val)) {
+        st = dc_json_parse_permission_overwrites(overwrites_val, &channel->permission_overwrites);
+        if (st != DC_OK) return st;
+    }
+
     st = dc_json_get_permission_optional_field(val, "permissions", &channel->permissions);
     if (st != DC_OK) return st;
 
@@ -929,6 +974,70 @@ dc_status_t dc_json_model_message_from_val(yyjson_val* val, dc_message_t* messag
             }
         }
     }
+
+    yyjson_val* attachments_val = yyjson_obj_get(val, "attachments");
+    if (attachments_val && yyjson_is_arr(attachments_val)) {
+        size_t idx, max;
+        yyjson_val* att_val;
+        yyjson_arr_foreach(attachments_val, idx, max, att_val) {
+            dc_attachment_t attachment;
+            st = dc_attachment_init(&attachment);
+            if (st != DC_OK) return st;
+            st = dc_json_model_attachment_from_val(att_val, &attachment);
+            if (st != DC_OK) {
+                dc_attachment_free(&attachment);
+                return st;
+            }
+            st = dc_vec_push(&message->attachments, &attachment);
+            if (st != DC_OK) {
+                dc_attachment_free(&attachment);
+                return st;
+            }
+        }
+    }
+
+    yyjson_val* embeds_val = yyjson_obj_get(val, "embeds");
+    if (embeds_val && yyjson_is_arr(embeds_val)) {
+        size_t idx, max;
+        yyjson_val* emb_val;
+        yyjson_arr_foreach(embeds_val, idx, max, emb_val) {
+            dc_embed_t embed;
+            st = dc_embed_init(&embed);
+            if (st != DC_OK) return st;
+            st = dc_json_model_embed_from_val(emb_val, &embed);
+            if (st != DC_OK) {
+                dc_embed_free(&embed);
+                return st;
+            }
+            st = dc_vec_push(&message->embeds, &embed);
+            if (st != DC_OK) {
+                dc_embed_free(&embed);
+                return st;
+            }
+        }
+    }
+
+    yyjson_val* mentions_val = yyjson_obj_get(val, "mentions");
+    if (mentions_val && yyjson_is_arr(mentions_val)) {
+        size_t idx, max;
+        yyjson_val* men_val;
+        yyjson_arr_foreach(mentions_val, idx, max, men_val) {
+            dc_guild_member_t mention;
+            st = dc_guild_member_init(&mention);
+            if (st != DC_OK) return st;
+            st = dc_json_model_mention_from_val(men_val, &mention);
+             if (st != DC_OK) {
+                dc_guild_member_free(&mention);
+                return st;
+            }
+            st = dc_vec_push(&message->mentions, &mention);
+            if (st != DC_OK) {
+                dc_guild_member_free(&mention);
+                return st;
+            }
+        }
+    }
+    
     return DC_OK;
 }
 
@@ -1001,6 +1110,32 @@ static dc_status_t dc_json_mut_add_snowflake_array(dc_json_mut_doc_t* doc, yyjso
         dc_status_t st = dc_snowflake_to_cstr(*sf, buf, sizeof(buf));
         if (st != DC_OK) return st;
         if (!yyjson_mut_arr_add_strcpy(doc->doc, arr, buf)) return DC_ERROR_OUT_OF_MEMORY;
+    }
+    return DC_OK;
+}
+
+static dc_status_t dc_json_mut_add_permission_overwrites(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
+                                                         const char* key, const dc_vec_t* overwrites) {
+    if (!doc || !doc->doc || !obj || !key || !overwrites) return DC_ERROR_NULL_POINTER;
+    if (dc_vec_is_empty(overwrites)) return DC_OK;
+    if (!yyjson_mut_is_obj(obj)) return DC_ERROR_INVALID_PARAM;
+
+    yyjson_mut_val* arr = yyjson_mut_obj_add_arr(doc->doc, obj, key);
+    if (!arr) return DC_ERROR_OUT_OF_MEMORY;
+
+    for (size_t i = 0; i < dc_vec_length(overwrites); i++) {
+        const dc_permission_overwrite_t* ow = (const dc_permission_overwrite_t*)dc_vec_at(overwrites, i);
+        yyjson_mut_val* ow_obj = yyjson_mut_arr_add_obj(doc->doc, arr);
+        if (!ow_obj) return DC_ERROR_OUT_OF_MEMORY;
+
+        dc_status_t st = dc_json_mut_set_snowflake(doc, ow_obj, "id", ow->id);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_set_int64(doc, ow_obj, "type", (int64_t)ow->type);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_set_permission(doc, ow_obj, "allow", ow->allow);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_set_permission(doc, ow_obj, "deny", ow->deny);
+        if (st != DC_OK) return st;
     }
     return DC_OK;
 }
@@ -1245,6 +1380,9 @@ dc_status_t dc_json_model_channel_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
     st = dc_json_mut_add_optional_snowflake(doc, obj, "application_id", &channel->application_id);
     if (st != DC_OK) return st;
 
+    st = dc_json_mut_add_permission_overwrites(doc, obj, "permission_overwrites", &channel->permission_overwrites);
+    if (st != DC_OK) return st;
+
     st = dc_json_mut_add_string_if_set(doc, obj, "name", &channel->name);
     if (st != DC_OK) return st;
     st = dc_json_mut_add_string_if_set(doc, obj, "topic", &channel->topic);
@@ -1395,5 +1533,388 @@ dc_status_t dc_json_model_message_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
     st = dc_json_model_user_to_mut(doc, author_obj, &message->author);
     if (st != DC_OK) return st;
 
+    return DC_OK;
+}
+
+dc_status_t dc_json_model_voice_state_from_val(yyjson_val* val, dc_voice_state_t* vs) {
+    if (!val || !vs) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    dc_status_t st = dc_json_get_snowflake_optional_field(val, "guild_id", &vs->guild_id);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_snowflake(val, "channel_id", &vs->channel_id);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_snowflake(val, "user_id", &vs->user_id);
+    if (st != DC_OK) return st;
+
+    const char* session_id = "";
+    st = dc_json_get_string_opt(val, "session_id", &session_id, "");
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&vs->session_id, session_id);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_bool_opt(val, "deaf", &vs->deaf, 0);
+    if (st != DC_OK) return st;
+    st = dc_json_get_bool_opt(val, "mute", &vs->mute, 0);
+    if (st != DC_OK) return st;
+    st = dc_json_get_bool_opt(val, "self_deaf", &vs->self_deaf, 0);
+    if (st != DC_OK) return st;
+    st = dc_json_get_bool_opt(val, "self_mute", &vs->self_mute, 0);
+    if (st != DC_OK) return st;
+    st = dc_json_get_bool_opt(val, "self_stream", &vs->self_stream, 0);
+    if (st != DC_OK) return st;
+    st = dc_json_get_bool_opt(val, "self_video", &vs->self_video, 0);
+    if (st != DC_OK) return st;
+    st = dc_json_get_bool_opt(val, "suppress", &vs->suppress, 0);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_nullable_string_field(val, "request_to_speak_timestamp",
+                                            &vs->request_to_speak_timestamp, 1);
+    if (st != DC_OK) return st;
+
+    return DC_OK;
+}
+
+dc_status_t dc_json_model_presence_from_val(yyjson_val* val, dc_presence_t* presence) {
+    if (!val || !presence) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    /* The user field is a partial user object with only id */
+    yyjson_val* user_val = yyjson_obj_get(val, "user");
+    if (user_val && yyjson_is_obj(user_val)) {
+        dc_status_t st = dc_json_get_snowflake(user_val, "id", &presence->user_id);
+        if (st != DC_OK) return st;
+    }
+
+    const char* status = "offline";
+    dc_status_t st = dc_json_get_string_opt(val, "status", &status, "offline");
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&presence->status_str, status);
+    if (st != DC_OK) return st;
+    presence->status = dc_presence_status_from_string(status);
+
+    return DC_OK;
+}
+
+dc_status_t dc_json_model_attachment_from_val(yyjson_val* val, dc_attachment_t* attachment) {
+    if (!val || !attachment) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    dc_status_t st = dc_json_get_snowflake(val, "id", &attachment->id);
+    if (st != DC_OK) return st;
+
+    const char* filename = "";
+    st = dc_json_get_string(val, "filename", &filename);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&attachment->filename, filename);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_nullable_string_field(val, "description", &attachment->description, 1);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_nullable_string_field(val, "content_type", &attachment->content_type, 1);
+    if (st != DC_OK) return st;
+
+    int64_t size = 0;
+    st = dc_json_get_int64(val, "size", &size);
+    if (st != DC_OK) return st;
+    attachment->size = (size_t)size;
+
+    const char* url = "";
+    st = dc_json_get_string(val, "url", &url);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&attachment->url, url);
+    if (st != DC_OK) return st;
+
+    const char* proxy_url = "";
+    st = dc_json_get_string(val, "proxy_url", &proxy_url);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&attachment->proxy_url, proxy_url);
+    if (st != DC_OK) return st;
+
+    /* Optional height/width/ephemeral/flags */
+    yyjson_val* height_val = yyjson_obj_get(val, "height");
+    if (!height_val || yyjson_is_null(height_val)) {
+        attachment->height.is_set = 0;
+        attachment->height.value = 0;
+    } else if (yyjson_is_int(height_val)) {
+        int64_t h = yyjson_get_sint(height_val);
+        if (h < 0) return DC_ERROR_INVALID_FORMAT;
+        attachment->height.is_set = 1;
+        attachment->height.value = (dc_snowflake_t)h;
+    } else if (yyjson_is_uint(height_val)) {
+        attachment->height.is_set = 1;
+        attachment->height.value = (dc_snowflake_t)yyjson_get_uint(height_val);
+    } else {
+        return DC_ERROR_INVALID_FORMAT;
+    }
+
+    yyjson_val* width_val = yyjson_obj_get(val, "width");
+    if (!width_val || yyjson_is_null(width_val)) {
+        attachment->width.is_set = 0;
+        attachment->width.value = 0;
+    } else if (yyjson_is_int(width_val)) {
+        int64_t w = yyjson_get_sint(width_val);
+        if (w < 0) return DC_ERROR_INVALID_FORMAT;
+        attachment->width.is_set = 1;
+        attachment->width.value = (dc_snowflake_t)w;
+    } else if (yyjson_is_uint(width_val)) {
+        attachment->width.is_set = 1;
+        attachment->width.value = (dc_snowflake_t)yyjson_get_uint(width_val);
+    } else {
+        return DC_ERROR_INVALID_FORMAT;
+    }
+
+    st = dc_json_get_bool_opt(val, "ephemeral", &attachment->ephemeral, 0);
+    if (st != DC_OK) return st;
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_embed_footer_from_val(yyjson_val* val, dc_embed_footer_t* footer) {
+    if (!val || !footer) return DC_ERROR_NULL_POINTER;
+    const char* text = "";
+    dc_status_t st = dc_json_get_string(val, "text", &text);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&footer->text, text);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_nullable_string_field(val, "icon_url", &footer->icon_url, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "proxy_icon_url", &footer->proxy_icon_url, 1);
+    if (st != DC_OK) return st;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_embed_image_from_val(yyjson_val* val, dc_embed_image_t* img) {
+    if (!val || !img) return DC_ERROR_NULL_POINTER;
+    const char* url = "";
+    dc_status_t st = dc_json_get_string(val, "url", &url);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&img->url, url);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_nullable_string_field(val, "proxy_url", &img->proxy_url, 1);
+    if (st != DC_OK) return st;
+    
+    int64_t h=0, w=0;
+    dc_json_get_int64_opt(val, "height", &h, 0);
+    dc_json_get_int64_opt(val, "width", &w, 0);
+    img->height = (int)h;
+    img->width = (int)w;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_embed_thumbnail_from_val(yyjson_val* val, dc_embed_thumbnail_t* thumb) {
+    if (!val || !thumb) return DC_ERROR_NULL_POINTER;
+    const char* url = "";
+    dc_status_t st = dc_json_get_string(val, "url", &url);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&thumb->url, url);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_nullable_string_field(val, "proxy_url", &thumb->proxy_url, 1);
+    if (st != DC_OK) return st;
+
+    int64_t h=0, w=0;
+    dc_json_get_int64_opt(val, "height", &h, 0);
+    dc_json_get_int64_opt(val, "width", &w, 0);
+    thumb->height = (int)h;
+    thumb->width = (int)w;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_embed_video_from_val(yyjson_val* val, dc_embed_video_t* video) {
+    if (!val || !video) return DC_ERROR_NULL_POINTER;
+    dc_status_t st = dc_json_get_nullable_string_field(val, "url", &video->url, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "proxy_url", &video->proxy_url, 1);
+    if (st != DC_OK) return st;
+    
+    int64_t h=0, w=0;
+    dc_json_get_int64_opt(val, "height", &h, 0);
+    dc_json_get_int64_opt(val, "width", &w, 0);
+    video->height = (int)h;
+    video->width = (int)w;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_embed_provider_from_val(yyjson_val* val, dc_embed_provider_t* prov) {
+    if (!val || !prov) return DC_ERROR_NULL_POINTER;
+    dc_status_t st = dc_json_get_nullable_string_field(val, "name", &prov->name, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "url", &prov->url, 1);
+    if (st != DC_OK) return st;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_embed_author_from_val(yyjson_val* val, dc_embed_author_t* auth) {
+    if (!val || !auth) return DC_ERROR_NULL_POINTER;
+    const char* name = "";
+    dc_status_t st = dc_json_get_string(val, "name", &name);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&auth->name, name);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_nullable_string_field(val, "url", &auth->url, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "icon_url", &auth->icon_url, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "proxy_icon_url", &auth->proxy_icon_url, 1);
+    if (st != DC_OK) return st;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_embed_field_from_val(yyjson_val* val, dc_embed_field_t* field) {
+    if (!val || !field) return DC_ERROR_NULL_POINTER;
+    const char* name = "";
+    dc_status_t st = dc_json_get_string(val, "name", &name);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&field->name, name);
+    if (st != DC_OK) return st;
+
+    const char* value = "";
+    st = dc_json_get_string(val, "value", &value);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&field->value, value);
+    if (st != DC_OK) return st;
+    
+    st = dc_json_get_bool_opt(val, "inline", &field->_inline, 0);
+    if (st != DC_OK) return st;
+    return DC_OK;
+}
+
+dc_status_t dc_json_model_embed_from_val(yyjson_val* val, dc_embed_t* embed) {
+    if (!val || !embed) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    dc_status_t st = dc_json_get_nullable_string_field(val, "title", &embed->title, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "type", &embed->type, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "description", &embed->description, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "url", &embed->url, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "timestamp", &embed->timestamp, 1);
+    if (st != DC_OK) return st;
+    
+    int64_t color = 0;
+    st = dc_json_get_int64_opt(val, "color", &color, 0);
+    if (st != DC_OK) return st;
+    embed->color = (int)color;
+
+    yyjson_val* footer = yyjson_obj_get(val, "footer");
+    if (footer && !yyjson_is_null(footer)) {
+        if (!yyjson_is_obj(footer)) return DC_ERROR_INVALID_FORMAT;
+        embed->has_footer = 1;
+        st = dc_json_model_embed_footer_from_val(footer, &embed->footer);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* image = yyjson_obj_get(val, "image");
+    if (image && !yyjson_is_null(image)) {
+        if (!yyjson_is_obj(image)) return DC_ERROR_INVALID_FORMAT;
+        embed->has_image = 1;
+        st = dc_json_model_embed_image_from_val(image, &embed->image);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* thumbnail = yyjson_obj_get(val, "thumbnail");
+    if (thumbnail && !yyjson_is_null(thumbnail)) {
+        if (!yyjson_is_obj(thumbnail)) return DC_ERROR_INVALID_FORMAT;
+        embed->has_thumbnail = 1;
+        st = dc_json_model_embed_thumbnail_from_val(thumbnail, &embed->thumbnail);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* video = yyjson_obj_get(val, "video");
+    if (video && !yyjson_is_null(video)) {
+        if (!yyjson_is_obj(video)) return DC_ERROR_INVALID_FORMAT;
+        embed->has_video = 1;
+        st = dc_json_model_embed_video_from_val(video, &embed->video);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* provider = yyjson_obj_get(val, "provider");
+    if (provider && !yyjson_is_null(provider)) {
+        if (!yyjson_is_obj(provider)) return DC_ERROR_INVALID_FORMAT;
+        embed->has_provider = 1;
+        st = dc_json_model_embed_provider_from_val(provider, &embed->provider);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* author = yyjson_obj_get(val, "author");
+    if (author && !yyjson_is_null(author)) {
+        if (!yyjson_is_obj(author)) return DC_ERROR_INVALID_FORMAT;
+        embed->has_author = 1;
+        st = dc_json_model_embed_author_from_val(author, &embed->author);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* fields = yyjson_obj_get(val, "fields");
+    if (fields && !yyjson_is_null(fields)) {
+        if (!yyjson_is_arr(fields)) return DC_ERROR_INVALID_FORMAT;
+        size_t idx, max;
+        yyjson_val* f_val;
+        yyjson_arr_foreach(fields, idx, max, f_val) {
+            dc_embed_field_t field;
+            // No custom init/free for scalar-ish structs? we might need memsetting
+            memset(&field, 0, sizeof(field));
+            dc_string_init(&field.name);
+            dc_string_init(&field.value);
+
+            st = dc_json_model_embed_field_from_val(f_val, &field);
+            if (st != DC_OK) {
+                 dc_embed_field_free(&field);
+                 return st;
+            }
+            st = dc_vec_push(&embed->fields, &field);
+             if (st != DC_OK) {
+                 dc_embed_field_free(&field);
+                 return st;
+            }
+        }
+    }
+
+    return DC_OK;
+}
+
+dc_status_t dc_json_model_mention_from_val(yyjson_val* val, dc_guild_member_t* member) {
+    if (!val || !member) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    /* 1. Parse user fields into member->user */
+    dc_status_t st = dc_json_model_user_from_val(val, &member->user);
+    if (st != DC_OK) return st;
+    member->has_user = 1;
+
+    /* 2. Check for "member" field */
+    yyjson_val* partial = yyjson_obj_get(val, "member");
+    if (partial && yyjson_is_obj(partial)) {
+        /* Parse "member" fields into member */
+        /* But dc_json_model_guild_member_from_val expects a full member object with potential user inside. 
+           We have partial member fields inside "member" object, but need to populate `member`.
+           Let's extract fields manually or modify `dc_json_model_guild_member_from_val`?
+           Actually, `dc_json_model_guild_member_from_val` handles `user` if present. 
+           Here the partial object does NOT have `user`.
+           So we can pass `partial` to `dc_json_model_guild_member_from_val` BUT
+           that function might reset fields.
+           Let's look at `dc_json_model_guild_member_from_val` impl:
+           It parses `roles`, `nick`, etc.
+        */
+         st = dc_json_model_guild_member_from_val(partial, member);
+         /* This assumes `dc_json_model_guild_member_from_val` doesn't overwrite existing user data 
+            if `user` field is missing in JSON.
+            Usually it *sets* fields.
+            Let's invoke it safely.
+         */
+         if (st != DC_OK) return st;
+         /* Preserve the user parsed from the parent mention object. */
+         member->has_user = 1;
+    }
+    
     return DC_OK;
 }

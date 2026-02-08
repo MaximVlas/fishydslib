@@ -12,7 +12,7 @@ The API is actively evolving, so review release notes and headers when upgrading
 - [5) Gateway](#5-gateway)
 - [6) JSON Helpers](#6-json-helpers)
 - [7) Typed Models](#7-typed-models)
-- [8) Enums and Constants](#8-enums-and-constants)
+- [8) Enums and Constants](#8-Notes-on-Enums-and-Constants)
 
 ## Conventions
 
@@ -79,18 +79,13 @@ int main(void) {
         return 1;
     }
 
-    // Resolve token from process env first, then fallback dotenv files.
-    const char* dotenv_paths[] = {"./.env", "./.env.ex"};
-    st = dc_env_get_discord_token(dotenv_paths,
-                                  sizeof(dotenv_paths) / sizeof(dotenv_paths[0]),
-                                  DC_ENV_FLAG_REQUIRE_PRIVATE_FILE,
-                                  &token);
+    // Resolve token from process env first, then auto-discover a dotenv file:
+    // - `DC_DOTENV_PATH` if set (hard path)
+    // - otherwise search up from CWD for ".env"
+    st = dc_env_get_discord_token_auto(DC_ENV_FLAG_REQUIRE_PRIVATE_FILE, &token);
     if (st == DC_ERROR_FORBIDDEN) {
         // Optional dev-only fallback when file permissions are not private.
-        st = dc_env_get_discord_token(dotenv_paths,
-                                      sizeof(dotenv_paths) / sizeof(dotenv_paths[0]),
-                                      0u,
-                                      &token);
+        st = dc_env_get_discord_token_auto(0u, &token);
     }
     if (st != DC_OK) {
         fprintf(stderr, "Failed to load DISCORD_TOKEN: %s\n", dc_status_string(st));
@@ -100,11 +95,11 @@ int main(void) {
     }
 
     // Optional gateway override for testing/proxies.
-    (void)dc_env_get_with_fallback("DISCORD_GATEWAY_URL",
-                                   dotenv_paths,
-                                   sizeof(dotenv_paths) / sizeof(dotenv_paths[0]),
-                                   0u,
-                                   &gateway_url);
+    (void)dc_env_get_with_dotenv_search("DISCORD_GATEWAY_URL",
+                                        NULL,
+                                        25,
+                                        0u,
+                                        &gateway_url);
 
     dc_client_config_t config;
     dc_client_config_init(&config);
@@ -540,10 +535,15 @@ Use this router setup with client config like:
 | Function | Parameters | Return Value | Description |
 |----------|------------|--------------|-------------|
 | `DC_ENV_FLAG_REQUIRE_PRIVATE_FILE` | N/A | N/A | Enforce private dotenv file permissions (POSIX) |
+| `DC_ENV_FLAG_OVERRIDE_EXISTING` | N/A | N/A | When loading dotenv, override existing process env vars |
+| `DC_ENV_FLAG_ALLOW_EMPTY` | N/A | N/A | When loading dotenv, allow setting empty values (`KEY=`) |
 | `dc_env_get_process(const char* key, dc_string_t* out_value)` | `key`: Environment variable key, `out_value`: Output string to store value | `dc_status_t`: `DC_OK` on success, error code on failure | Read non-empty variable from process env |
 | `dc_env_get_from_file(const char* path, const char* key, unsigned flags, dc_string_t* out_value)` | `path`: Path to dotenv-style file, `key`: Variable key, `flags`: Flags (e.g., `DC_ENV_FLAG_REQUIRE_PRIVATE_FILE`), `out_value`: Output string to store value | `dc_status_t`: `DC_OK` on success, error code on failure | Read variable from dotenv-style file |
 | `dc_env_get_with_fallback(const char* key, const char* const* paths, size_t path_count, unsigned flags, dc_string_t* out_value)` | `key`: Variable key, `paths`: Array of file paths to check, `path_count`: Number of paths, `flags`: Flags, `out_value`: Output string to store value | `dc_status_t`: `DC_OK` on success, error code on failure | Resolve from process env then fallback files |
+| `dc_env_get_with_dotenv_search(const char* key, const char* dotenv_filename, size_t max_depth, unsigned flags, dc_string_t* out_value)` | `key`: Variable key, `dotenv_filename`: File name to search for (NULL/empty => ".env"), `max_depth`: Max parent traversals (0 => only CWD), `flags`: Flags, `out_value`: Output string to store value | `dc_status_t`: `DC_OK` on success, error code on failure | Resolve from process env then auto-discovered dotenv file |
 | `dc_env_get_discord_token(const char* const* paths, size_t path_count, unsigned flags, dc_string_t* out_token)` | `paths`: Array of file paths to check, `path_count`: Number of paths, `flags`: Flags, `out_token`: Output string to store token | `dc_status_t`: `DC_OK` on success, error code on failure | Convenience resolver for `DISCORD_TOKEN` |
+| `dc_env_get_discord_token_auto(unsigned flags, dc_string_t* out_token)` | `flags`: Flags, `out_token`: Output string to store token | `dc_status_t`: `DC_OK` on success, error code on failure | Resolve `DISCORD_TOKEN` from process env then auto-discovered dotenv file |
+| `dc_env_load_dotenv(const char* dotenv_path, unsigned flags, size_t* out_loaded)` | `dotenv_path`: Dotenv path (NULL/empty => auto-discover), `flags`: Flags, `out_loaded`: Optional count of vars set | `dc_status_t`: `DC_OK` on success, error code on failure | Load dotenv file into the process environment |
 | `dc_env_secure_clear_string(dc_string_t* value)` | `value`: String to securely clear | `void` | Wipe string bytes and reset it |
 
 ### Content Formatting and Mention Control (`core/dc_format.h`, `core/dc_allowed_mentions.h`)
@@ -713,6 +713,16 @@ Use this router setup with client config like:
 | `dc_gateway_thread_list_sync_init(dc_gateway_thread_list_sync_t* sync)` | `sync`: Thread list sync model to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init `THREAD_LIST_SYNC` model |
 | `dc_gateway_thread_list_sync_free(dc_gateway_thread_list_sync_t* sync)` | `sync`: Thread list sync model to free | `void` | Free `THREAD_LIST_SYNC` model |
 | `dc_gateway_event_parse_thread_list_sync(const char* event_data, dc_gateway_thread_list_sync_t* sync)` | `event_data`: Thread list sync JSON data, `sync`: Output model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse `THREAD_LIST_SYNC` payload |
+| `dc_gateway_ready_init(dc_gateway_ready_t* ready)` | `ready`: READY model to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init `READY` model |
+| `dc_gateway_ready_free(dc_gateway_ready_t* ready)` | `ready`: READY model to free | `void` | Free `READY` model |
+| `dc_gateway_event_parse_ready(const char* event_data, dc_gateway_ready_t* ready)` | `event_data`: READY JSON data, `ready`: Output READY model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse `READY` payload |
+| `dc_gateway_guild_create_init(dc_gateway_guild_create_t* guild)` | `guild`: GUILD_CREATE model to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init `GUILD_CREATE` model |
+| `dc_gateway_guild_create_free(dc_gateway_guild_create_t* guild)` | `guild`: GUILD_CREATE model to free | `void` | Free `GUILD_CREATE` model |
+| `dc_gateway_event_parse_guild_create(const char* event_data, dc_gateway_guild_create_t* guild)` | `event_data`: GUILD_CREATE JSON data, `guild`: Output model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse `GUILD_CREATE` payload |
+| `dc_gateway_message_create_init(dc_gateway_message_create_t* msg)` | `msg`: MESSAGE_CREATE wrapper to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init full `MESSAGE_CREATE` wrapper |
+| `dc_gateway_message_create_free(dc_gateway_message_create_t* msg)` | `msg`: MESSAGE_CREATE wrapper to free | `void` | Free full `MESSAGE_CREATE` wrapper |
+| `dc_gateway_event_parse_message_create_full(const char* event_data, dc_gateway_message_create_t* msg)` | `event_data`: MESSAGE_CREATE JSON data, `msg`: Output wrapper to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse full `MESSAGE_CREATE` payload (guild_id/member) |
+| `dc_gateway_event_parse_message_create(const char* event_data, dc_message_t* message)` | `event_data`: MESSAGE_CREATE JSON data, `message`: Output message model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse message-only `MESSAGE_CREATE` payload (legacy) |
 
 ## 6) JSON Helpers
 
@@ -802,12 +812,18 @@ Use this router setup with client config like:
 | Function | Parameters | Return Value | Description |
 |----------|------------|--------------|-------------|
 | `dc_json_model_user_from_val(yyjson_val* val, dc_user_t* user)` | `val`: JSON value to parse from, `user`: Output user model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse user model from JSON value |
+| `dc_json_model_guild_from_val(yyjson_val* val, dc_guild_t* guild)` | `val`: JSON value to parse from, `guild`: Output guild model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse guild model from JSON value |
 | `dc_json_model_guild_member_from_val(yyjson_val* val, dc_guild_member_t* member)` | `val`: JSON value to parse from, `member`: Output guild member model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse guild member model from JSON value |
 | `dc_json_model_role_from_val(yyjson_val* val, dc_role_t* role)` | `val`: JSON value to parse from, `role`: Output role model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse role model from JSON value |
 | `dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channel)` | `val`: JSON value to parse from, `channel`: Output channel model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse channel model from JSON value |
 | `dc_json_model_message_from_val(yyjson_val* val, dc_message_t* message)` | `val`: JSON value to parse from, `message`: Output message model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse message model from JSON value |
 | `dc_json_model_component_from_val(yyjson_val* val, dc_component_t* component)` | `val`: JSON value to parse from, `component`: Output component model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse component model from JSON value |
 | `dc_json_model_thread_member_from_val(yyjson_val* val, dc_channel_thread_member_t* member)` | `val`: JSON value to parse from, `member`: Output thread member model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse thread member model from JSON value |
+| `dc_json_model_voice_state_from_val(yyjson_val* val, dc_voice_state_t* vs)` | `val`: JSON value to parse from, `vs`: Output voice state model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse voice state model from JSON value |
+| `dc_json_model_presence_from_val(yyjson_val* val, dc_presence_t* presence)` | `val`: JSON value to parse from, `presence`: Output presence model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse presence model from JSON value |
+| `dc_json_model_attachment_from_val(yyjson_val* val, dc_attachment_t* attachment)` | `val`: JSON value to parse from, `attachment`: Output attachment model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse attachment model from JSON value |
+| `dc_json_model_embed_from_val(yyjson_val* val, dc_embed_t* embed)` | `val`: JSON value to parse from, `embed`: Output embed model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse embed model from JSON value |
+| `dc_json_model_mention_from_val(yyjson_val* val, dc_guild_member_t* member)` | `val`: JSON value to parse from, `member`: Output mention wrapper to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse a message mention entry into a guild-member wrapper |
 | `dc_json_model_user_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_user_t* user)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `user`: User model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize user model into mutable JSON object |
 | `dc_json_model_guild_member_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_guild_member_t* member)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `member`: Guild member model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize guild member model into mutable JSON object |
 | `dc_json_model_role_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_role_t* role)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `role`: Role model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize role model into mutable JSON object |
@@ -833,6 +849,9 @@ Use this router setup with client config like:
 | `dc_user_get_display_name(const dc_user_t* user)` | `user`: User to get display name for | `const char*`: Display name string | Choose display name fallback (`global_name` then `username`) |
 
 ### Channel Model (`model/dc_channel.h`)
+
+**Notes**
+- `dc_channel_t.permission_overwrites`: `dc_vec_t` of `dc_permission_overwrite_t` parsed from JSON `permission_overwrites` (type 0 = role, 1 = member).
 
 | Function | Parameters | Return Value | Description |
 |----------|------------|--------------|-------------|
@@ -876,6 +895,20 @@ Use this router setup with client config like:
 | `dc_role_list_init(dc_role_list_t* list)` | `list`: Role list container to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize typed role list container |
 | `dc_role_list_free(dc_role_list_t* list)` | `list`: Role list container to free | `void` | Free typed role list container and element-owned memory |
 
+### Permissions Helpers (`model/dc_permissions.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_permissions_compute_base(dc_snowflake_t guild_id, dc_snowflake_t guild_owner_id, dc_snowflake_t member_user_id, const dc_role_list_t* roles, const dc_vec_t* member_role_ids, uint64_t* out_permissions)` | `guild_id`: Guild ID (also @everyone role ID), `guild_owner_id`: Guild owner user ID (0 if unknown), `member_user_id`: Member user ID, `roles`: Guild role list, `member_role_ids`: Member role IDs (`dc_snowflake_t` vec), `out_permissions`: Output permissions bitfield | `dc_status_t`: `DC_OK` on success, error code on failure | Compute guild-level base permissions for a member (roles only) |
+| `dc_permissions_compute_overwrites(uint64_t base_permissions, dc_snowflake_t guild_id, dc_snowflake_t member_user_id, const dc_vec_t* member_role_ids, const dc_vec_t* permission_overwrites, uint64_t* out_permissions)` | `base_permissions`: Base permission bitfield, `guild_id`: Guild ID, `member_user_id`: Member user ID, `member_role_ids`: Member role IDs (`dc_snowflake_t` vec), `permission_overwrites`: Overwrites (`dc_permission_overwrite_t` vec), `out_permissions`: Output permissions bitfield | `dc_status_t`: `DC_OK` on success, error code on failure | Apply channel permission overwrites to a base permission set |
+| `dc_permissions_compute_channel(dc_snowflake_t guild_id, dc_snowflake_t guild_owner_id, const dc_role_list_t* roles, const dc_guild_member_t* member, const dc_channel_t* channel, uint64_t* out_permissions)` | `guild_id`: Guild ID, `guild_owner_id`: Guild owner user ID (0 if unknown), `roles`: Guild role list, `member`: Guild member (must include `user.id`), `channel`: Channel (uses `permission_overwrites`), `out_permissions`: Output permissions bitfield | `dc_status_t`: `DC_OK` on success, error code on failure | Compute base + overwrites for a channel |
+| `dc_permissions_apply_implicit_text(uint64_t perms)` | `perms`: Permission bitfield | `uint64_t`: Filtered permission bitfield | Apply documented implicit permission rules for text-like channels |
+| `dc_permissions_apply_thread_rules(uint64_t perms, dc_channel_type_t channel_type)` | `perms`: Permission bitfield, `channel_type`: Channel type | `uint64_t`: Filtered permission bitfield | Apply thread inheritance rule (clear `SEND_MESSAGES` for thread types) |
+| `dc_permissions_apply_timed_out_mask(uint64_t perms)` | `perms`: Permission bitfield | `uint64_t`: Filtered permission bitfield | Apply timed-out member mask (`VIEW_CHANNEL` + `READ_MESSAGE_HISTORY` only) |
+
+**Notes**
+- Permission bit constants are defined as `DC_PERMISSION_*`, plus `DC_PERMISSIONS_NONE` and `DC_PERMISSIONS_ALL`.
+
 ### Component Model (`model/dc_component.h`)
 
 | Function | Parameters | Return Value | Description |
@@ -892,6 +925,42 @@ Use this router setup with client config like:
 | `dc_partial_emoji_free(dc_partial_emoji_t* emoji)` | `emoji`: Partial emoji struct to free | `void` | Free partial emoji struct |
 | `dc_media_gallery_item_init(dc_media_gallery_item_t* item)` | `item`: Media gallery item to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize media gallery item |
 | `dc_media_gallery_item_free(dc_media_gallery_item_t* item)` | `item`: Media gallery item to free | `void` | Free media gallery item |
+
+### Attachment Model (`model/dc_attachment.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_attachment_init(dc_attachment_t* attachment)` | `attachment`: Attachment struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize attachment struct |
+| `dc_attachment_free(dc_attachment_t* attachment)` | `attachment`: Attachment struct to free | `void` | Free attachment-owned fields |
+
+### Embed Model (`model/dc_embed.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_embed_init(dc_embed_t* embed)` | `embed`: Embed struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize embed struct |
+| `dc_embed_free(dc_embed_t* embed)` | `embed`: Embed struct to free | `void` | Free embed recursively |
+| `dc_embed_footer_free(dc_embed_footer_t* val)` | `val`: Footer sub-struct to free | `void` | Free embed footer |
+| `dc_embed_image_free(dc_embed_image_t* val)` | `val`: Image sub-struct to free | `void` | Free embed image |
+| `dc_embed_thumbnail_free(dc_embed_thumbnail_t* val)` | `val`: Thumbnail sub-struct to free | `void` | Free embed thumbnail |
+| `dc_embed_video_free(dc_embed_video_t* val)` | `val`: Video sub-struct to free | `void` | Free embed video |
+| `dc_embed_provider_free(dc_embed_provider_t* val)` | `val`: Provider sub-struct to free | `void` | Free embed provider |
+| `dc_embed_author_free(dc_embed_author_t* val)` | `val`: Author sub-struct to free | `void` | Free embed author |
+| `dc_embed_field_free(dc_embed_field_t* val)` | `val`: Field sub-struct to free | `void` | Free embed field |
+
+### Voice State Model (`model/dc_voice_state.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_voice_state_init(dc_voice_state_t* vs)` | `vs`: Voice state to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize voice state struct |
+| `dc_voice_state_free(dc_voice_state_t* vs)` | `vs`: Voice state to free | `void` | Free voice state-owned fields |
+
+### Presence Model (`model/dc_presence.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_presence_init(dc_presence_t* presence)` | `presence`: Presence to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize presence struct |
+| `dc_presence_free(dc_presence_t* presence)` | `presence`: Presence to free | `void` | Free presence-owned fields |
+| `dc_presence_status_from_string(const char* status_str)` | `status_str`: Status string ("online", "idle", "dnd", "offline") | `dc_presence_status_t`: Mapped enum value | Parse presence status string to enum |
 
 ### Message Model (`model/dc_message.h`)
 

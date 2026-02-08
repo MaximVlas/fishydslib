@@ -141,8 +141,13 @@ set(FISHYDS_SOURCES
     model/dc_guild_member.c
     model/dc_channel.c
     model/dc_component.c
+    model/dc_attachment.c
+    model/dc_embed.c
     model/dc_message.c
     model/dc_guild.c
+    model/dc_voice_state.c
+    model/dc_presence.c
+    model/dc_permissions.c
     
     # Client
     client/dc_client.c

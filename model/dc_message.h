@@ -15,6 +15,9 @@
 #include "model/dc_user.h"
 #include "model/dc_channel.h"
 #include "model/dc_component.h"
+#include "model/dc_attachment.h"
+#include "model/dc_embed.h"
+#include "model/dc_guild_member.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,6 +96,9 @@ typedef struct {
     int has_thread;
     dc_channel_t thread;
     dc_vec_t components; /* dc_component_t */
+    dc_vec_t attachments; /* dc_attachment_t */
+    dc_vec_t embeds;      /* dc_embed_t */
+    dc_vec_t mentions;    /* dc_guild_member_t (using guild member to capture user + partial member) */
 } dc_message_t;
 
 dc_status_t dc_message_init(dc_message_t* message);

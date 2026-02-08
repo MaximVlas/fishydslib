@@ -25,6 +25,12 @@ dc_status_t dc_message_init(dc_message_t* message) {
     if (st != DC_OK) return st;
     st = dc_vec_init(&message->components, sizeof(dc_component_t));
     if (st != DC_OK) return st;
+    st = dc_vec_init(&message->attachments, sizeof(dc_attachment_t));
+    if (st != DC_OK) return st;
+    st = dc_vec_init(&message->embeds, sizeof(dc_embed_t));
+    if (st != DC_OK) return st;
+    st = dc_vec_init(&message->mentions, sizeof(dc_guild_member_t));
+    if (st != DC_OK) return st;
     return DC_OK;
 }
 
@@ -43,6 +49,21 @@ void dc_message_free(dc_message_t* message) {
         dc_component_free(component);
     }
     dc_vec_free(&message->components);
+
+    for (size_t i = 0; i < dc_vec_length(&message->attachments); i++) {
+        dc_attachment_free((dc_attachment_t*)dc_vec_at(&message->attachments, i));
+    }
+    dc_vec_free(&message->attachments);
+
+    for (size_t i = 0; i < dc_vec_length(&message->embeds); i++) {
+        dc_embed_free((dc_embed_t*)dc_vec_at(&message->embeds, i));
+    }
+    dc_vec_free(&message->embeds);
+
+    for (size_t i = 0; i < dc_vec_length(&message->mentions); i++) {
+        dc_guild_member_free((dc_guild_member_t*)dc_vec_at(&message->mentions, i));
+    }
+    dc_vec_free(&message->mentions);
     
     memset(message, 0, sizeof(*message));
 }

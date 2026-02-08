@@ -44,6 +44,8 @@ dc_status_t dc_channel_init(dc_channel_t* channel) {
     if (st != DC_OK) return st;
     st = dc_string_init(&channel->rtc_region);
     if (st != DC_OK) return st;
+    st = dc_vec_init(&channel->permission_overwrites, sizeof(dc_permission_overwrite_t));
+    if (st != DC_OK) return st;
     st = dc_vec_init(&channel->available_tags, sizeof(dc_channel_forum_tag_t));
     if (st != DC_OK) return st;
     st = dc_vec_init(&channel->applied_tags, sizeof(dc_snowflake_t));
@@ -66,6 +68,7 @@ void dc_channel_free(dc_channel_t* channel) {
     dc_string_free(&channel->icon);
     dc_string_free(&channel->last_pin_timestamp);
     dc_string_free(&channel->rtc_region);
+    dc_vec_free(&channel->permission_overwrites);
     dc_channel_free_forum_tags(&channel->available_tags);
     dc_vec_free(&channel->applied_tags);
     dc_optional_string_free(&channel->default_reaction_emoji.emoji_name);

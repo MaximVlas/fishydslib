@@ -188,7 +188,7 @@ static dc_status_t dc_guild_add_optional_permission(dc_json_mut_doc_t* doc,
     return dc_json_mut_set_permission(doc, obj, key, val->value);
 }
 
-static dc_status_t dc_guild_parse_from_val(yyjson_val* val, dc_guild_t* guild) {
+dc_status_t dc_json_model_guild_from_val(yyjson_val* val, dc_guild_t* guild) {
     if (!val || !guild) return DC_ERROR_NULL_POINTER;
     if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
 
@@ -483,7 +483,7 @@ dc_status_t dc_guild_from_json(const char* json_data, dc_guild_t* guild) {
         return st;
     }
 
-    st = dc_guild_parse_from_val(doc.root, &tmp);
+    st = dc_json_model_guild_from_val(doc.root, &tmp);
     dc_json_doc_free(&doc);
     if (st != DC_OK) {
         dc_guild_free(&tmp);

@@ -33,6 +33,18 @@ typedef enum {
     DC_CHANNEL_TYPE_GUILD_MEDIA = 16
 } dc_channel_type_t;
 
+typedef enum {
+    DC_PERMISSION_OVERWRITE_TYPE_ROLE = 0,
+    DC_PERMISSION_OVERWRITE_TYPE_MEMBER = 1
+} dc_permission_overwrite_type_t;
+
+typedef struct {
+    dc_snowflake_t id;
+    dc_permission_overwrite_type_t type; /* 0 = role, 1 = member */
+    uint64_t allow;
+    uint64_t deny;
+} dc_permission_overwrite_t;
+
 typedef struct {
     int archived;
     int auto_archive_duration;
@@ -79,6 +91,7 @@ typedef struct {
     dc_string_t last_pin_timestamp;
     dc_string_t rtc_region;
     int position;
+    dc_vec_t permission_overwrites; /* dc_permission_overwrite_t */
     int nsfw;
     int bitrate;
     int user_limit;

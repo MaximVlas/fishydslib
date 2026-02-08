@@ -18,6 +18,8 @@ int test_allowed_mentions_main(void);
 int test_cdn_main(void);
 int test_data_uri_main(void);
 int test_attachments_main(void);
+int test_env_main(void);
+int test_permissions_main(void);
 
 int main(void) {
     int result = 0;
@@ -36,6 +38,8 @@ int main(void) {
     result |= test_cdn_main();
     result |= test_data_uri_main();
     result |= test_attachments_main();
+    result |= test_env_main();
+    result |= test_permissions_main();
     
     if (result == 0) {
         printf("\nAll core tests passed!\n");

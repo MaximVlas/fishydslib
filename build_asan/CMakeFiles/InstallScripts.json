@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/max/DcChamb/fishydslib/build_asan/cmake_install.cmake",
+		"/home/max/DcChamb/fishydslib/build_asan/examples/cmake_install.cmake",
+		"/home/max/DcChamb/fishydslib/build_asan/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

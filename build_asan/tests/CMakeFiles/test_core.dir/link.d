@@ -1,0 +1,283 @@
+test_core: \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/Scrt1.o \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/crti.o \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libasan_preinit.o \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libasan.so \
+  CMakeFiles/test_core.dir/test_status.c.o \
+  CMakeFiles/test_core.dir/test_alloc.c.o \
+  CMakeFiles/test_core.dir/test_string.c.o \
+  CMakeFiles/test_core.dir/test_vec.c.o \
+  CMakeFiles/test_core.dir/test_snowflake.c.o \
+  CMakeFiles/test_core.dir/test_time.c.o \
+  CMakeFiles/test_core.dir/test_optional.c.o \
+  CMakeFiles/test_core.dir/test_format.c.o \
+  CMakeFiles/test_core.dir/test_allowed_mentions.c.o \
+  CMakeFiles/test_core.dir/test_cdn.c.o \
+  CMakeFiles/test_core.dir/test_data_uri.c.o \
+  CMakeFiles/test_core.dir/test_attachments.c.o \
+  CMakeFiles/test_core.dir/test_core_main.c.o \
+  ../libdiscordc.a \
+  libtest_utils.a \
+  ../libdiscordc.a \
+  /usr/lib/libcurl.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libwebsockets.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libcap.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libsystemd.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libyyjson.so \
+  /usr/lib/libz.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libglib-2.0.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so.1 \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libc.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libc.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libc.so \
+  /usr/lib/libc.so.6 \
+  /usr/lib/libc_nonshared.a \
+  /usr/lib/ld-linux-x86-64.so.2 \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so.1 \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/crtn.o \
+  /usr/lib/../lib/libstdc++.so.6 \
+  /usr/lib/../lib/libm.so.6 \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so.1 \
+  /usr/lib32/libnghttp3.so.9 \
+  /usr/lib/libnghttp3.so.9 \
+  /usr/lib32/libngtcp2_crypto_ossl.so.0 \
+  /usr/lib/libngtcp2_crypto_ossl.so.0 \
+  /usr/lib32/libngtcp2.so.16 \
+  /usr/lib/libngtcp2.so.16 \
+  /usr/lib32/libnghttp2.so.14 \
+  /usr/lib/libnghttp2.so.14 \
+  /usr/lib32/libidn2.so.0 \
+  /usr/lib/libidn2.so.0 \
+  /usr/lib32/libssh2.so.1 \
+  /usr/lib/libssh2.so.1 \
+  /usr/lib32/libpsl.so.5 \
+  /usr/lib/libpsl.so.5 \
+  /usr/lib32/libssl.so.3 \
+  /usr/lib/libssl.so.3 \
+  /usr/lib32/libcrypto.so.3 \
+  /usr/lib/libcrypto.so.3 \
+  /usr/lib32/libgssapi_krb5.so.2 \
+  /usr/lib/libgssapi_krb5.so.2 \
+  /usr/lib32/libzstd.so.1 \
+  /usr/lib/libzstd.so.1 \
+  /usr/lib32/libbrotlidec.so.1 \
+  /usr/lib/libbrotlidec.so.1 \
+  /usr/lib/ld-linux-x86-64.so.2 \
+  /usr/lib32/libpcre2-8.so.0 \
+  /usr/lib/libpcre2-8.so.0 \
+  /usr/lib32/libunistring.so.5 \
+  /usr/lib/libunistring.so.5 \
+  /usr/lib32/libkrb5.so.3 \
+  /usr/lib/libkrb5.so.3 \
+  /usr/lib32/libk5crypto.so.3 \
+  /usr/lib/libk5crypto.so.3 \
+  /usr/lib32/libcom_err.so.2 \
+  /usr/lib/libcom_err.so.2 \
+  /usr/lib32/libkrb5support.so.0 \
+  /usr/lib/libkrb5support.so.0 \
+  /usr/lib32/libkeyutils.so.1 \
+  /usr/lib/libkeyutils.so.1 \
+  /usr/lib32/libresolv.so.2 \
+  /usr/lib/libresolv.so.2 \
+  /usr/lib32/libbrotlicommon.so.1 \
+  /usr/lib/libbrotlicommon.so.1
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/Scrt1.o:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/crti.o:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libasan_preinit.o:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libasan.so:
+
+CMakeFiles/test_core.dir/test_status.c.o:
+
+CMakeFiles/test_core.dir/test_alloc.c.o:
+
+CMakeFiles/test_core.dir/test_string.c.o:
+
+CMakeFiles/test_core.dir/test_vec.c.o:
+
+CMakeFiles/test_core.dir/test_snowflake.c.o:
+
+CMakeFiles/test_core.dir/test_time.c.o:
+
+CMakeFiles/test_core.dir/test_optional.c.o:
+
+CMakeFiles/test_core.dir/test_format.c.o:
+
+CMakeFiles/test_core.dir/test_allowed_mentions.c.o:
+
+CMakeFiles/test_core.dir/test_cdn.c.o:
+
+CMakeFiles/test_core.dir/test_data_uri.c.o:
+
+CMakeFiles/test_core.dir/test_attachments.c.o:
+
+CMakeFiles/test_core.dir/test_core_main.c.o:
+
+../libdiscordc.a:
+
+libtest_utils.a:
+
+../libdiscordc.a:
+
+/usr/lib/libcurl.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libwebsockets.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libcap.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libsystemd.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libyyjson.so:
+
+/usr/lib/libz.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libglib-2.0.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so.1:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libc.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libc.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libc.so:
+
+/usr/lib/libc.so.6:
+
+/usr/lib/libc_nonshared.a:
+
+/usr/lib/ld-linux-x86-64.so.2:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so.1:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/crtn.o:
+
+/usr/lib/../lib/libstdc++.so.6:
+
+/usr/lib/../lib/libm.so.6:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libgcc_s.so.1:
+
+/usr/lib32/libnghttp3.so.9:
+
+/usr/lib/libnghttp3.so.9:
+
+/usr/lib32/libngtcp2_crypto_ossl.so.0:
+
+/usr/lib/libngtcp2_crypto_ossl.so.0:
+
+/usr/lib32/libngtcp2.so.16:
+
+/usr/lib/libngtcp2.so.16:
+
+/usr/lib32/libnghttp2.so.14:
+
+/usr/lib/libnghttp2.so.14:
+
+/usr/lib32/libidn2.so.0:
+
+/usr/lib/libidn2.so.0:
+
+/usr/lib32/libssh2.so.1:
+
+/usr/lib/libssh2.so.1:
+
+/usr/lib32/libpsl.so.5:
+
+/usr/lib/libpsl.so.5:
+
+/usr/lib32/libssl.so.3:
+
+/usr/lib/libssl.so.3:
+
+/usr/lib32/libcrypto.so.3:
+
+/usr/lib/libcrypto.so.3:
+
+/usr/lib32/libgssapi_krb5.so.2:
+
+/usr/lib/libgssapi_krb5.so.2:
+
+/usr/lib32/libzstd.so.1:
+
+/usr/lib/libzstd.so.1:
+
+/usr/lib32/libbrotlidec.so.1:
+
+/usr/lib/libbrotlidec.so.1:
+
+/usr/lib/ld-linux-x86-64.so.2:
+
+/usr/lib32/libpcre2-8.so.0:
+
+/usr/lib/libpcre2-8.so.0:
+
+/usr/lib32/libunistring.so.5:
+
+/usr/lib/libunistring.so.5:
+
+/usr/lib32/libkrb5.so.3:
+
+/usr/lib/libkrb5.so.3:
+
+/usr/lib32/libk5crypto.so.3:
+
+/usr/lib/libk5crypto.so.3:
+
+/usr/lib32/libcom_err.so.2:
+
+/usr/lib/libcom_err.so.2:
+
+/usr/lib32/libkrb5support.so.0:
+
+/usr/lib/libkrb5support.so.0:
+
+/usr/lib32/libkeyutils.so.1:
+
+/usr/lib/libkeyutils.so.1:
+
+/usr/lib32/libresolv.so.2:
+
+/usr/lib/libresolv.so.2:
+
+/usr/lib32/libbrotlicommon.so.1:
+
+/usr/lib/libbrotlicommon.so.1:
