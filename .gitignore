@@ -22,3 +22,4 @@ examples/
 **/*.md
 **/*.mdx
 !FishyDsLib-API-Reference.mdx
+!README.md
