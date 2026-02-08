@@ -1,0 +1,24 @@
+# Local/dev artifacts
+build/
+cmake-build*/
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dlls
+*.exe
+
+# Local env files
+.env
+.env.ex
+**/.env
+**/.env.ex
+
+# The example folder is local-only,
+examples/
+
+# Keep only one markdown document for publishing, the rest are notes/outdated
+**/*.md
+**/*.mdx
+!FishyDsLib-API-Reference.mdx

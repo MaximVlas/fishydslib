@@ -1,0 +1,1004 @@
+# Fishy Discord Lib API Reference (Discord API v10)
+
+This reference documents the public API exported by `fishydslib/*/*.h` (excluding test-only headers).
+The API is actively evolving, so review release notes and headers when upgrading.
+
+## Table of Contents
+- [Conventions](#conventions)
+- [1) Client API](#1-client-api)
+- [2) Message Command Router](#2-message-command-router)
+- [3) Core Utilities](#3-core-utilities)
+- [4) HTTP, REST, and Compliance](#4-http-rest-and-compliance)
+- [5) Gateway](#5-gateway)
+- [6) JSON Helpers](#6-json-helpers)
+- [7) Typed Models](#7-typed-models)
+- [8) Enums and Constants](#8-enums-and-constants)
+
+## Conventions
+
+- Unless explicitly noted, APIs return `dc_status_t`.
+- `DC_OK` means success.
+- "Overwrites output" means caller should free existing data in that output object before reuse.
+- Most model/resource structs use explicit `*_init` / `*_free` lifecycle pairs.
+- Thread-safety depends on the API:
+  - `dc_client_start`, `dc_client_stop`, and `dc_client_process` are single-thread calls.
+  - Gateway callbacks execute on the calling thread of `dc_client_process`.
+- Do not hardcode tokens in source code; examples prefer `core/dc_env.h` token loading.
+
+## 1) Client API (`client/dc_client.h`)
+
+### Lifecycle and Configuration
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_gateway_info_init(dc_gateway_info_t* info)` | `info`: Pointer to gateway info struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize gateway info struct |
+| `dc_gateway_info_free(dc_gateway_info_t* info)` | `info`: Pointer to gateway info struct to free | `void` | Free gateway info-owned strings |
+| `dc_client_config_init(dc_client_config_t* config)` | `config`: Pointer to client config struct to initialize | `void` | Fill config with safe defaults |
+| `dc_client_config_set_user_agent_info(dc_client_config_t* config, const dc_user_agent_t* ua)` | `config`: Client configuration, `ua`: User-Agent descriptor | `dc_status_t`: `DC_OK` on success, error code on failure | Set structured User-Agent metadata |
+| `dc_client_create(const dc_client_config_t* config, dc_client_t** client)` | `config`: Client configuration, `client`: Pointer to store created client | `dc_status_t`: `DC_OK` on success, error code on failure | Create client instance |
+| `dc_client_init(const dc_client_config_t* config, dc_client_t** client)` | `config`: Client configuration, `client`: Pointer to store initialized client | `dc_status_t`: `DC_OK` on success, error code on failure | Alias of `dc_client_create` |
+| `dc_client_free(dc_client_t* client)` | `client`: Client to free | `void` | Free client and owned resources |
+| `dc_client_shutdown(dc_client_t* client)` | `client`: Client to shutdown | `void` | Alias of `dc_client_free` |
+
+**Example: Creating and running a client safely**
+
+```c
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
+#include "client/dc_client.h"
+#include "core/dc_env.h"
+#include "core/dc_log.h"
+
+static volatile sig_atomic_t g_running = 1;
+
+static void on_signal(int sig) {
+    (void)sig;
+    g_running = 0;
+}
+
+static void on_event(const char* event_name, const char* event_json, void* user_data) {
+    (void)event_json;
+    (void)user_data;
+    if (event_name && strcmp(event_name, "READY") == 0) {
+        puts("Client is READY.");
+    }
+}
+
+int main(void) {
+    signal(SIGINT, on_signal);
+    signal(SIGTERM, on_signal);
+
+    dc_string_t token;
+    dc_string_t gateway_url;
+    dc_status_t st = dc_string_init(&token);
+    if (st != DC_OK) return 1;
+    st = dc_string_init(&gateway_url);
+    if (st != DC_OK) {
+        dc_string_free(&token);
+        return 1;
+    }
+
+    // Resolve token from process env first, then fallback dotenv files.
+    const char* dotenv_paths[] = {"./.env", "./.env.ex"};
+    st = dc_env_get_discord_token(dotenv_paths,
+                                  sizeof(dotenv_paths) / sizeof(dotenv_paths[0]),
+                                  DC_ENV_FLAG_REQUIRE_PRIVATE_FILE,
+                                  &token);
+    if (st == DC_ERROR_FORBIDDEN) {
+        // Optional dev-only fallback when file permissions are not private.
+        st = dc_env_get_discord_token(dotenv_paths,
+                                      sizeof(dotenv_paths) / sizeof(dotenv_paths[0]),
+                                      0u,
+                                      &token);
+    }
+    if (st != DC_OK) {
+        fprintf(stderr, "Failed to load DISCORD_TOKEN: %s\n", dc_status_string(st));
+        dc_string_free(&gateway_url);
+        dc_string_free(&token);
+        return 1;
+    }
+
+    // Optional gateway override for testing/proxies.
+    (void)dc_env_get_with_fallback("DISCORD_GATEWAY_URL",
+                                   dotenv_paths,
+                                   sizeof(dotenv_paths) / sizeof(dotenv_paths[0]),
+                                   0u,
+                                   &gateway_url);
+
+    dc_client_config_t config;
+    dc_client_config_init(&config);
+    config.token = dc_string_cstr(&token);
+    config.intents = DC_INTENT_GUILDS | DC_INTENT_GUILD_MESSAGES | DC_INTENT_MESSAGE_CONTENT;
+    config.event_callback = on_event;
+    config.log_callback = dc_log_default_callback;
+    config.log_level = DC_LOG_INFO;
+
+    dc_client_t* client = NULL;
+    st = dc_client_create(&config, &client);
+    if (st != DC_OK) {
+        fprintf(stderr, "dc_client_create failed: %s\n", dc_status_string(st));
+        dc_env_secure_clear_string(&token);
+        dc_string_free(&gateway_url);
+        dc_string_free(&token);
+        return 1;
+    }
+
+    if (!dc_string_is_empty(&gateway_url)) {
+        st = dc_client_start_with_gateway_url(client, dc_string_cstr(&gateway_url));
+    } else {
+        st = dc_client_start(client);
+    }
+    if (st != DC_OK) {
+        fprintf(stderr, "Client start failed: %s\n", dc_status_string(st));
+        dc_client_free(client);
+        dc_env_secure_clear_string(&token);
+        dc_string_free(&gateway_url);
+        dc_string_free(&token);
+        return 1;
+    }
+
+    // Single-threaded client loop.
+    while (g_running) {
+        st = dc_client_process(client, 100);
+        if (st != DC_OK && st != DC_ERROR_TIMEOUT) {
+            fprintf(stderr, "dc_client_process failed: %s\n", dc_status_string(st));
+            break;
+        }
+    }
+
+    (void)dc_client_stop(client);
+    dc_client_free(client);
+    dc_env_secure_clear_string(&token);
+    dc_string_free(&gateway_url);
+    dc_string_free(&token);
+    return 0;
+}
+```
+
+### Client Operations
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_client_set_logger(dc_client_t* client, dc_log_callback_t callback, void* user_data, dc_log_level_t level)` | `client`: Discord client, `callback`: Log callback (NULL to disable), `user_data`: User data for callback, `level`: Log level filter | `void` | Override runtime logger callback and level |
+| `dc_client_start(dc_client_t* client)` | `client`: Discord client | `dc_status_t`: `DC_OK` on success, error code on failure | Start client and connect using REST-fetched gateway info |
+| `dc_client_start_with_gateway_url(dc_client_t* client, const char* gateway_url)` | `client`: Discord client, `gateway_url`: Gateway URL (e.g., wss://gateway.discord.gg/?v=10&encoding=json) | `dc_status_t`: `DC_OK` on success, error code on failure | Start using explicit gateway URL |
+| `dc_client_stop(dc_client_t* client)` | `client`: Discord client | `dc_status_t`: `DC_OK` on success, error code on failure | Stop/disconnect gateway |
+| `dc_client_process(dc_client_t* client, uint32_t timeout_ms)` | `client`: Discord client, `timeout_ms`: Timeout in milliseconds (0 for non-blocking) | `dc_status_t`: `DC_OK` on success, error code on failure | Pump gateway I/O and dispatch callbacks |
+| `dc_client_get_gateway_info(dc_client_t* client, dc_gateway_info_t* info)` | `client`: Discord client, `info`: Gateway info output (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Query `/gateway` or `/gateway/bot` metadata |
+
+### User Routes
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_client_get_current_user(dc_client_t* client, dc_user_t* user)` | `client`: Discord client, `user`: User to store result | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch current bot/application user (`GET /users/@me`) |
+| `dc_client_get_user(dc_client_t* client, dc_snowflake_t user_id, dc_user_t* user)` | `client`: Discord client, `user_id`: User ID, `user`: User to store result | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch user by ID |
+
+### Message and Channel Routes
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_client_create_message(dc_client_t* client, dc_snowflake_t channel_id, const char* content, dc_snowflake_t* message_id)` | `client`: Discord client, `channel_id`: Channel ID, `content`: Message content, `message_id`: Pointer to store created message ID (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Send a text message |
+| `dc_client_create_message_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body, dc_snowflake_t* message_id)` | `client`: Discord client, `channel_id`: Channel ID, `json_body`: Message JSON payload, `message_id`: Pointer to store created message ID (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Send message from raw JSON body |
+| `dc_client_get_channel(dc_client_t* client, dc_snowflake_t channel_id, dc_channel_t* channel)` | `client`: Discord client, `channel_id`: Channel ID, `channel`: Output channel (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch channel object |
+| `dc_client_modify_channel_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body, dc_channel_t* channel)` | `client`: Discord client, `channel_id`: Channel ID, `json_body`: JSON payload for `PATCH /channels/{channel.id}`, `channel`: Output channel (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Patch channel via JSON body |
+| `dc_client_delete_channel(dc_client_t* client, dc_snowflake_t channel_id, dc_channel_t* channel)` | `client`: Discord client, `channel_id`: Channel ID, `channel`: Output deleted channel (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Delete/close channel |
+| `dc_client_list_channel_messages_json(dc_client_t* client, dc_snowflake_t channel_id, uint32_t limit, dc_snowflake_t before, dc_snowflake_t after, dc_snowflake_t around, dc_string_t* messages_json)` | `client`: Discord client, `channel_id`: Channel ID, `limit`: Max messages (1-100, 0 to use default), `before`: Message ID cursor (0 to omit), `after`: Message ID cursor (0 to omit), `around`: Message ID cursor (0 to omit), `messages_json`: Output JSON string (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List messages as raw JSON |
+| `dc_client_get_message(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, dc_message_t* message)` | `client`: Discord client, `channel_id`: Channel ID, `message_id`: Message ID, `message`: Output message (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch message by ID |
+| `dc_client_edit_message_content(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* content, dc_message_t* message)` | `client`: Discord client, `channel_id`: Channel ID, `message_id`: Message ID, `content`: Updated content, `message`: Output updated message (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Edit message content |
+| `dc_client_delete_message(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id)` | `client`: Discord client, `channel_id`: Channel ID, `message_id`: Message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Delete message |
+| `dc_client_pin_message(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id)` | `client`: Discord client, `channel_id`: Channel ID, `message_id`: Message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Pin message |
+| `dc_client_unpin_message(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id)` | `client`: Discord client, `channel_id`: Channel ID, `message_id`: Message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Unpin message |
+| `dc_client_get_pinned_messages_json(dc_client_t* client, dc_snowflake_t channel_id, dc_string_t* messages_json)` | `client`: Discord client, `channel_id`: Channel ID, `messages_json`: Output JSON string (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List pinned messages as raw JSON |
+
+**Example: Sending a message with robust error handling**
+
+```c
+#include <stdio.h>
+#include "client/dc_client.h"
+#include "core/dc_snowflake.h"
+
+dc_status_t send_text_message(dc_client_t* client,
+                              dc_snowflake_t channel_id,
+                              const char* content) {
+    if (!client || !content || content[0] == '\0') {
+        return DC_ERROR_INVALID_PARAM;
+    }
+
+    dc_snowflake_t message_id = 0;
+    dc_status_t st = dc_client_create_message(client, channel_id, content, &message_id);
+    if (st != DC_OK) {
+        fprintf(stderr, "dc_client_create_message failed: %s\n", dc_status_string(st));
+        return st;
+    }
+
+    // Convert snowflake to text safely before logging.
+    char id_buf[32];
+    st = dc_snowflake_to_cstr(message_id, id_buf, sizeof(id_buf));
+    if (st == DC_OK) {
+        printf("Message sent successfully, id=%s\n", id_buf);
+    }
+
+    return DC_OK;
+}
+```
+
+### Guild Routes
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_client_get_guild_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* guild_json)` | `client`: Discord client, `guild_id`: Guild ID, `guild_json`: Output JSON string (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch guild JSON |
+| `dc_client_get_guild(dc_client_t* client, dc_snowflake_t guild_id, dc_guild_t* guild)` | `client`: Discord client, `guild_id`: Guild ID, `guild`: Output guild (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch guild as typed model |
+| `dc_client_get_guild_channels_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* channels_json)` | `client`: Discord client, `guild_id`: Guild ID, `channels_json`: Output JSON string (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List guild channels JSON |
+| `dc_client_get_guild_channels(dc_client_t* client, dc_snowflake_t guild_id, dc_channel_list_t* channels)` | `client`: Discord client, `guild_id`: Guild ID, `channels`: Output channel list (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List guild channels as typed models |
+| `dc_client_modify_guild_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_string_t* guild_json)` | `client`: Discord client, `guild_id`: Guild ID, `json_body`: JSON payload for `PATCH /guilds/{guild.id}`, `guild_json`: Output guild JSON (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Patch guild via JSON body |
+| `dc_client_modify_guild(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_guild_t* guild)` | `client`: Discord client, `guild_id`: Guild ID, `json_body`: JSON payload for `PATCH /guilds/{guild.id}`, `guild`: Output guild (optional, overwritten when non-NULL) | `dc_status_t`: `DC_OK` on success, error code on failure | Patch guild and parse typed response |
+| `dc_client_create_guild_channel_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_channel_t* channel)` | `client`: Discord client, `guild_id`: Guild ID, `json_body`: JSON payload for `POST /guilds/{guild.id}/channels`, `channel`: Output channel (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Create guild channel |
+| `dc_client_get_guild_member_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id, dc_string_t* member_json)` | `client`: Discord client, `guild_id`: Guild ID, `user_id`: User ID, `member_json`: Output member JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch guild member JSON |
+| `dc_client_get_guild_member(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id, dc_guild_member_t* member)` | `client`: Discord client, `guild_id`: Guild ID, `user_id`: User ID, `member`: Output guild member (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch guild member as typed model |
+| `dc_client_list_guild_members_json(dc_client_t* client, dc_snowflake_t guild_id, uint32_t limit, dc_snowflake_t after, dc_string_t* members_json)` | `client`: Discord client, `guild_id`: Guild ID, `limit`: Max members (1-1000, 0 uses default), `after`: Cursor user ID (0 to omit), `members_json`: Output members JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List guild members JSON |
+| `dc_client_list_guild_members(dc_client_t* client, dc_snowflake_t guild_id, uint32_t limit, dc_snowflake_t after, dc_guild_member_list_t* members)` | `client`: Discord client, `guild_id`: Guild ID, `limit`: Max members (1-1000, 0 uses default), `after`: Cursor user ID (0 to omit), `members`: Output member list (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List guild members as typed models |
+| `dc_client_get_guild_roles_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* roles_json)` | `client`: Discord client, `guild_id`: Guild ID, `roles_json`: Output roles JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List guild roles JSON |
+| `dc_client_get_guild_roles(dc_client_t* client, dc_snowflake_t guild_id, dc_role_list_t* roles)` | `client`: Discord client, `guild_id`: Guild ID, `roles`: Output role list (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List guild roles as typed models |
+| `dc_client_create_guild_role_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_role_t* role)` | `client`: Discord client, `guild_id`: Guild ID, `json_body`: JSON payload for `POST /guilds/{guild.id}/roles`, `role`: Output role (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Create guild role |
+| `dc_client_modify_guild_role_positions_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_role_list_t* roles)` | `client`: Discord client, `guild_id`: Guild ID, `json_body`: JSON payload for `PATCH /guilds/{guild.id}/roles`, `roles`: Output role list (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Patch role positions and optionally parse typed role list |
+| `dc_client_modify_guild_role_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t role_id, const char* json_body, dc_role_t* role)` | `client`: Discord client, `guild_id`: Guild ID, `role_id`: Role ID, `json_body`: JSON payload for `PATCH /guilds/{guild.id}/roles/{role.id}`, `role`: Output role (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Patch one guild role and optionally parse typed role |
+| `dc_client_delete_guild_role(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t role_id)` | `client`: Discord client, `guild_id`: Guild ID, `role_id`: Role ID | `dc_status_t`: `DC_OK` on success, error code on failure | Delete guild role |
+| `dc_client_remove_guild_member(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id)` | `client`: Discord client, `guild_id`: Guild ID, `user_id`: User ID | `dc_status_t`: `DC_OK` on success, error code on failure | Kick guild member |
+| `dc_client_add_guild_member_role(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id, dc_snowflake_t role_id)` | `client`: Discord client, `guild_id`: Guild ID, `user_id`: User ID, `role_id`: Role ID | `dc_status_t`: `DC_OK` on success, error code on failure | Grant role to guild member |
+| `dc_client_remove_guild_member_role(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id, dc_snowflake_t role_id)` | `client`: Discord client, `guild_id`: Guild ID, `user_id`: User ID, `role_id`: Role ID | `dc_status_t`: `DC_OK` on success, error code on failure | Remove role from guild member |
+
+### Webhook Routes
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_client_create_channel_webhook_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body, dc_string_t* webhook_json)` | `client`: Discord client, `channel_id`: Channel ID, `json_body`: JSON payload for `POST /channels/{channel.id}/webhooks`, `webhook_json`: Output webhook JSON (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Create channel webhook |
+| `dc_client_get_channel_webhooks_json(dc_client_t* client, dc_snowflake_t channel_id, dc_string_t* webhooks_json)` | `client`: Discord client, `channel_id`: Channel ID, `webhooks_json`: Output webhooks JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List channel webhooks |
+| `dc_client_get_guild_webhooks_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* webhooks_json)` | `client`: Discord client, `guild_id`: Guild ID, `webhooks_json`: Output webhooks JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | List guild webhooks |
+| `dc_client_get_webhook_json(dc_client_t* client, dc_snowflake_t webhook_id, dc_string_t* webhook_json)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_json`: Output webhook JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch webhook by ID |
+| `dc_client_get_webhook_with_token_json(dc_client_t* client, dc_snowflake_t webhook_id, const char* webhook_token, dc_string_t* webhook_json)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_token`: Webhook token, `webhook_json`: Output webhook JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch webhook using token auth path |
+| `dc_client_modify_webhook_json(dc_client_t* client, dc_snowflake_t webhook_id, const char* json_body, dc_string_t* webhook_json)` | `client`: Discord client, `webhook_id`: Webhook ID, `json_body`: JSON patch body, `webhook_json`: Output webhook JSON (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Patch webhook |
+| `dc_client_modify_webhook_with_token_json(dc_client_t* client, dc_snowflake_t webhook_id, const char* webhook_token, const char* json_body, dc_string_t* webhook_json)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_token`: Webhook token, `json_body`: JSON patch body, `webhook_json`: Output webhook JSON (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Patch webhook with token route |
+| `dc_client_delete_webhook(dc_client_t* client, dc_snowflake_t webhook_id)` | `client`: Discord client, `webhook_id`: Webhook ID | `dc_status_t`: `DC_OK` on success, error code on failure | Delete webhook |
+| `dc_client_delete_webhook_with_token(dc_client_t* client, dc_snowflake_t webhook_id, const char* webhook_token)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_token`: Webhook token | `dc_status_t`: `DC_OK` on success, error code on failure | Delete webhook via token route |
+| `dc_client_execute_webhook_json(dc_client_t* client, dc_snowflake_t webhook_id, const char* webhook_token, const char* json_body, int wait, dc_string_t* message_json)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_token`: Webhook token, `json_body`: JSON execute body, `wait`: Non-zero to wait for created message response, `message_json`: Output message JSON when wait=true (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Execute webhook payload |
+| `dc_client_get_webhook_message_json(dc_client_t* client, dc_snowflake_t webhook_id, const char* webhook_token, dc_snowflake_t message_id, dc_snowflake_t thread_id, dc_string_t* message_json)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_token`: Webhook token, `message_id`: Message ID, `thread_id`: Thread ID (0 to omit), `message_json`: Output message JSON (overwritten) | `dc_status_t`: `DC_OK` on success, error code on failure | Fetch webhook message |
+| `dc_client_edit_webhook_message_json(dc_client_t* client, dc_snowflake_t webhook_id, const char* webhook_token, dc_snowflake_t message_id, const char* json_body, dc_snowflake_t thread_id, dc_string_t* message_json)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_token`: Webhook token, `message_id`: Message ID, `json_body`: JSON patch body, `thread_id`: Thread ID (0 to omit), `message_json`: Output message JSON (optional) | `dc_status_t`: `DC_OK` on success, error code on failure | Edit webhook message |
+| `dc_client_delete_webhook_message(dc_client_t* client, dc_snowflake_t webhook_id, const char* webhook_token, dc_snowflake_t message_id, dc_snowflake_t thread_id)` | `client`: Discord client, `webhook_id`: Webhook ID, `webhook_token`: Webhook token, `message_id`: Message ID, `thread_id`: Thread ID (0 to omit) | `dc_status_t`: `DC_OK` on success, error code on failure | Delete webhook message |
+
+### Interactions and Application Commands
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_client_create_command_simple(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, const char* name, const char* description, const char* option_name, const char* option_description, int option_required)` | `client`: Discord client, `application_id`: Application ID, `guild_id`: Guild ID for guild command (0 for global), `name`: Command name, `description`: Command description, `option_name`: Option name (string), `option_description`: Option description, `option_required`: Non-zero if required | `dc_status_t`: `DC_OK` on success, error code on failure | Create simple slash command with one string option |
+| `dc_client_interaction_respond_message(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token, const char* content, int ephemeral)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token, `content`: Message content, `ephemeral`: Non-zero to send ephemeral response | `dc_status_t`: `DC_OK` on success, error code on failure | Send initial interaction message response |
+| `dc_client_interaction_edit_original_response(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, const char* content)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `content`: New message content | `dc_status_t`: `DC_OK` on success, error code on failure | Edit original interaction response |
+| `dc_client_interaction_delete_original_response(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token | `dc_status_t`: `DC_OK` on success, error code on failure | Delete original interaction response |
+| `dc_client_interaction_create_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, const char* content, int ephemeral, dc_snowflake_t* message_id)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `content`: Message content, `ephemeral`: Non-zero to send ephemeral response, `message_id`: Optional output for created followup message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Create follow-up message |
+| `dc_client_interaction_edit_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, dc_snowflake_t message_id, const char* content)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `message_id`: Followup message ID, `content`: New message content | `dc_status_t`: `DC_OK` on success, error code on failure | Edit follow-up message |
+| `dc_client_interaction_delete_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, dc_snowflake_t message_id)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `message_id`: Followup message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Delete follow-up message |
+
+### Gateway Send Helpers (Through Client)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_client_update_presence(dc_client_t* client, const char* status, const char* activity_name, int activity_type)` | `client`: Discord client, `status`: Status string ("online", "idle", "dnd", "invisible"), `activity_name`: Activity name (optional), `activity_type`: Activity type (0=playing, 1=streaming, 2=listening, 3=watching, 5=competing) | `dc_status_t`: `DC_OK` on success, error code on failure | Send gateway presence update |
+| `dc_client_request_guild_members(dc_client_t* client, dc_snowflake_t guild_id, const char* query, uint32_t limit, int presences, const dc_snowflake_t* user_ids, size_t user_id_count, const char* nonce)` | `client`: Discord client, `guild_id`: Guild ID, `query`: Username prefix query, or "" for all members (mutually exclusive with user_ids), `limit`: Max members for query mode, `presences`: Non-zero to request presence objects, `user_ids`: Optional user IDs (mutually exclusive with query), `user_id_count`: Number of user IDs, `nonce`: Optional nonce (max 32 bytes) | `dc_status_t`: `DC_OK` on success, error code on failure | Send op 8 member request |
+| `dc_client_request_soundboard_sounds(dc_client_t* client, const dc_snowflake_t* guild_ids, size_t guild_id_count)` | `client`: Discord client, `guild_ids`: Guild ID array, `guild_id_count`: Number of guild IDs | `dc_status_t`: `DC_OK` on success, error code on failure | Send op 31 soundboard request |
+| `dc_client_update_voice_state(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t channel_id, int self_mute, int self_deaf)` | `client`: Discord client, `guild_id`: Guild ID, `channel_id`: Voice channel ID, or 0 to disconnect, `self_mute`: Non-zero to self-mute, `self_deaf`: Non-zero to self-deafen | `dc_status_t`: `DC_OK` on success, error code on failure | Send op 4 voice state update |
+
+## 2) Message Command Router (`client/dc_commands.h`)
+
+### Types
+
+- `dc_command_handler_t`: Callback signature for message command handlers
+- `dc_command_t`: Command descriptor (`name`, optional `help`, `handler`)
+- `dc_command_router_t`: Router state (`prefix`, command list, options`)
+
+### API
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_command_router_init(dc_command_router_t* router, const char* prefix)` | `router`: Command router to initialize, `prefix`: Command prefix (e.g. "!") | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize command router |
+| `dc_command_router_free(dc_command_router_t* router)` | `router`: Command router to free | `void` | Free router-owned resources |
+| `dc_command_router_add(dc_command_router_t* router, const dc_command_t* command)` | `router`: Command router, `command`: Command to add | `dc_status_t`: `DC_OK` on success, error code on failure | Register single command |
+| `dc_command_router_add_many(dc_command_router_t* router, const dc_command_t* commands, size_t count)` | `router`: Command router, `commands`: Array of commands to add, `count`: Number of commands | `dc_status_t`: `DC_OK` on success, error code on failure | Register many commands |
+| `dc_command_router_set_prefix(dc_command_router_t* router, const char* prefix)` | `router`: Command router, `prefix`: New prefix | `dc_status_t`: `DC_OK` on success, error code on failure | Change prefix at runtime |
+| `dc_command_router_set_ignore_bots(dc_command_router_t* router, int ignore)` | `router`: Command router, `ignore`: Non-zero to ignore bot authors | `void` | Enable/disable bot-author filtering |
+| `dc_command_router_set_case_insensitive(dc_command_router_t* router, int enable)` | `router`: Command router, `enable`: Non-zero to enable case-insensitive matching | `void` | Enable/disable case-insensitive command matching |
+| `dc_command_router_handle_message(dc_command_router_t* router, dc_client_t* client, const dc_message_t* message)` | `router`: Command router, `client`: Discord client, `message`: Already-parsed message | `dc_status_t`: `DC_OK` on success, error code on failure | Parse/dispatch one already-parsed message |
+| `dc_command_router_handle_event(dc_command_router_t* router, dc_client_t* client, const char* event_name, const char* event_json)` | `router`: Command router, `client`: Discord client, `event_name`: Gateway event name, `event_json`: Gateway event JSON | `dc_status_t`: `DC_OK` on success, error code on failure | Parse and dispatch from gateway event JSON |
+
+**Example: Wiring the message command router into gateway events**
+
+```c
+#include <stdio.h>
+#include <string.h>
+#include "client/dc_client.h"
+#include "client/dc_commands.h"
+
+typedef struct {
+    dc_client_t* client;
+    dc_command_router_t router;
+} bot_ctx_t;
+
+static dc_status_t cmd_ping(dc_client_t* client,
+                            const dc_message_t* message,
+                            const char* args,
+                            void* user_data) {
+    (void)args;
+    (void)user_data;
+    return dc_client_create_message(client, message->channel_id, "Pong!", NULL);
+}
+
+static dc_status_t cmd_echo(dc_client_t* client,
+                            const dc_message_t* message,
+                            const char* args,
+                            void* user_data) {
+    (void)user_data;
+    if (!args || args[0] == '\0') {
+        return dc_client_create_message(client, message->channel_id, "Usage: !echo <text>", NULL);
+    }
+    return dc_client_create_message(client, message->channel_id, args, NULL);
+}
+
+static void on_event(const char* event_name, const char* event_json, void* user_data) {
+    bot_ctx_t* ctx = (bot_ctx_t*)user_data;
+    if (!ctx || !ctx->client || !event_name || !event_json) return;
+
+    // Route message-create events directly through the command router.
+    if (strcmp(event_name, "MESSAGE_CREATE") == 0) {
+        dc_status_t st = dc_command_router_handle_event(&ctx->router,
+                                                        ctx->client,
+                                                        event_name,
+                                                        event_json);
+        if (st != DC_OK) {
+            fprintf(stderr, "Command routing error: %s\n", dc_status_string(st));
+        }
+    }
+}
+
+dc_status_t setup_router(bot_ctx_t* ctx) {
+    if (!ctx) return DC_ERROR_NULL_POINTER;
+
+    dc_status_t st = dc_command_router_init(&ctx->router, "!");
+    if (st != DC_OK) return st;
+
+    dc_command_router_set_ignore_bots(&ctx->router, 1);
+    dc_command_router_set_case_insensitive(&ctx->router, 1);
+    ctx->router.user_data = ctx;
+
+    const dc_command_t commands[] = {
+        {"ping", "Health check", cmd_ping},
+        {"echo", "Echo text", cmd_echo},
+    };
+
+    st = dc_command_router_add_many(&ctx->router,
+                                    commands,
+                                    sizeof(commands) / sizeof(commands[0]));
+    if (st != DC_OK) {
+        dc_command_router_free(&ctx->router);
+        return st;
+    }
+
+    return DC_OK;
+}
+```
+
+Use this router setup with client config like:
+- `config.event_callback = on_event;`
+- `config.user_data = &ctx;`
+- call `setup_router(&ctx)` before `dc_client_start(...)`
+- call `dc_command_router_free(&ctx.router)` during shutdown
+
+## 3) Core Utilities
+
+### Status and Logging (`core/dc_status.h`, `core/dc_log.h`)
+
+| Function | Description |
+|----------|-------------|
+| `dc_status_string(dc_status_t status)` | Convert status code to human-readable text |
+| `dc_status_is_recoverable(dc_status_t status)` | Classify whether retry may succeed |
+| `dc_status_from_http(long http_status)` | Map HTTP status to library status |
+| `dc_log_level_string(dc_log_level_t level)` | Stringify log level |
+| `dc_log_default_callback(dc_log_level_t level, const char* message, void* user_data)` | Default logger implementation |
+
+### Memory Hooks (`core/dc_alloc.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_alloc_set_hooks(const dc_alloc_hooks_t* hooks)` | `hooks`: Custom allocation hooks to install | `void` | Install custom alloc/realloc/free hooks |
+| `dc_alloc_get_hooks(dc_alloc_hooks_t* hooks)` | `hooks`: Pointer to store current hooks | `void` | Retrieve currently active memory hooks |
+| `dc_alloc_reset_hooks(void)` | None | `void` | Restore default `malloc/realloc/free` hooks |
+| `dc_alloc(size_t size)` | `size`: Size in bytes to allocate | `void*`: Pointer to allocated memory, or NULL on failure | Allocate memory with guard checks |
+| `dc_calloc(size_t count, size_t size)` | `count`: Number of elements, `size`: Size of each element | `void*`: Pointer to zeroed allocated memory, or NULL on failure | Allocate zeroed memory |
+| `dc_realloc(void* ptr, size_t size)` | `ptr`: Pointer to existing allocation, `size`: New size in bytes | `void*`: Pointer to resized memory, or NULL on failure | Resize allocation |
+| `dc_free(void* ptr)` | `ptr`: Pointer to memory to free | `void` | Free allocation (NULL-safe) |
+| `dc_strdup(const char* str)` | `str`: String to duplicate | `char*`: Pointer to duplicated string, or NULL on failure | Duplicate full C string using library allocator |
+| `dc_strndup(const char* str, size_t max_len)` | `str`: String to duplicate, `max_len`: Maximum length to copy | `char*`: Pointer to duplicated string, or NULL on failure | Duplicate C string up to max length |
+| `dc_alloc_aligned(size_t size, size_t alignment)` | `size`: Size in bytes to allocate, `alignment`: Alignment requirement in bytes | `void*`: Pointer to aligned allocated memory, or NULL on failure | Allocate aligned block |
+
+### Dynamic Strings (`core/dc_string.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_string_init(dc_string_t* str)` | `str`: String to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize empty string |
+| `dc_string_init_with_capacity(dc_string_t* str, size_t capacity)` | `str`: String to initialize, `capacity`: Initial capacity to reserve | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize with reserved capacity |
+| `dc_string_init_from_cstr(dc_string_t* str, const char* cstr)` | `str`: String to initialize, `cstr`: Null-terminated string to copy | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize from null-terminated string |
+| `dc_string_init_from_buffer(dc_string_t* str, const char* data, size_t length)` | `str`: String to initialize, `data`: Raw data to copy, `length`: Length of data | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize from raw buffer |
+| `dc_string_free(dc_string_t* str)` | `str`: String to free | `void` | Free string storage |
+| `dc_string_clear(dc_string_t* str)` | `str`: String to clear | `void` | Clear content, keep capacity |
+| `dc_string_reserve(dc_string_t* str, size_t capacity)` | `str`: String to reserve capacity for, `capacity`: Minimum capacity to reserve | `dc_status_t`: `DC_OK` on success, error code on failure | Reserve minimum capacity |
+| `dc_string_shrink_to_fit(dc_string_t* str)` | `str`: String to shrink | `dc_status_t`: `DC_OK` on success, error code on failure | Shrink capacity to length + terminator |
+| `dc_string_append_cstr(dc_string_t* str, const char* cstr)` | `str`: String to append to, `cstr`: C string to append | `dc_status_t`: `DC_OK` on success, error code on failure | Append C string |
+| `dc_string_append_buffer(dc_string_t* str, const char* data, size_t length)` | `str`: String to append to, `data`: Raw data to append, `length`: Length of data | `dc_status_t`: `DC_OK` on success, error code on failure | Append raw bytes |
+| `dc_string_append_char(dc_string_t* str, char c)` | `str`: String to append to, `c`: Character to append | `dc_status_t`: `DC_OK` on success, error code on failure | Append one character |
+| `dc_string_append_string(dc_string_t* str, const dc_string_t* other)` | `str`: String to append to, `other`: Dynamic string to append | `dc_status_t`: `DC_OK` on success, error code on failure | Append another dynamic string |
+| `dc_string_append_printf(dc_string_t* str, const char* format, ...)` | `str`: String to append to, `format`: Format string, `...`: Arguments | `dc_status_t`: `DC_OK` on success, error code on failure | Append formatted text |
+| `dc_string_append_vprintf(dc_string_t* str, const char* format, va_list args)` | `str`: String to append to, `format`: Format string, `args`: Arguments list | `dc_status_t`: `DC_OK` on success, error code on failure | `va_list` append variant |
+| `dc_string_set_cstr(dc_string_t* str, const char* cstr)` | `str`: String to set, `cstr`: C string to copy | `dc_status_t`: `DC_OK` on success, error code on failure | Replace content from C string |
+| `dc_string_set_buffer(dc_string_t* str, const char* data, size_t length)` | `str`: String to set, `data`: Raw data to copy, `length`: Length of data | `dc_status_t`: `DC_OK` on success, error code on failure | Replace content from buffer |
+| `dc_string_printf(dc_string_t* str, const char* format, ...)` | `str`: String to format into, `format`: Format string, `...`: Arguments | `dc_status_t`: `DC_OK` on success, error code on failure | Replace with formatted text |
+| `dc_string_vprintf(dc_string_t* str, const char* format, va_list args)` | `str`: String to format into, `format`: Format string, `args`: Arguments list | `dc_status_t`: `DC_OK` on success, error code on failure | `va_list` replace variant |
+| `dc_string_cstr(const dc_string_t* str)` | `str`: String to get view of | `const char*`: Null-terminated string view | Get null-terminated pointer view |
+| `dc_string_length(const dc_string_t* str)` | `str`: String to query | `size_t`: Current length in bytes | Current length in bytes |
+| `dc_string_capacity(const dc_string_t* str)` | `str`: String to query | `size_t`: Allocated capacity | Allocated capacity |
+| `dc_string_is_empty(const dc_string_t* str)` | `str`: String to check | `int`: 1 if empty, 0 otherwise | Empty check |
+| `dc_string_compare_cstr(const dc_string_t* str, const char* cstr)` | `str`: Dynamic string to compare, `cstr`: C string to compare | `int`: Comparison result (like strcmp) | Compare with C string |
+| `dc_string_compare(const dc_string_t* str1, const dc_string_t* str2)` | `str1`: First string to compare, `str2`: Second string to compare | `int`: Comparison result (like strcmp) | Compare two dynamic strings |
+
+### Dynamic Vectors (`core/dc_vec.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_vec_init(dc_vec_t* vec, size_t element_size)` | `vec`: Vector to initialize, `element_size`: Size of each element in bytes | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize empty vector |
+| `dc_vec_init_with_capacity(dc_vec_t* vec, size_t element_size, size_t capacity)` | `vec`: Vector to initialize, `element_size`: Size of each element in bytes, `capacity`: Initial capacity to reserve | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize with reserved capacity |
+| `dc_vec_free(dc_vec_t* vec)` | `vec`: Vector to free | `void` | Free vector storage |
+| `dc_vec_clear(dc_vec_t* vec)` | `vec`: Vector to clear | `void` | Clear content |
+| `dc_vec_reserve(dc_vec_t* vec, size_t capacity)` | `vec`: Vector to reserve capacity for, `capacity`: Minimum capacity to reserve | `dc_status_t`: `DC_OK` on success, error code on failure | Reserve capacity |
+| `dc_vec_shrink_to_fit(dc_vec_t* vec)` | `vec`: Vector to shrink | `dc_status_t`: `DC_OK` on success, error code on failure | Shrink to current length |
+| `dc_vec_push(dc_vec_t* vec, const void* element)` | `vec`: Vector to push to, `element`: Element to push | `dc_status_t`: `DC_OK` on success, error code on failure | Push to end |
+| `dc_vec_pop(dc_vec_t* vec, void* element)` | `vec`: Vector to pop from, `element`: Output location for popped element | `dc_status_t`: `DC_OK` on success, error code on failure | Pop from end |
+| `dc_vec_insert(dc_vec_t* vec, size_t index, const void* element)` | `vec`: Vector to insert into, `index`: Index to insert at, `element`: Element to insert | `dc_status_t`: `DC_OK` on success, error code on failure | Insert at index |
+| `dc_vec_remove(dc_vec_t* vec, size_t index, void* element)` | `vec`: Vector to remove from, `index`: Index to remove from, `element`: Output location for removed element | `dc_status_t`: `DC_OK` on success, error code on failure | Remove at index preserving order |
+| `dc_vec_swap_remove(dc_vec_t* vec, size_t index, void* element)` | `vec`: Vector to remove from, `index`: Index to remove from, `element`: Output location for removed element | `dc_status_t`: `DC_OK` on success, error code on failure | Remove by swapping with last |
+| `dc_vec_get(const dc_vec_t* vec, size_t index, void* element)` | `vec`: Vector to read from, `index`: Index to read from, `element`: Output location for element | `dc_status_t`: `DC_OK` on success, error code on failure | Bounds-checked read copy |
+| `dc_vec_set(dc_vec_t* vec, size_t index, const void* element)` | `vec`: Vector to write to, `index`: Index to write to, `element`: Element to write | `dc_status_t`: `DC_OK` on success, error code on failure | Bounds-checked write |
+| `dc_vec_at(const dc_vec_t* vec, size_t index)` | `vec`: Vector to access, `index`: Index to access | `void*`: Pointer to element at index | Pointer to element |
+| `dc_vec_front(const dc_vec_t* vec)` | `vec`: Vector to access | `void*`: Pointer to first element | Pointer to first element |
+| `dc_vec_back(const dc_vec_t* vec)` | `vec`: Vector to access | `void*`: Pointer to last element | Pointer to last element |
+| `dc_vec_data(const dc_vec_t* vec)` | `vec`: Vector to access | `void*`: Raw data pointer | Raw data pointer |
+| `dc_vec_length(const dc_vec_t* vec)` | `vec`: Vector to query | `size_t`: Number of elements | Element count |
+| `dc_vec_capacity(const dc_vec_t* vec)` | `vec`: Vector to query | `size_t`: Allocated capacity | Capacity |
+| `dc_vec_is_empty(const dc_vec_t* vec)` | `vec`: Vector to check | `int`: 1 if empty, 0 otherwise | Empty check |
+| `dc_vec_resize(dc_vec_t* vec, size_t new_length)` | `vec`: Vector to resize, `new_length`: New length | `dc_status_t`: `DC_OK` on success, error code on failure | Resize vector |
+| `dc_vec_find(const dc_vec_t* vec, const void* element, int (*compare)(const void*, const void*), size_t* index)` | `vec`: Vector to search, `element`: Element to find, `compare`: Comparison function, `index`: Output location for found index | `dc_status_t`: `DC_OK` on success, error code on failure | Find element by comparator/memcmp fallback |
+| `dc_vec_append(dc_vec_t* vec, const void* elements, size_t count)` | `vec`: Vector to append to, `elements`: Elements to append, `count`: Number of elements | `dc_status_t`: `DC_OK` on success, error code on failure | Append many elements |
+| `dc_vec_copy(dc_vec_t* dst, const dc_vec_t* src)` | `dst`: Destination vector, `src`: Source vector | `dc_status_t`: `DC_OK` on success, error code on failure | Deep-copy vector buffer |
+| `dc_vec_swap(dc_vec_t* a, dc_vec_t* b)` | `a`: First vector, `b`: Second vector | `void` | Swap two vectors |
+
+### Optional/Nullable Helpers (`core/dc_optional.h`, `model/dc_model_common.h`)
+
+`core/dc_optional.h` exposes macros:
+
+- `DC_OPTIONAL(T)`: Optional wrapper with `is_set`
+- `DC_NULLABLE(T)`: Nullable wrapper with `is_null`
+- `DC_OPTIONAL_CLEAR`, `DC_OPTIONAL_SET`, `DC_NULLABLE_SET`, `DC_NULLABLE_SET_NULL`: Mutator macros
+
+`model/dc_model_common.h` exposes inline helpers:
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_optional_string_init(dc_optional_string_t* opt)` | `opt`: Optional string wrapper to initialize | `void` | Initialize optional string wrapper |
+| `dc_optional_string_free(dc_optional_string_t* opt)` | `opt`: Optional string wrapper to free | `void` | Free optional string wrapper |
+| `dc_nullable_string_init(dc_nullable_string_t* opt)` | `opt`: Nullable string wrapper to initialize | `void` | Initialize nullable string wrapper |
+| `dc_nullable_string_free(dc_nullable_string_t* opt)` | `opt`: Nullable string wrapper to free | `void` | Free nullable string wrapper |
+| `dc_optional_snowflake_clear(dc_optional_snowflake_t* opt)` | `opt`: Optional snowflake wrapper to clear | `void` | Clear optional snowflake |
+| `dc_nullable_snowflake_set_null(dc_nullable_snowflake_t* opt)` | `opt`: Nullable snowflake wrapper to set to null | `void` | Set nullable snowflake to null |
+| `dc_optional_i32_clear(dc_optional_i32_t* opt)` | `opt`: Optional 32-bit integer wrapper to clear | `void` | Clear optional 32-bit int |
+| `dc_optional_bool_clear(dc_optional_bool_t* opt)` | `opt`: Optional boolean wrapper to clear | `void` | Clear optional bool/int |
+
+### Snowflakes and Time (`core/dc_snowflake.h`, `core/dc_time.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_snowflake_from_string(const char* str, dc_snowflake_t* snowflake)` | `str`: Decimal string to parse, `snowflake`: Output snowflake | `dc_status_t`: `DC_OK` on success, error code on failure | Parse snowflake decimal string |
+| `dc_snowflake_to_string(dc_snowflake_t snowflake, dc_string_t* str)` | `snowflake`: Snowflake to convert, `str`: Output dynamic string | `dc_status_t`: `DC_OK` on success, error code on failure | Write snowflake into dynamic string |
+| `dc_snowflake_to_cstr(dc_snowflake_t snowflake, char* buffer, size_t buffer_size)` | `snowflake`: Snowflake to convert, `buffer`: Output buffer, `buffer_size`: Size of output buffer | `dc_status_t`: `DC_OK` on success, error code on failure | Write snowflake into fixed buffer |
+| `dc_snowflake_timestamp(dc_snowflake_t snowflake, uint64_t* timestamp)` | `snowflake`: Snowflake to extract from, `timestamp`: Output timestamp in milliseconds | `dc_status_t`: `DC_OK` on success, error code on failure | Extract Discord-epoch timestamp ms |
+| `dc_snowflake_unix_timestamp(dc_snowflake_t snowflake, time_t* unix_timestamp)` | `snowflake`: Snowflake to extract from, `unix_timestamp`: Output Unix timestamp in seconds | `dc_status_t`: `DC_OK` on success, error code on failure | Extract Unix timestamp seconds |
+| `dc_snowflake_unix_timestamp_ms(dc_snowflake_t snowflake, uint64_t* unix_timestamp_ms)` | `snowflake`: Snowflake to extract from, `unix_timestamp_ms`: Output Unix timestamp in milliseconds | `dc_status_t`: `DC_OK` on success, error code on failure | Extract Unix timestamp ms |
+| `dc_snowflake_worker_id(dc_snowflake_t snowflake, uint8_t* worker_id)` | `snowflake`: Snowflake to extract from, `worker_id`: Output worker ID | `dc_status_t`: `DC_OK` on success, error code on failure | Extract worker bits |
+| `dc_snowflake_process_id(dc_snowflake_t snowflake, uint8_t* process_id)` | `snowflake`: Snowflake to extract from, `process_id`: Output process ID | `dc_status_t`: `DC_OK` on success, error code on failure | Extract process bits |
+| `dc_snowflake_increment(dc_snowflake_t snowflake, uint16_t* increment)` | `snowflake`: Snowflake to extract from, `increment`: Output increment | `dc_status_t`: `DC_OK` on success, error code on failure | Extract increment bits |
+| `dc_snowflake_is_valid(dc_snowflake_t snowflake)` | `snowflake`: Snowflake to validate | `int`: 1 if valid, 0 otherwise | Validate non-null snowflake |
+| `dc_snowflake_compare(dc_snowflake_t a, dc_snowflake_t b)` | `a`: First snowflake, `b`: Second snowflake | `int`: Comparison result (-1, 0, 1) | Compare by numeric order |
+| `dc_snowflake_generate(uint8_t worker_id, uint8_t process_id, uint16_t increment, dc_snowflake_t* snowflake)` | `worker_id`: Worker ID, `process_id`: Process ID, `increment`: Increment, `snowflake`: Output generated snowflake | `dc_status_t`: `DC_OK` on success, error code on failure | Generate synthetic snowflake (testing/helper) |
+
+### ISO8601 Time Helpers (`core/dc_time.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_iso8601_parse(const char* str, dc_iso8601_t* timestamp)` | `str`: ISO8601 string to parse, `timestamp`: Output timestamp struct | `dc_status_t`: `DC_OK` on success, error code on failure | Parse ISO8601 into struct |
+| `dc_iso8601_format(const dc_iso8601_t* timestamp, dc_string_t* str)` | `timestamp`: Timestamp to format, `str`: Output dynamic string | `dc_status_t`: `DC_OK` on success, error code on failure | Format timestamp into string |
+| `dc_iso8601_format_cstr(const dc_iso8601_t* timestamp, char* buffer, size_t buffer_size)` | `timestamp`: Timestamp to format, `buffer`: Output buffer, `buffer_size`: Size of output buffer | `dc_status_t`: `DC_OK` on success, error code on failure | Format into fixed buffer |
+| `dc_iso8601_to_unix(const dc_iso8601_t* timestamp, time_t* unix_timestamp)` | `timestamp`: Timestamp to convert, `unix_timestamp`: Output Unix timestamp in seconds | `dc_status_t`: `DC_OK` on success, error code on failure | Convert to Unix seconds |
+| `dc_iso8601_to_unix_ms(const dc_iso8601_t* timestamp, uint64_t* unix_timestamp_ms)` | `timestamp`: Timestamp to convert, `unix_timestamp_ms`: Output Unix timestamp in milliseconds | `dc_status_t`: `DC_OK` on success, error code on failure | Convert to Unix milliseconds |
+| `dc_iso8601_from_unix(time_t unix_timestamp, dc_iso8601_t* timestamp)` | `unix_timestamp`: Unix timestamp in seconds, `timestamp`: Output ISO8601 struct | `dc_status_t`: `DC_OK` on success, error code on failure | Convert Unix seconds to ISO8601 struct |
+| `dc_iso8601_from_unix_ms(uint64_t unix_timestamp_ms, dc_iso8601_t* timestamp)` | `unix_timestamp_ms`: Unix timestamp in milliseconds, `timestamp`: Output ISO8601 struct | `dc_status_t`: `DC_OK` on success, error code on failure | Convert Unix ms to ISO8601 struct |
+| `dc_iso8601_now_utc(dc_iso8601_t* timestamp)` | `timestamp`: Output timestamp struct | `dc_status_t`: `DC_OK` on success, error code on failure | Current UTC time |
+| `dc_iso8601_now_local(dc_iso8601_t* timestamp)` | `timestamp`: Output timestamp struct | `dc_status_t`: `DC_OK` on success, error code on failure | Current local time |
+| `dc_iso8601_validate(const dc_iso8601_t* timestamp)` | `timestamp`: Timestamp to validate | `int`: 1 if valid, 0 otherwise | Validate struct fields |
+| `dc_iso8601_compare(const dc_iso8601_t* a, const dc_iso8601_t* b)` | `a`: First timestamp, `b`: Second timestamp | `int`: Comparison result (-1, 0, 1) | Compare instants |
+| `dc_iso8601_add_seconds(dc_iso8601_t* timestamp, int64_t seconds)` | `timestamp`: Timestamp to modify, `seconds`: Seconds to add (negative to subtract) | `dc_status_t`: `DC_OK` on success, error code on failure | Add/subtract seconds |
+| `dc_iso8601_add_milliseconds(dc_iso8601_t* timestamp, int64_t milliseconds)` | `timestamp`: Timestamp to modify, `milliseconds`: Milliseconds to add (negative to subtract) | `dc_status_t`: `DC_OK` on success, error code on failure | Add/subtract milliseconds |
+| `dc_iso8601_diff_seconds(const dc_iso8601_t* a, const dc_iso8601_t* b, int64_t* diff_seconds)` | `a`: First timestamp, `b`: Second timestamp, `diff_seconds`: Output difference in seconds | `dc_status_t`: `DC_OK` on success, error code on failure | Diff in seconds (`a - b`) |
+| `dc_iso8601_diff_milliseconds(const dc_iso8601_t* a, const dc_iso8601_t* b, int64_t* diff_ms)` | `a`: First timestamp, `b`: Second timestamp, `diff_ms`: Output difference in milliseconds | `dc_status_t`: `DC_OK` on success, error code on failure | Diff in ms (`a - b`) |
+
+### Environment/Token Loading (`core/dc_env.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `DC_ENV_FLAG_REQUIRE_PRIVATE_FILE` | N/A | N/A | Enforce private dotenv file permissions (POSIX) |
+| `dc_env_get_process(const char* key, dc_string_t* out_value)` | `key`: Environment variable key, `out_value`: Output string to store value | `dc_status_t`: `DC_OK` on success, error code on failure | Read non-empty variable from process env |
+| `dc_env_get_from_file(const char* path, const char* key, unsigned flags, dc_string_t* out_value)` | `path`: Path to dotenv-style file, `key`: Variable key, `flags`: Flags (e.g., `DC_ENV_FLAG_REQUIRE_PRIVATE_FILE`), `out_value`: Output string to store value | `dc_status_t`: `DC_OK` on success, error code on failure | Read variable from dotenv-style file |
+| `dc_env_get_with_fallback(const char* key, const char* const* paths, size_t path_count, unsigned flags, dc_string_t* out_value)` | `key`: Variable key, `paths`: Array of file paths to check, `path_count`: Number of paths, `flags`: Flags, `out_value`: Output string to store value | `dc_status_t`: `DC_OK` on success, error code on failure | Resolve from process env then fallback files |
+| `dc_env_get_discord_token(const char* const* paths, size_t path_count, unsigned flags, dc_string_t* out_token)` | `paths`: Array of file paths to check, `path_count`: Number of paths, `flags`: Flags, `out_token`: Output string to store token | `dc_status_t`: `DC_OK` on success, error code on failure | Convenience resolver for `DISCORD_TOKEN` |
+| `dc_env_secure_clear_string(dc_string_t* value)` | `value`: String to securely clear | `void` | Wipe string bytes and reset it |
+
+### Content Formatting and Mention Control (`core/dc_format.h`, `core/dc_allowed_mentions.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_format_timestamp_style_is_valid(char style)` | `style`: Timestamp style character to validate | `int`: 1 if valid, 0 otherwise | Validate Discord timestamp style char |
+| `dc_format_mention_user(dc_snowflake_t user_id, dc_string_t* out)` | `user_id`: User ID to mention, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format `<@id>` |
+| `dc_format_mention_user_nick(dc_snowflake_t user_id, dc_string_t* out)` | `user_id`: User ID to mention, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format `<@!id>` |
+| `dc_format_mention_channel(dc_snowflake_t channel_id, dc_string_t* out)` | `channel_id`: Channel ID to mention, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format `<#id>` |
+| `dc_format_mention_role(dc_snowflake_t role_id, dc_string_t* out)` | `role_id`: Role ID to mention, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format `<@&id>` |
+| `dc_format_slash_command_mention(const char* name, dc_snowflake_t command_id, dc_string_t* out)` | `name`: Command name, `command_id`: Command ID, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format `</name:id>` |
+| `dc_format_mention_emoji(const char* name, dc_snowflake_t emoji_id, int animated, dc_string_t* out)` | `name`: Emoji name, `emoji_id`: Emoji ID, `animated`: 1 if animated, 0 otherwise, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format custom emoji mention |
+| `dc_format_timestamp(int64_t unix_seconds, char style, dc_string_t* out)` | `unix_seconds`: Unix timestamp in seconds, `style`: Timestamp style character, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format timestamp mention from seconds |
+| `dc_format_timestamp_ms(int64_t unix_ms, char style, dc_string_t* out)` | `unix_ms`: Unix timestamp in milliseconds, `style`: Timestamp style character, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Format timestamp mention from ms |
+| `dc_format_escape_content(const char* input, dc_string_t* out)` | `input`: Input content to escape, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Escape markdown/mention-sensitive content |
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_allowed_mentions_init(dc_allowed_mentions_t* mentions)` | `mentions`: Allowed mentions builder to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize allowed-mentions builder |
+| `dc_allowed_mentions_free(dc_allowed_mentions_t* mentions)` | `mentions`: Allowed mentions builder to free | `void` | Free allowed-mentions vectors |
+| `dc_allowed_mentions_set_parse(dc_allowed_mentions_t* mentions, int users, int roles, int everyone)` | `mentions`: Allowed mentions builder, `users`: 1 to parse user mentions, 0 to skip, `roles`: 1 to parse role mentions, 0 to skip, `everyone`: 1 to parse @everyone/@here, 0 to skip | `dc_status_t`: `DC_OK` on success, error code on failure | Configure parse categories |
+| `dc_allowed_mentions_set_replied_user(dc_allowed_mentions_t* mentions, int replied_user)` | `mentions`: Allowed mentions builder, `replied_user`: 1 to mention replied user, 0 to suppress | `dc_status_t`: `DC_OK` on success, error code on failure | Configure reply ping behavior |
+| `dc_allowed_mentions_add_user(dc_allowed_mentions_t* mentions, dc_snowflake_t user_id)` | `mentions`: Allowed mentions builder, `user_id`: User ID to allow mentioning | `dc_status_t`: `DC_OK` on success, error code on failure | Allow specific user mention |
+| `dc_allowed_mentions_add_role(dc_allowed_mentions_t* mentions, dc_snowflake_t role_id)` | `mentions`: Allowed mentions builder, `role_id`: Role ID to allow mentioning | `dc_status_t`: `DC_OK` on success, error code on failure | Allow specific role mention |
+
+### Attachments, CDN, Data URI (`core/dc_attachments.h`, `core/dc_cdn.h`, `core/dc_data_uri.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_attachment_filename_is_valid(const char* filename)` | `filename`: Filename to validate | `int`: 1 if valid, 0 otherwise | Validate attachment filename for embed use |
+| `dc_attachment_size_is_valid(size_t size, size_t max_size)` | `size`: Attachment size to validate, `max_size`: Maximum allowed size | `int`: 1 if valid, 0 otherwise | Validate single attachment size |
+| `dc_attachment_total_size_is_valid(size_t total, size_t max_total)` | `total`: Total attachment size to validate, `max_total`: Maximum allowed total size | `int`: 1 if valid, 0 otherwise | Validate aggregate attachment size |
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_cdn_image_format_is_valid(dc_cdn_image_format_t format)` | `format`: Image format to validate | `int`: 1 if valid, 0 otherwise | Validate image format enum |
+| `dc_cdn_image_format_extension(dc_cdn_image_format_t format)` | `format`: Image format | `const char*`: Extension string (e.g., "png", "jpg") | Map format enum to extension string |
+| `dc_cdn_image_extension_is_valid(const char* ext)` | `ext`: Extension string to validate | `int`: 1 if valid, 0 otherwise | Validate extension string |
+| `dc_cdn_image_size_is_valid(uint32_t size)` | `size`: Size to validate | `int`: 1 if valid (power-of-two, 16..4096), 0 otherwise | Validate Discord CDN size (power-of-two, 16..4096) |
+| `dc_cdn_hash_is_animated(const char* hash)` | `hash`: Hash string to check | `int`: 1 if animated (typically `a_` prefix), 0 otherwise | Detect animated hash (typically `a_` prefix) |
+| `dc_cdn_build_url(const char* base_url, const char* path_without_ext, uint32_t allowed_formats, dc_cdn_image_format_t format, uint32_t size, int prefer_animated, int is_animated, dc_string_t* out)` | `base_url`: Base CDN URL, `path_without_ext`: Path without extension, `allowed_formats`: Bitmask of allowed formats, `format`: Desired format, `size`: Desired size, `prefer_animated`: 1 to prefer animated, 0 otherwise, `is_animated`: 1 if resource is animated, 0 otherwise, `out`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | Generic CDN URL builder |
+| `dc_cdn_user_avatar(dc_snowflake_t user_id, const char* hash, dc_cdn_image_format_t format, uint32_t size, int prefer_animated, dc_string_t* out)` | `user_id`: User ID, `hash`: Avatar hash, `format`: Desired image format, `size`: Desired size, `prefer_animated`: 1 to prefer animated, 0 otherwise, `out`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | User avatar URL helper |
+| `dc_cdn_guild_icon(dc_snowflake_t guild_id, const char* hash, dc_cdn_image_format_t format, uint32_t size, int prefer_animated, dc_string_t* out)` | `guild_id`: Guild ID, `hash`: Icon hash, `format`: Desired image format, `size`: Desired size, `prefer_animated`: 1 to prefer animated, 0 otherwise, `out`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | Guild icon URL helper |
+| `dc_cdn_channel_icon(dc_snowflake_t channel_id, const char* hash, dc_cdn_image_format_t format, uint32_t size, int prefer_animated, dc_string_t* out)` | `channel_id`: Channel ID, `hash`: Icon hash, `format`: Desired image format, `size`: Desired size, `prefer_animated`: 1 to prefer animated, 0 otherwise, `out`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | Channel icon URL helper |
+| `dc_cdn_emoji(dc_snowflake_t emoji_id, int animated, dc_cdn_image_format_t format, uint32_t size, dc_string_t* out)` | `emoji_id`: Emoji ID, `animated`: 1 if animated, 0 otherwise, `format`: Desired image format, `size`: Desired size, `out`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | Emoji URL helper |
+| `dc_cdn_attachment_url_passthrough(const char* url, dc_string_t* out)` | `url`: Signed attachment URL, `out`: Output string | `dc_status_t`: `DC_OK` on success, error code on failure | Pass through signed attachment URL safely |
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_data_uri_is_valid_image_base64(const char* data_uri)` | `data_uri`: Data URI to validate | `int`: 1 if valid image data URI, 0 otherwise | Validate image `data:` URI format |
+| `dc_data_uri_build_image_base64(dc_cdn_image_format_t format, const char* base64, dc_string_t* out)` | `format`: Image format, `base64`: Base64-encoded image data, `out`: Output string for data URI | `dc_status_t`: `DC_OK` on success, error code on failure | Build `data:image/*;base64,...` URI |
+
+## 4) HTTP, REST, and Compliance
+
+### Compliance Helpers (`http/dc_http_compliance.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_http_is_discord_api_url(const char* url)` | `url`: URL to verify | `int`: 1 if valid Discord API v10 URL, 0 otherwise | Verify URL is Discord API v10 URL |
+| `dc_http_build_discord_api_url(const char* path, dc_string_t* out)` | `path`: Path or full URL to normalize, `out`: Output string for normalized URL | `dc_status_t`: `DC_OK` on success, error code on failure | Normalize path/full URL into valid Discord API URL |
+| `dc_http_format_user_agent(const dc_user_agent_t* ua, dc_string_t* out)` | `ua`: User-Agent descriptor, `out`: Output string for formatted User-Agent | `dc_status_t`: `DC_OK` on success, error code on failure | Format Discord-compliant User-Agent string |
+| `dc_http_format_default_user_agent(dc_string_t* out)` | `out`: Output string for default User-Agent | `dc_status_t`: `DC_OK` on success, error code on failure | Format default library User-Agent |
+| `dc_http_content_type_string(dc_http_content_type_t type)` | `type`: Content type enum | `const char*`: String representation of content type | Map content-type enum to string |
+| `dc_http_content_type_is_allowed(const char* content_type)` | `content_type`: Content type string to verify | `int`: 1 if allowed Discord content type, 0 otherwise | Verify allowed Discord content type |
+| `dc_http_user_agent_is_valid(const char* value)` | `value`: User-Agent string to validate | `int`: 1 if valid format, 0 otherwise | Validate User-Agent format |
+| `dc_http_format_auth_header(dc_http_auth_type_t type, const char* token, dc_string_t* out)` | `type`: Authentication type, `token`: Token value, `out`: Output string for Authorization header | `dc_status_t`: `DC_OK` on success, error code on failure | Format `Authorization` header value |
+| `dc_http_append_query_bool(dc_string_t* query, const char* key, int value, dc_http_bool_format_t format)` | `query`: Query string to append to, `key`: Parameter key, `value`: Boolean value, `format`: Boolean format type | `dc_status_t`: `DC_OK` on success, error code on failure | Append boolean query key/value |
+| `dc_http_error_init(dc_http_error_t* err)` | `err`: HTTP error container to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init parsed HTTP error container |
+| `dc_http_error_free(dc_http_error_t* err)` | `err`: HTTP error container to free | `void` | Free parsed HTTP error container |
+| `dc_http_error_parse(const char* body, size_t body_len, dc_http_error_t* err)` | `body`: Error response JSON body, `body_len`: Length of body, `err`: Output error container | `dc_status_t`: `DC_OK` on success, error code on failure | Parse Discord error response JSON |
+| `dc_http_validate_json_body(const char* body, size_t body_len)` | `body`: JSON body to validate, `body_len`: Length of body | `int`: 1 if valid JSON, 0 otherwise | Validate JSON payload body |
+| `dc_http_rate_limit_init(dc_http_rate_limit_t* rl)` | `rl`: Rate-limit header struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init rate-limit header struct |
+| `dc_http_rate_limit_free(dc_http_rate_limit_t* rl)` | `rl`: Rate-limit header struct to free | `void` | Free rate-limit header struct |
+| `dc_http_rate_limit_parse(dc_status_t (*get_header)(void* userdata, const char* name, const char** value), void* userdata, dc_http_rate_limit_t* rl)` | `get_header`: Callback to retrieve header values, `userdata`: User data for callback, `rl`: Output rate-limit struct | `dc_status_t`: `DC_OK` on success, error code on failure | Parse rate-limit metadata from header accessor callback |
+| `dc_http_rate_limit_response_init(dc_http_rate_limit_response_t* rl)` | `rl`: 429 response body struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init parsed 429 response body struct |
+| `dc_http_rate_limit_response_free(dc_http_rate_limit_response_t* rl)` | `rl`: 429 response body struct to free | `void` | Free parsed 429 response body struct |
+| `dc_http_rate_limit_response_parse(const char* body, size_t body_len, dc_http_rate_limit_response_t* rl)` | `body`: 429 response JSON body, `body_len`: Length of body, `rl`: Output rate-limit response struct | `dc_status_t`: `DC_OK` on success, error code on failure | Parse 429 JSON response body |
+
+### HTTP Transport Layer (`http/dc_http.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_http_client_create(dc_http_client_t** client)` | `client`: Pointer to store created client | `dc_status_t`: `DC_OK` on success, error code on failure | Create libcurl-backed HTTP client |
+| `dc_http_client_free(dc_http_client_t* client)` | `client`: HTTP client to free | `void` | Free HTTP client |
+| `dc_http_request_init(dc_http_request_t* request)` | `request`: HTTP request struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize HTTP request struct |
+| `dc_http_request_free(dc_http_request_t* request)` | `request`: HTTP request struct to free | `void` | Free HTTP request struct |
+| `dc_http_response_init(dc_http_response_t* response)` | `response`: HTTP response struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize HTTP response struct |
+| `dc_http_response_free(dc_http_response_t* response)` | `response`: HTTP response struct to free | `void` | Free HTTP response struct |
+| `dc_http_request_set_method(dc_http_request_t* request, dc_http_method_t method)` | `request`: HTTP request, `method`: HTTP method | `dc_status_t`: `DC_OK` on success, error code on failure | Set method |
+| `dc_http_request_set_url(dc_http_request_t* request, const char* url)` | `request`: HTTP request, `url`: URL to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set URL |
+| `dc_http_request_add_header(dc_http_request_t* request, const char* name, const char* value)` | `request`: HTTP request, `name`: Header name, `value`: Header value | `dc_status_t`: `DC_OK` on success, error code on failure | Append request header |
+| `dc_http_request_set_body(dc_http_request_t* request, const char* body)` | `request`: HTTP request, `body`: Text body to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set text body |
+| `dc_http_request_set_body_buffer(dc_http_request_t* request, const void* body, size_t length)` | `request`: HTTP request, `body`: Binary body to set, `length`: Length of body | `dc_status_t`: `DC_OK` on success, error code on failure | Set binary-safe body |
+| `dc_http_request_set_json_body(dc_http_request_t* request, const char* json_body)` | `request`: HTTP request, `json_body`: JSON body to validate and set | `dc_status_t`: `DC_OK` on success, error code on failure | Validate and set JSON body, content-type aware |
+| `dc_http_request_set_timeout(dc_http_request_t* request, uint32_t timeout_ms)` | `request`: HTTP request, `timeout_ms`: Timeout in milliseconds | `dc_status_t`: `DC_OK` on success, error code on failure | Set per-request timeout |
+| `dc_http_client_execute(dc_http_client_t* client, const dc_http_request_t* request, dc_http_response_t* response)` | `client`: HTTP client, `request`: Request to execute, `response`: Response to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Execute request |
+| `dc_http_response_get_header(const dc_http_response_t* response, const char* name, const char** value)` | `response`: HTTP response, `name`: Header name to retrieve, `value`: Output pointer for header value | `dc_status_t`: `DC_OK` on success, error code on failure | Read response header by name |
+| `dc_http_response_parse_rate_limit(const dc_http_response_t* response, dc_http_rate_limit_t* rl)` | `response`: HTTP response, `rl`: Rate-limit struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse rate-limit headers from response |
+
+### Multipart Helpers (`http/dc_multipart.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_multipart_init(dc_multipart_t* mp)` | `mp`: Multipart builder to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize multipart builder |
+| `dc_multipart_free(dc_multipart_t* mp)` | `mp`: Multipart builder to free | `void` | Free multipart builder state |
+| `dc_multipart_set_boundary(dc_multipart_t* mp, const char* boundary)` | `mp`: Multipart builder, `boundary`: Boundary token to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set custom boundary token |
+| `dc_multipart_set_limits(dc_multipart_t* mp, size_t max_file_size, size_t max_total_size)` | `mp`: Multipart builder, `max_file_size`: Maximum individual file size, `max_total_size`: Maximum total size | `dc_status_t`: `DC_OK` on success, error code on failure | Set size guards |
+| `dc_multipart_get_content_type(const dc_multipart_t* mp, dc_string_t* out)` | `mp`: Multipart builder, `out`: Output string for content-type header | `dc_status_t`: `DC_OK` on success, error code on failure | Build content-type header value |
+| `dc_multipart_add_field(dc_multipart_t* mp, const char* name, const char* value)` | `mp`: Multipart builder, `name`: Field name, `value`: Field value | `dc_status_t`: `DC_OK` on success, error code on failure | Append text field |
+| `dc_multipart_add_payload_json(dc_multipart_t* mp, const char* json)` | `mp`: Multipart builder, `json`: JSON payload to append | `dc_status_t`: `DC_OK` on success, error code on failure | Append `payload_json` field |
+| `dc_multipart_add_file(dc_multipart_t* mp, const char* filename, const void* data, size_t size, const char* content_type, size_t* out_index)` | `mp`: Multipart builder, `filename`: File name, `data`: File data, `size`: File size, `content_type`: Content type, `out_index`: Output index of added file | `dc_status_t`: `DC_OK` on success, error code on failure | Append file with auto `files[n]` key |
+| `dc_multipart_add_file_named(dc_multipart_t* mp, const char* field_name, const char* filename, const void* data, size_t size, const char* content_type)` | `mp`: Multipart builder, `field_name`: Field name, `filename`: File name, `data`: File data, `size`: File size, `content_type`: Content type | `dc_status_t`: `DC_OK` on success, error code on failure | Append file with explicit field name |
+| `dc_multipart_finish(dc_multipart_t* mp)` | `mp`: Multipart builder to finalize | `dc_status_t`: `DC_OK` on success, error code on failure | Append closing boundary and finalize body |
+
+### REST Client (`http/dc_rest.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_rest_transport_fn` | N/A | N/A | Pluggable transport callback signature |
+| `dc_rest_client_create(const dc_rest_client_config_t* config, dc_rest_client_t** out_client)` | `config`: REST client configuration, `out_client`: Pointer to store created client | `dc_status_t`: `DC_OK` on success, error code on failure | Create REST client with rate-limit logic |
+| `dc_rest_client_free(dc_rest_client_t* client)` | `client`: REST client to free | `void` | Free REST client |
+| `dc_rest_request_init(dc_rest_request_t* request)` | `request`: REST request to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize REST request |
+| `dc_rest_request_free(dc_rest_request_t* request)` | `request`: REST request to free | `void` | Free REST request |
+| `dc_rest_request_set_method(dc_rest_request_t* request, dc_http_method_t method)` | `request`: REST request, `method`: HTTP method | `dc_status_t`: `DC_OK` on success, error code on failure | Set request method |
+| `dc_rest_request_set_path(dc_rest_request_t* request, const char* path)` | `request`: REST request, `path`: Route path or full URL | `dc_status_t`: `DC_OK` on success, error code on failure | Set route path/full URL |
+| `dc_rest_request_add_header(dc_rest_request_t* request, const char* name, const char* value)` | `request`: REST request, `name`: Header name, `value`: Header value | `dc_status_t`: `DC_OK` on success, error code on failure | Add request header |
+| `dc_rest_request_set_body(dc_rest_request_t* request, const char* body)` | `request`: REST request, `body`: Request body text | `dc_status_t`: `DC_OK` on success, error code on failure | Set request body text |
+| `dc_rest_request_set_body_buffer(dc_rest_request_t* request, const void* body, size_t length)` | `request`: REST request, `body`: Request body data, `length`: Length of body | `dc_status_t`: `DC_OK` on success, error code on failure | Set binary-safe body |
+| `dc_rest_request_set_json_body(dc_rest_request_t* request, const char* json_body)` | `request`: REST request, `json_body`: JSON body to validate and set | `dc_status_t`: `DC_OK` on success, error code on failure | Set JSON body with validation |
+| `dc_rest_request_set_timeout(dc_rest_request_t* request, uint32_t timeout_ms)` | `request`: REST request, `timeout_ms`: Timeout in milliseconds | `dc_status_t`: `DC_OK` on success, error code on failure | Set per-request timeout |
+| `dc_rest_request_set_interaction(dc_rest_request_t* request, int is_interaction)` | `request`: REST request, `is_interaction`: 1 if interaction route, 0 otherwise | `dc_status_t`: `DC_OK` on success, error code on failure | Mark request as interaction route |
+| `dc_rest_response_init(dc_rest_response_t* response)` | `response`: REST response to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize REST response aggregate |
+| `dc_rest_response_free(dc_rest_response_t* response)` | `response`: REST response to free | `void` | Free REST response aggregate |
+| `dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* request, dc_rest_response_t* response)` | `client`: REST client, `request`: Request to execute, `response`: Response to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Execute REST request with bucket/global limit handling |
+
+## 5) Gateway
+
+### Gateway Client (`gw/dc_gateway.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_gateway_close_code_string(int code)` | `code`: Gateway close code | `const char*`: String representation of the close code | Stringify gateway close code |
+| `dc_gateway_close_code_should_reconnect(int code)` | `code`: Gateway close code | `int`: 1 if reconnect is allowed, 0 otherwise | Reconnect policy helper for close codes |
+| `dc_gateway_client_create(const dc_gateway_config_t* config, dc_gateway_client_t** client)` | `config`: Gateway configuration, `client`: Pointer to store created client | `dc_status_t`: `DC_OK` on success, error code on failure | Create gateway websocket client |
+| `dc_gateway_client_free(dc_gateway_client_t* client)` | `client`: Gateway client to free | `void` | Free gateway client |
+| `dc_gateway_client_connect(dc_gateway_client_t* client, const char* gateway_url)` | `client`: Gateway client, `gateway_url`: Gateway URL (from /gateway/bot endpoint). If NULL, uses cached resume/base URL. | `dc_status_t`: `DC_OK` on success, error code on failure | Connect (or reconnect/resume) to gateway |
+| `dc_gateway_client_disconnect(dc_gateway_client_t* client)` | `client`: Gateway client | `dc_status_t`: `DC_OK` on success, error code on failure | Request disconnect and stop reconnect loop |
+| `dc_gateway_client_process(dc_gateway_client_t* client, uint32_t timeout_ms)` | `client`: Gateway client, `timeout_ms`: Timeout in milliseconds (0 for non-blocking) | `dc_status_t`: `DC_OK` on success, error code on failure | Process one loop slice, dispatch callbacks, maintain heartbeat/reconnect |
+| `dc_gateway_client_get_state(const dc_gateway_client_t* client, dc_gateway_state_t* state)` | `client`: Gateway client, `state`: Pointer to store current state | `dc_status_t`: `DC_OK` on success, error code on failure | Query connection state |
+| `dc_gateway_client_update_presence(dc_gateway_client_t* client, const char* status, const char* activity_name, int activity_type)` | `client`: Gateway client, `status`: Status string ("online", "idle", "dnd", "invisible"), `activity_name`: Activity name (optional), `activity_type`: Activity type (0=playing, 1=streaming, 2=listening, 3=watching, 5=competing) | `dc_status_t`: `DC_OK` on success, error code on failure | Send op 3 presence payload |
+| `dc_gateway_client_request_guild_members(dc_gateway_client_t* client, dc_snowflake_t guild_id, const char* query, uint32_t limit, int presences, const dc_snowflake_t* user_ids, size_t user_id_count, const char* nonce)` | `client`: Gateway client, `guild_id`: Guild ID, `query`: Username prefix query, or "" for all members (mutually exclusive with user_ids), `limit`: Max members for query mode (required with query), `presences`: Non-zero to request presence objects, `user_ids`: Optional list of user IDs to fetch (mutually exclusive with query), `user_id_count`: Number of entries in user_ids, `nonce`: Optional nonce (max 32 bytes) | `dc_status_t`: `DC_OK` on success, error code on failure | Send op 8 member request |
+| `dc_gateway_client_request_soundboard_sounds(dc_gateway_client_t* client, const dc_snowflake_t* guild_ids, size_t guild_id_count)` | `client`: Gateway client, `guild_ids`: Guild ID array, `guild_id_count`: Number of guild IDs | `dc_status_t`: `DC_OK` on success, error code on failure | Send op 31 soundboard request |
+| `dc_gateway_client_update_voice_state(dc_gateway_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t channel_id, int self_mute, int self_deaf)` | `client`: Gateway client, `guild_id`: Guild ID, `channel_id`: Channel ID, or 0 to disconnect, `self_mute`: Non-zero to self-mute, `self_deaf`: Non-zero to self-deafen | `dc_status_t`: `DC_OK` on success, error code on failure | Send op 4 voice-state update |
+
+### Gateway Event Parsers (`gw/dc_events.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_gateway_event_kind_from_name(const char* name)` | `name`: Event name to map | `dc_gateway_event_kind_t`: Corresponding event kind enum | Map dispatch event name to known enum kind |
+| `dc_gateway_event_is_thread_event(const char* name)` | `name`: Event name to check | `int`: 1 if thread event, 0 otherwise | Quick thread-event classifier |
+| `dc_gateway_event_parse_thread_channel(const char* event_data, dc_channel_t* channel)` | `event_data`: Thread event JSON data, `channel`: Output channel struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse thread channel payload (`THREAD_CREATE/UPDATE/DELETE`) |
+| `dc_gateway_event_parse_thread_member(const char* event_data, dc_channel_thread_member_t* member)` | `event_data`: Thread member event JSON data, `member`: Output thread member struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse `THREAD_MEMBER_UPDATE` payload |
+| `dc_gateway_thread_members_update_init(dc_gateway_thread_members_update_t* update)` | `update`: Thread members update model to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init `THREAD_MEMBERS_UPDATE` model |
+| `dc_gateway_thread_members_update_free(dc_gateway_thread_members_update_t* update)` | `update`: Thread members update model to free | `void` | Free `THREAD_MEMBERS_UPDATE` model |
+| `dc_gateway_event_parse_thread_members_update(const char* event_data, dc_gateway_thread_members_update_t* update)` | `event_data`: Thread members update JSON data, `update`: Output model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse `THREAD_MEMBERS_UPDATE` payload |
+| `dc_gateway_thread_list_sync_init(dc_gateway_thread_list_sync_t* sync)` | `sync`: Thread list sync model to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Init `THREAD_LIST_SYNC` model |
+| `dc_gateway_thread_list_sync_free(dc_gateway_thread_list_sync_t* sync)` | `sync`: Thread list sync model to free | `void` | Free `THREAD_LIST_SYNC` model |
+| `dc_gateway_event_parse_thread_list_sync(const char* event_data, dc_gateway_thread_list_sync_t* sync)` | `event_data`: Thread list sync JSON data, `sync`: Output model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse `THREAD_LIST_SYNC` payload |
+
+## 6) JSON Helpers
+
+### Generic JSON Helpers (`json/dc_json.h`)
+
+#### Document Lifecycle
+
+| Function | Description |
+|----------|-------------|
+| `dc_json_parse(const char* json_str, dc_json_doc_t* doc)` | Parse strict JSON string |
+| `dc_json_parse_relaxed(const char* json_str, dc_json_doc_t* doc)` | Parse relaxed JSON (comments/trailing commas) |
+| `dc_json_parse_buffer(const char* json_data, size_t json_len, dc_json_doc_t* doc)` | Parse strict JSON buffer |
+| `dc_json_parse_buffer_relaxed(const char* json_data, size_t json_len, dc_json_doc_t* doc)` | Parse relaxed JSON buffer |
+| `dc_json_doc_free(dc_json_doc_t* doc)` | Free parsed immutable doc |
+| `dc_json_mut_doc_create(dc_json_mut_doc_t* doc)` | Create mutable doc for building JSON |
+| `dc_json_mut_doc_free(dc_json_mut_doc_t* doc)` | Free mutable doc |
+| `dc_json_mut_doc_serialize(const dc_json_mut_doc_t* doc, dc_string_t* result)` | Serialize mutable doc into string |
+
+#### Required Field Getters
+
+| Function | Description |
+|----------|-------------|
+| `dc_json_get_string(yyjson_val* val, const char* key, const char** result)` | Read required string field |
+| `dc_json_get_int64(yyjson_val* val, const char* key, int64_t* result)` | Read required int64 field |
+| `dc_json_get_uint64(yyjson_val* val, const char* key, uint64_t* result)` | Read required uint64 field |
+| `dc_json_get_bool(yyjson_val* val, const char* key, int* result)` | Read required bool field |
+| `dc_json_get_double(yyjson_val* val, const char* key, double* result)` | Read required double field |
+| `dc_json_get_object(yyjson_val* val, const char* key, yyjson_val** result)` | Read required object field |
+| `dc_json_get_array(yyjson_val* val, const char* key, yyjson_val** result)` | Read required array field |
+
+#### Optional/Default Getters
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_json_get_string_opt(yyjson_val* val, const char* key, const char** result, const char* default_val)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for string value, `default_val`: Default value if key not found | `dc_status_t`: `DC_OK` on success, error code on failure | Read optional string with default |
+| `dc_json_get_int64_opt(yyjson_val* val, const char* key, int64_t* result, int64_t default_val)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for int64 value, `default_val`: Default value if key not found | `dc_status_t`: `DC_OK` on success, error code on failure | Read optional int64 with default |
+| `dc_json_get_uint64_opt(yyjson_val* val, const char* key, uint64_t* result, uint64_t default_val)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for uint64 value, `default_val`: Default value if key not found | `dc_status_t`: `DC_OK` on success, error code on failure | Read optional uint64 with default |
+| `dc_json_get_bool_opt(yyjson_val* val, const char* key, int* result, int default_val)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for bool value, `default_val`: Default value if key not found | `dc_status_t`: `DC_OK` on success, error code on failure | Read optional bool with default |
+| `dc_json_get_double_opt(yyjson_val* val, const char* key, double* result, double default_val)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for double value, `default_val`: Default value if key not found | `dc_status_t`: `DC_OK` on success, error code on failure | Read optional double with default |
+| `dc_json_get_object_opt(yyjson_val* val, const char* key, yyjson_val** result)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for object value | `dc_status_t`: `DC_OK` on success, error code on failure | Read optional object if present |
+| `dc_json_get_array_opt(yyjson_val* val, const char* key, yyjson_val** result)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for array value | `dc_status_t`: `DC_OK` on success, error code on failure | Read optional array if present |
+
+#### Optional vs Nullable Distinction
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_json_get_string_optional(yyjson_val* val, const char* key, dc_optional_cstr_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output optional string wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Distinguish missing string field |
+| `dc_json_get_string_nullable(yyjson_val* val, const char* key, dc_nullable_cstr_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output nullable string wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Distinguish explicit null string |
+| `dc_json_get_int64_optional(yyjson_val* val, const char* key, dc_optional_i64_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output optional int64 wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Optional int64 getter |
+| `dc_json_get_int64_nullable(yyjson_val* val, const char* key, dc_nullable_i64_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output nullable int64 wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Nullable int64 getter |
+| `dc_json_get_uint64_optional(yyjson_val* val, const char* key, dc_optional_u64_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output optional uint64 wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Optional uint64 getter |
+| `dc_json_get_uint64_nullable(yyjson_val* val, const char* key, dc_nullable_u64_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output nullable uint64 wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Nullable uint64 getter |
+| `dc_json_get_bool_optional(yyjson_val* val, const char* key, dc_optional_int_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output optional bool wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Optional bool getter |
+| `dc_json_get_bool_nullable(yyjson_val* val, const char* key, dc_nullable_int_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output nullable bool wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Nullable bool getter |
+| `dc_json_get_double_optional(yyjson_val* val, const char* key, dc_optional_double_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output optional double wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Optional double getter |
+| `dc_json_get_double_nullable(yyjson_val* val, const char* key, dc_nullable_double_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output nullable double wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Nullable double getter |
+
+#### Snowflake/Permission Helpers
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_json_get_snowflake(yyjson_val* val, const char* key, uint64_t* result)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for snowflake value | `dc_status_t`: `DC_OK` on success, error code on failure | Read required snowflake field from JSON string |
+| `dc_json_get_snowflake_opt(yyjson_val* val, const char* key, uint64_t* result, uint64_t default_val)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for snowflake value, `default_val`: Default value if key not found | `dc_status_t`: `DC_OK` on success, error code on failure | Optional snowflake with default |
+| `dc_json_get_snowflake_optional(yyjson_val* val, const char* key, dc_optional_u64_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output optional snowflake wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Optional snowflake wrapper output |
+| `dc_json_get_snowflake_nullable(yyjson_val* val, const char* key, dc_nullable_u64_t* out)` | `val`: JSON value to read from, `key`: Key to look up, `out`: Output nullable snowflake wrapper | `dc_status_t`: `DC_OK` on success, error code on failure | Nullable snowflake wrapper output |
+| `dc_json_get_permission(yyjson_val* val, const char* key, uint64_t* result)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for permission bitfield value | `dc_status_t`: `DC_OK` on success, error code on failure | Read required permission bitfield from JSON string |
+| `dc_json_get_permission_opt(yyjson_val* val, const char* key, uint64_t* result, uint64_t default_val)` | `val`: JSON value to read from, `key`: Key to look up, `result`: Output for permission bitfield value, `default_val`: Default value if key not found | `dc_status_t`: `DC_OK` on success, error code on failure | Optional permission bitfield with default |
+
+#### Mutable JSON Builders
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_json_mut_create_object(dc_json_mut_doc_t* doc)` | `doc`: Mutable document to allocate in | `yyjson_mut_val*`: Pointer to created object, or NULL on failure | Allocate mutable object node |
+| `dc_json_mut_create_array(dc_json_mut_doc_t* doc)` | `doc`: Mutable document to allocate in | `yyjson_mut_val*`: Pointer to created array, or NULL on failure | Allocate mutable array node |
+| `dc_json_mut_set_string(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, const char* val)` | `doc`: Mutable document, `obj`: Object to set in, `key`: Key to set, `val`: String value to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set string property |
+| `dc_json_mut_set_int64(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, int64_t val)` | `doc`: Mutable document, `obj`: Object to set in, `key`: Key to set, `val`: Int64 value to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set int64 property |
+| `dc_json_mut_set_uint64(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, uint64_t val)` | `doc`: Mutable document, `obj`: Object to set in, `key`: Key to set, `val`: Uint64 value to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set uint64 property |
+| `dc_json_mut_set_bool(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, int val)` | `doc`: Mutable document, `obj`: Object to set in, `key`: Key to set, `val`: Bool value to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set bool property |
+| `dc_json_mut_set_null(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key)` | `doc`: Mutable document, `obj`: Object to set in, `key`: Key to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set property to JSON null |
+| `dc_json_mut_set_snowflake(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, uint64_t val)` | `doc`: Mutable document, `obj`: Object to set in, `key`: Key to set, `val`: Snowflake value to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set snowflake property as JSON string |
+| `dc_json_mut_set_permission(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, uint64_t val)` | `doc`: Mutable document, `obj`: Object to set in, `key`: Key to set, `val`: Permission bitfield value to set | `dc_status_t`: `DC_OK` on success, error code on failure | Set permission bitfield as JSON string |
+| `dc_json_mut_add_allowed_mentions(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, const dc_allowed_mentions_t* mentions)` | `doc`: Mutable document, `obj`: Object to add to, `key`: Key to add, `mentions`: Allowed mentions to add | `dc_status_t`: `DC_OK` on success, error code on failure | Append allowed_mentions object |
+| `dc_json_mut_add_attachments(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const char* key, const dc_attachment_descriptor_t* attachments, size_t count)` | `doc`: Mutable document, `obj`: Object to add to, `key`: Key to add, `attachments`: Attachment descriptors to add, `count`: Number of attachments | `dc_status_t`: `DC_OK` on success, error code on failure | Append attachments array |
+
+### Model Adapters (`json/dc_json_model.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_json_model_user_from_val(yyjson_val* val, dc_user_t* user)` | `val`: JSON value to parse from, `user`: Output user model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse user model from JSON value |
+| `dc_json_model_guild_member_from_val(yyjson_val* val, dc_guild_member_t* member)` | `val`: JSON value to parse from, `member`: Output guild member model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse guild member model from JSON value |
+| `dc_json_model_role_from_val(yyjson_val* val, dc_role_t* role)` | `val`: JSON value to parse from, `role`: Output role model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse role model from JSON value |
+| `dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channel)` | `val`: JSON value to parse from, `channel`: Output channel model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse channel model from JSON value |
+| `dc_json_model_message_from_val(yyjson_val* val, dc_message_t* message)` | `val`: JSON value to parse from, `message`: Output message model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse message model from JSON value |
+| `dc_json_model_component_from_val(yyjson_val* val, dc_component_t* component)` | `val`: JSON value to parse from, `component`: Output component model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse component model from JSON value |
+| `dc_json_model_thread_member_from_val(yyjson_val* val, dc_channel_thread_member_t* member)` | `val`: JSON value to parse from, `member`: Output thread member model to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse thread member model from JSON value |
+| `dc_json_model_user_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_user_t* user)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `user`: User model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize user model into mutable JSON object |
+| `dc_json_model_guild_member_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_guild_member_t* member)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `member`: Guild member model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize guild member model into mutable JSON object |
+| `dc_json_model_role_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_role_t* role)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `role`: Role model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize role model into mutable JSON object |
+| `dc_json_model_channel_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_channel_t* channel)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `channel`: Channel model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize channel model into mutable JSON object |
+| `dc_json_model_message_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_message_t* message)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `message`: Message model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize message model into mutable JSON object |
+| `dc_json_model_component_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* obj, const dc_component_t* component)` | `doc`: Mutable document to serialize to, `obj`: Object to serialize into, `component`: Component model to serialize | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize component model into mutable JSON object |
+
+## 7) Typed Models
+
+### User Model (`model/dc_user.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_user_init(dc_user_t* user)` | `user`: User struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize user struct |
+| `dc_user_free(dc_user_t* user)` | `user`: User struct to free | `void` | Free user-owned fields |
+| `dc_user_from_json(const char* json_data, dc_user_t* user)` | `json_data`: JSON text to parse, `user`: Output user struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse user from JSON text |
+| `dc_user_to_json(const dc_user_t* user, dc_string_t* json_result)` | `user`: User struct to serialize, `json_result`: Output string for JSON | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize user to JSON text |
+| `dc_user_get_mention(const dc_user_t* user, dc_string_t* mention)` | `user`: User to build mention for, `mention`: Output string for mention | `dc_status_t`: `DC_OK` on success, error code on failure | Build `<@id>` mention string for user |
+| `dc_user_get_avatar_url(const dc_user_t* user, uint16_t size, const char* format, dc_string_t* url)` | `user`: User to build URL for, `size`: Image size (power of 2, 16-4096), `format`: Image format ("png", "jpg", "webp", "gif"), `url`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | Build user avatar CDN URL |
+| `dc_user_get_default_avatar_url(const dc_user_t* user, uint16_t size, dc_string_t* url)` | `user`: User to build URL for, `size`: Image size (power of 2, 16-4096), `url`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | Build default avatar URL |
+| `dc_user_get_banner_url(const dc_user_t* user, uint16_t size, const char* format, dc_string_t* url)` | `user`: User to build URL for, `size`: Image size (power of 2, 16-4096), `format`: Image format ("png", "jpg", "webp", "gif"), `url`: Output string for URL | `dc_status_t`: `DC_OK` on success, error code on failure | Build banner URL |
+| `dc_user_has_flag(const dc_user_t* user, dc_user_flag_t flag)` | `user`: User to check, `flag`: Flag to test | `int`: 1 if user has flag, 0 otherwise | Test user bitflag |
+| `dc_user_get_display_name(const dc_user_t* user)` | `user`: User to get display name for | `const char*`: Display name string | Choose display name fallback (`global_name` then `username`) |
+
+### Channel Model (`model/dc_channel.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_channel_thread_member_init(dc_channel_thread_member_t* member)` | `member`: Thread-member struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize thread-member struct |
+| `dc_channel_thread_member_free(dc_channel_thread_member_t* member)` | `member`: Thread-member struct to free | `void` | Free thread-member fields |
+| `dc_channel_init(dc_channel_t* channel)` | `channel`: Channel struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize channel struct |
+| `dc_channel_free(dc_channel_t* channel)` | `channel`: Channel struct to free | `void` | Free channel-owned fields/vectors |
+| `dc_channel_from_json(const char* json_data, dc_channel_t* channel)` | `json_data`: JSON text to parse, `channel`: Output channel struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse channel from JSON text |
+| `dc_channel_to_json(const dc_channel_t* channel, dc_string_t* json_result)` | `channel`: Channel struct to serialize, `json_result`: Output string for JSON | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize channel to JSON text |
+| `dc_channel_list_init(dc_channel_list_t* list)` | `list`: Channel list container to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize typed channel list container |
+| `dc_channel_list_free(dc_channel_list_t* list)` | `list`: Channel list container to free | `void` | Free typed channel list container and element-owned memory |
+
+### Guild Model (`model/dc_guild.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_guild_init(dc_guild_t* guild)` | `guild`: Guild struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize guild struct |
+| `dc_guild_free(dc_guild_t* guild)` | `guild`: Guild struct to free | `void` | Free guild-owned fields |
+| `dc_guild_from_json(const char* json_data, dc_guild_t* guild)` | `json_data`: JSON text to parse, `guild`: Output guild struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse guild from JSON text |
+| `dc_guild_to_json(const dc_guild_t* guild, dc_string_t* json_result)` | `guild`: Guild struct to serialize, `json_result`: Output string for JSON | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize guild to JSON text |
+
+### Guild Member Model (`model/dc_guild_member.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_guild_member_init(dc_guild_member_t* member)` | `member`: Guild member struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize guild member struct |
+| `dc_guild_member_free(dc_guild_member_t* member)` | `member`: Guild member struct to free | `void` | Free guild member-owned fields |
+| `dc_guild_member_from_json(const char* json_data, dc_guild_member_t* member)` | `json_data`: JSON text to parse, `member`: Output guild member struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse guild member from JSON text |
+| `dc_guild_member_to_json(const dc_guild_member_t* member, dc_string_t* json_result)` | `member`: Guild member struct to serialize, `json_result`: Output string for JSON | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize guild member to JSON text |
+| `dc_guild_member_list_init(dc_guild_member_list_t* list)` | `list`: Guild member list container to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize typed guild member list container |
+| `dc_guild_member_list_free(dc_guild_member_list_t* list)` | `list`: Guild member list container to free | `void` | Free typed guild member list container and element-owned memory |
+
+### Role Model (`model/dc_role.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_role_init(dc_role_t* role)` | `role`: Role struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize role struct |
+| `dc_role_free(dc_role_t* role)` | `role`: Role struct to free | `void` | Free role-owned fields |
+| `dc_role_from_json(const char* json_data, dc_role_t* role)` | `json_data`: JSON text to parse, `role`: Output role struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse role from JSON text |
+| `dc_role_to_json(const dc_role_t* role, dc_string_t* json_result)` | `role`: Role struct to serialize, `json_result`: Output string for JSON | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize role to JSON text |
+| `dc_role_list_init(dc_role_list_t* list)` | `list`: Role list container to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize typed role list container |
+| `dc_role_list_free(dc_role_list_t* list)` | `list`: Role list container to free | `void` | Free typed role list container and element-owned memory |
+
+### Component Model (`model/dc_component.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_component_init(dc_component_t* component)` | `component`: Component struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize component struct |
+| `dc_component_free(dc_component_t* component)` | `component`: Component struct to free | `void` | Free component recursively |
+| `dc_select_option_init(dc_select_option_t* option)` | `option`: Select option to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize select option |
+| `dc_select_option_free(dc_select_option_t* option)` | `option`: Select option to free | `void` | Free select option |
+| `dc_unfurled_media_item_init(dc_unfurled_media_item_t* media)` | `media`: Media item struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize media item struct |
+| `dc_unfurled_media_item_free(dc_unfurled_media_item_t* media)` | `media`: Media item to free | `void` | Free media item |
+| `dc_select_default_value_init(dc_select_default_value_t* default_val)` | `default_val`: Select default value to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize select default value |
+| `dc_select_default_value_free(dc_select_default_value_t* default_val)` | `default_val`: Select default value to free | `void` | Free select default value |
+| `dc_partial_emoji_init(dc_partial_emoji_t* emoji)` | `emoji`: Partial emoji struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize partial emoji struct |
+| `dc_partial_emoji_free(dc_partial_emoji_t* emoji)` | `emoji`: Partial emoji struct to free | `void` | Free partial emoji struct |
+| `dc_media_gallery_item_init(dc_media_gallery_item_t* item)` | `item`: Media gallery item to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize media gallery item |
+| `dc_media_gallery_item_free(dc_media_gallery_item_t* item)` | `item`: Media gallery item to free | `void` | Free media gallery item |
+
+### Message Model (`model/dc_message.h`)
+
+| Function | Parameters | Return Value | Description |
+|----------|------------|--------------|-------------|
+| `dc_message_init(dc_message_t* message)` | `message`: Message struct to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize message struct |
+| `dc_message_free(dc_message_t* message)` | `message`: Message struct to free | `void` | Free message-owned fields/vectors |
+| `dc_message_from_json(const char* json_data, dc_message_t* message)` | `json_data`: JSON text to parse, `message`: Output message struct to populate | `dc_status_t`: `DC_OK` on success, error code on failure | Parse message from JSON text |
+| `dc_message_to_json(const dc_message_t* message, dc_string_t* json_result)` | `message`: Message struct to serialize, `json_result`: Output string for JSON | `dc_status_t`: `DC_OK` on success, error code on failure | Serialize message to JSON text |
+
+## 8) Notes on Enums and Constants
+
+Alongside the functions above, the headers also expose core enums/constants used by the API surface:
+
+- Gateway: states, intents, opcodes, close codes (`gw/dc_gateway.h`).
+- Models: channel types, message types/flags (including `DC_MESSAGE_FLAG_IS_COMPONENTS_V2`), component/button/text-input/select enums.
+- HTTP: auth types, content types, boolean query formatting, rate-limit scope.
+- CDN: image formats.
+- Status/logging: full `dc_status_t` and `dc_log_level_t` enums.
+
+These are intended to be used directly when constructing requests, parsing events, and configuring client/gateway behavior. For edge cases, verify behavior in the corresponding source files.
+
+### Gateway States
+
+| Enum | Description |
+|------|-------------|
+| `DC_GATEWAY_DISCONNECTED` | Disconnected from gateway |
+| `DC_GATEWAY_CONNECTING` | Connecting to gateway |
+| `DC_GATEWAY_CONNECTED` | Connected to gateway |
+| `DC_GATEWAY_IDENTIFYING` | Identifying with gateway |
+| `DC_GATEWAY_READY` | Ready to receive events |
+| `DC_GATEWAY_RESUMING` | Resuming previous session |
+| `DC_GATEWAY_RECONNECTING` | Attempting to reconnect |
+
+### Gateway Intents
+
+| Enum | Description |
+|------|-------------|
+| `DC_INTENT_GUILDS` | Guilds |
+| `DC_INTENT_GUILD_MEMBERS` | Guild members |
+| `DC_INTENT_GUILD_MODERATION` | Guild moderation |
+| `DC_INTENT_GUILD_EMOJIS_AND_STICKERS` | Guild emojis and stickers |
+| `DC_INTENT_GUILD_INTEGRATIONS` | Guild integrations |
+| `DC_INTENT_GUILD_WEBHOOKS` | Guild webhooks |
+| `DC_INTENT_GUILD_INVITES` | Guild invites |
+| `DC_INTENT_GUILD_VOICE_STATES` | Guild voice states |
+| `DC_INTENT_GUILD_PRESENCES` | Guild presences |
+| `DC_INTENT_GUILD_MESSAGES` | Guild messages |
+| `DC_INTENT_GUILD_MESSAGE_REACTIONS` | Guild message reactions |
+| `DC_INTENT_GUILD_MESSAGE_TYPING` | Guild message typing |
+| `DC_INTENT_DIRECT_MESSAGES` | Direct messages |
+| `DC_INTENT_DIRECT_MESSAGE_REACTIONS` | Direct message reactions |
+| `DC_INTENT_DIRECT_MESSAGE_TYPING` | Direct message typing |
+| `DC_INTENT_MESSAGE_CONTENT` | Message content |
+| `DC_INTENT_GUILD_SCHEDULED_EVENTS` | Guild scheduled events |
+| `DC_INTENT_AUTO_MODERATION_CONFIG` | Auto moderation config |
+| `DC_INTENT_AUTO_MODERATION_EXECUTION` | Auto moderation execution |
+
+### Status Codes
+
+| Enum | Description |
+|------|-------------|
+| `DC_OK` | Success |
+| `DC_ERROR_INVALID_PARAM` | Invalid parameter |
+| `DC_ERROR_NULL_POINTER` | Null pointer passed |
+| `DC_ERROR_OUT_OF_MEMORY` | Memory allocation failed |
+| `DC_ERROR_BUFFER_TOO_SMALL` | Buffer too small |
+| `DC_ERROR_INVALID_FORMAT` | Invalid format |
+| `DC_ERROR_PARSE_ERROR` | Parse error |
+| `DC_ERROR_NETWORK` | Network error |
+| `DC_ERROR_HTTP` | HTTP error |
+| `DC_ERROR_WEBSOCKET` | WebSocket error |
+| `DC_ERROR_JSON` | JSON error |
+| `DC_ERROR_RATE_LIMITED` | Rate limited |
+| `DC_ERROR_UNAUTHORIZED` | Unauthorized |
+| `DC_ERROR_FORBIDDEN` | Forbidden |
+| `DC_ERROR_NOT_FOUND` | Not found |
+| `DC_ERROR_TIMEOUT` | Timeout |
+| `DC_ERROR_NOT_IMPLEMENTED` | Not implemented |
+| `DC_ERROR_UNKNOWN` | Unknown error |
+| `DC_ERROR_BAD_REQUEST` | HTTP 400 |
+| `DC_ERROR_NOT_MODIFIED` | HTTP 304 |
+| `DC_ERROR_METHOD_NOT_ALLOWED` | HTTP 405 |
+| `DC_ERROR_CONFLICT` | Conflict |
+| `DC_ERROR_UNAVAILABLE` | HTTP 502/503 |
+| `DC_ERROR_SERVER` | HTTP 5xx |
+| `DC_ERROR_INVALID_STATE` | Invalid state |
+| `DC_ERROR_TRY_AGAIN` | Temporary failure |
+
+### Log Levels
+
+| Enum | Description |
+|------|-------------|
+| `DC_LOG_ERROR` | Error level |
+| `DC_LOG_WARN` | Warning level |
+| `DC_LOG_INFO` | Information level |
+| `DC_LOG_DEBUG` | Debug level |
+| `DC_LOG_TRACE` | Trace level |
+
+## Conclusion
+
+The Fishy Discord Library provides a comprehensive C API for interacting with Discord's API v10. This reference covers all public functions, data structures, and constants available in the library. The library follows consistent patterns for error handling using `dc_status_t` return values and provides extensive utilities for JSON parsing, HTTP requests, and gateway connections.
+
+For more information about Discord's API, refer to the official [Discord Developer Documentation](https://discord.com/developers/docs/intro).
+
+## Additional Resources
+
+- [Discord API v10 Documentation](https://discord.com/developers/docs/reference)
+- [Discord Gateway Events](https://discord.com/developers/docs/topics/gateway-events)
+- [Discord Rate Limits](https://discord.com/developers/docs/topics/rate-limits)
