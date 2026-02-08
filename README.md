@@ -38,7 +38,6 @@ If you install it via CMake, headers install under `include/fishydslib/`.
 ## Docs / Status
 
 - API reference: `FishyDsLib-API-Reference.mdx`
-- Project notes/tracking live in the repo root (`tasks.md`, `plan.md`).
 
 ## License
 
