@@ -94,6 +94,17 @@ dc_status_t dc_vec_pop(dc_vec_t* vec, void* element);
 dc_status_t dc_vec_insert(dc_vec_t* vec, size_t index, const void* element);
 
 /**
+ * @brief Insert element at index without preserving order (O(1))
+ * @param vec Pointer to vector structure
+ * @param index Index to insert at (0..length)
+ * @param element Pointer to element to insert
+ * @return DC_OK on success, error code on failure
+ *
+ * @note If index < length, the previous element at index is moved to the end.
+ */
+dc_status_t dc_vec_insert_unordered(dc_vec_t* vec, size_t index, const void* element);
+
+/**
  * @brief Remove element at index
  * @param vec Pointer to vector structure
  * @param index Index to remove
@@ -110,6 +121,17 @@ dc_status_t dc_vec_remove(dc_vec_t* vec, size_t index, void* element);
  * @return DC_OK on success, error code on failure
  */
 dc_status_t dc_vec_swap_remove(dc_vec_t* vec, size_t index, void* element);
+
+/**
+ * @brief Remove element at index without preserving order (O(1))
+ * @param vec Pointer to vector structure
+ * @param index Index to remove
+ * @param element Pointer to store removed element (optional)
+ * @return DC_OK on success, error code on failure
+ *
+ * @note Equivalent to dc_vec_swap_remove.
+ */
+dc_status_t dc_vec_remove_unordered(dc_vec_t* vec, size_t index, void* element);
 
 /**
  * @brief Get element at index (bounds-checked)

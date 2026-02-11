@@ -52,6 +52,24 @@ int test_vec_main(void) {
     TEST_ASSERT_EQ(DC_OK, dc_vec_find(&vec, &v7, NULL, &idx), "find value");
     TEST_ASSERT_EQ(1u, idx, "find index");
 
+    int v9 = 9;
+    TEST_ASSERT_EQ(DC_OK, dc_vec_insert_unordered(&vec, (size_t)1, &v9), "insert unordered index 1");
+    TEST_ASSERT_EQ(5u, dc_vec_length(&vec), "length after unordered insert");
+    TEST_ASSERT_EQ(DC_OK, dc_vec_get(&vec, (size_t)1, &out), "get unordered inserted");
+    TEST_ASSERT_EQ(9, out, "unordered inserted value");
+    TEST_ASSERT_EQ(DC_OK, dc_vec_get(&vec, (size_t)4, &out), "get displaced value at end");
+    TEST_ASSERT_EQ(7, out, "displaced moved to end");
+
+    TEST_ASSERT_EQ(DC_OK, dc_vec_remove_unordered(&vec, (size_t)0, &out), "remove unordered index 0");
+    TEST_ASSERT_EQ(1, out, "remove unordered removed value");
+    TEST_ASSERT_EQ(4u, dc_vec_length(&vec), "length after unordered remove");
+    TEST_ASSERT_EQ(DC_OK, dc_vec_get(&vec, (size_t)0, &out), "get swapped-in value at index 0");
+    TEST_ASSERT_EQ(7, out, "last moved to removed slot");
+
+    TEST_ASSERT_EQ(DC_OK, dc_vec_swap_remove(&vec, (size_t)1, &out), "swap remove index 1");
+    TEST_ASSERT_EQ(9, out, "swap remove removed value");
+    TEST_ASSERT_EQ(3u, dc_vec_length(&vec), "length after swap remove");
+
     dc_vec_free(&vec);
 
     dc_vec_t empty;

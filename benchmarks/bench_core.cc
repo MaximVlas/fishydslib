@@ -29,6 +29,18 @@ static void dc_bench_init_buffers() {
     initialized = 1;
 }
 
+static bool dc_bench_vec_prepare(dc_vec_t* vec, size_t count, size_t extra_capacity) {
+    dc_status_t st = dc_vec_init_with_capacity(vec, sizeof(uint64_t), count + extra_capacity);
+    if (st != DC_OK) return false;
+    if (count == 0) return true;
+    st = dc_vec_append(vec, kBenchValues, count);
+    if (st != DC_OK) {
+        dc_vec_free(vec);
+        return false;
+    }
+    return true;
+}
+
 static void BM_Alloc_Free(benchmark::State& state) {
     const size_t size = static_cast<size_t>(state.range(0));
     size_t total_bytes = 0;
@@ -124,6 +136,66 @@ static void BM_String_Append(benchmark::State& state) {
 }
 BENCHMARK(BM_String_Append)->Range(8, 1024);
 
+static void BM_String_Append_Printf(benchmark::State& state) {
+    const size_t reps = static_cast<size_t>(state.range(0));
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_string_t s;
+        if (dc_string_init(&s) != DC_OK) {
+            state.SkipWithError("dc_string_init failed");
+            return;
+        }
+        for (size_t i = 0; i < reps; i++) {
+            dc_status_t st = dc_string_append_printf(&s, "%zu:%u|", i, 42u);
+            if (st != DC_OK) {
+                dc_string_free(&s);
+                state.SkipWithError("dc_string_append_printf failed");
+                return;
+            }
+        }
+        total_bytes += dc_string_length(&s);
+        benchmark::DoNotOptimize(dc_string_cstr(&s));
+        dc_string_free(&s);
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * reps));
+}
+BENCHMARK(BM_String_Append_Printf)->Range(8, 1024);
+
+static void BM_String_Append_Printf_Reserved(benchmark::State& state) {
+    const size_t reps = static_cast<size_t>(state.range(0));
+    const size_t reserve_bytes = (reps * (size_t)16) + (size_t)1;
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_string_t s;
+        dc_status_t st = dc_string_init(&s);
+        if (st != DC_OK) {
+            state.SkipWithError("dc_string_init failed");
+            return;
+        }
+        st = dc_string_reserve(&s, reserve_bytes);
+        if (st != DC_OK) {
+            dc_string_free(&s);
+            state.SkipWithError("dc_string_reserve failed");
+            return;
+        }
+        for (size_t i = 0; i < reps; i++) {
+            st = dc_string_append_printf(&s, "%zu:%u|", i, 42u);
+            if (st != DC_OK) {
+                dc_string_free(&s);
+                state.SkipWithError("dc_string_append_printf failed");
+                return;
+            }
+        }
+        total_bytes += dc_string_length(&s);
+        benchmark::DoNotOptimize(dc_string_cstr(&s));
+        dc_string_free(&s);
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * reps));
+}
+BENCHMARK(BM_String_Append_Printf_Reserved)->Range(8, 1024);
+
 static void BM_String_Set_Buffer(benchmark::State& state) {
     dc_bench_init_buffers();
     const size_t len = static_cast<size_t>(state.range(0));
@@ -193,6 +265,189 @@ static void BM_Vec_Append(benchmark::State& state) {
     state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * count));
 }
 BENCHMARK(BM_Vec_Append)->Range(16, 4096);
+
+static void BM_Vec_Insert_Ordered_Middle(benchmark::State& state) {
+    dc_bench_init_buffers();
+    const size_t count = static_cast<size_t>(state.range(0));
+    const size_t index = count / (size_t)2;
+    const uint64_t inserted = 0xBEEFULL;
+    const size_t bytes_touched = (count - index + (size_t)1) * sizeof(uint64_t);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_vec_t vec;
+        state.PauseTiming();
+        if (!dc_bench_vec_prepare(&vec, count, (size_t)1)) {
+            state.SkipWithError("dc_bench_vec_prepare failed");
+            return;
+        }
+        state.ResumeTiming();
+        dc_status_t st = dc_vec_insert(&vec, index, &inserted);
+        if (st != DC_OK) {
+            state.PauseTiming();
+            dc_vec_free(&vec);
+            state.SkipWithError("dc_vec_insert failed");
+            return;
+        }
+        benchmark::DoNotOptimize(dc_vec_length(&vec));
+        total_bytes += bytes_touched;
+        state.PauseTiming();
+        dc_vec_free(&vec);
+        state.ResumeTiming();
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_Vec_Insert_Ordered_Middle)->Range(16, 4096);
+
+static void BM_Vec_Insert_Unordered_Middle(benchmark::State& state) {
+    dc_bench_init_buffers();
+    const size_t count = static_cast<size_t>(state.range(0));
+    const size_t index = count / (size_t)2;
+    const uint64_t inserted = 0xBEEFULL;
+    const size_t bytes_touched = (size_t)2 * sizeof(uint64_t);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_vec_t vec;
+        state.PauseTiming();
+        if (!dc_bench_vec_prepare(&vec, count, (size_t)1)) {
+            state.SkipWithError("dc_bench_vec_prepare failed");
+            return;
+        }
+        state.ResumeTiming();
+        dc_status_t st = dc_vec_insert_unordered(&vec, index, &inserted);
+        if (st != DC_OK) {
+            state.PauseTiming();
+            dc_vec_free(&vec);
+            state.SkipWithError("dc_vec_insert_unordered failed");
+            return;
+        }
+        benchmark::DoNotOptimize(dc_vec_length(&vec));
+        total_bytes += bytes_touched;
+        state.PauseTiming();
+        dc_vec_free(&vec);
+        state.ResumeTiming();
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_Vec_Insert_Unordered_Middle)->Range(16, 4096);
+
+static void BM_Vec_Remove_Ordered_Middle(benchmark::State& state) {
+    dc_bench_init_buffers();
+    const size_t count = static_cast<size_t>(state.range(0));
+    const size_t index = count / (size_t)2;
+    const size_t bytes_touched = (count - index) * sizeof(uint64_t);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_vec_t vec;
+        uint64_t removed = 0;
+        state.PauseTiming();
+        if (!dc_bench_vec_prepare(&vec, count, (size_t)0)) {
+            state.SkipWithError("dc_bench_vec_prepare failed");
+            return;
+        }
+        state.ResumeTiming();
+        dc_status_t st = dc_vec_remove(&vec, index, &removed);
+        if (st != DC_OK) {
+            state.PauseTiming();
+            dc_vec_free(&vec);
+            state.SkipWithError("dc_vec_remove failed");
+            return;
+        }
+        benchmark::DoNotOptimize(removed);
+        total_bytes += bytes_touched;
+        state.PauseTiming();
+        dc_vec_free(&vec);
+        state.ResumeTiming();
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_Vec_Remove_Ordered_Middle)->Range(16, 4096);
+
+static void BM_Vec_Remove_Unordered_Middle(benchmark::State& state) {
+    dc_bench_init_buffers();
+    const size_t count = static_cast<size_t>(state.range(0));
+    const size_t index = count / (size_t)2;
+    const size_t bytes_touched = (size_t)2 * sizeof(uint64_t);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_vec_t vec;
+        uint64_t removed = 0;
+        state.PauseTiming();
+        if (!dc_bench_vec_prepare(&vec, count, (size_t)0)) {
+            state.SkipWithError("dc_bench_vec_prepare failed");
+            return;
+        }
+        state.ResumeTiming();
+        dc_status_t st = dc_vec_remove_unordered(&vec, index, &removed);
+        if (st != DC_OK) {
+            state.PauseTiming();
+            dc_vec_free(&vec);
+            state.SkipWithError("dc_vec_remove_unordered failed");
+            return;
+        }
+        benchmark::DoNotOptimize(removed);
+        total_bytes += bytes_touched;
+        state.PauseTiming();
+        dc_vec_free(&vec);
+        state.ResumeTiming();
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_Vec_Remove_Unordered_Middle)->Range(16, 4096);
+
+static void BM_Vec_Find_Present_Last(benchmark::State& state) {
+    dc_bench_init_buffers();
+    const size_t count = static_cast<size_t>(state.range(0));
+    dc_vec_t vec;
+    if (!dc_bench_vec_prepare(&vec, count, (size_t)0)) {
+        state.SkipWithError("dc_bench_vec_prepare failed");
+        return;
+    }
+    const uint64_t needle = kBenchValues[count - (size_t)1];
+    const size_t bytes_per_iter = count * sizeof(uint64_t);
+    for (auto _ : state) {
+        size_t idx = 0;
+        dc_status_t st = dc_vec_find(&vec, &needle, NULL, &idx);
+        if (st != DC_OK) {
+            dc_vec_free(&vec);
+            state.SkipWithError("dc_vec_find present failed");
+            return;
+        }
+        benchmark::DoNotOptimize(idx);
+    }
+    dc_vec_free(&vec);
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * bytes_per_iter));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_Vec_Find_Present_Last)->Range(16, 4096);
+
+static void BM_Vec_Find_Missing(benchmark::State& state) {
+    dc_bench_init_buffers();
+    const size_t count = static_cast<size_t>(state.range(0));
+    dc_vec_t vec;
+    if (!dc_bench_vec_prepare(&vec, count, (size_t)0)) {
+        state.SkipWithError("dc_bench_vec_prepare failed");
+        return;
+    }
+    const uint64_t needle = ~0ULL;
+    const size_t bytes_per_iter = count * sizeof(uint64_t);
+    for (auto _ : state) {
+        dc_status_t st = dc_vec_find(&vec, &needle, NULL, NULL);
+        if (st != DC_ERROR_NOT_FOUND) {
+            dc_vec_free(&vec);
+            state.SkipWithError("dc_vec_find missing failed");
+            return;
+        }
+        benchmark::DoNotOptimize(st);
+    }
+    dc_vec_free(&vec);
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * bytes_per_iter));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_Vec_Find_Missing)->Range(16, 4096);
 
 static void BM_Snowflake_To_Cstr(benchmark::State& state) {
     const dc_snowflake_t snow = 175928847299117063ULL;

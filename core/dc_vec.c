@@ -251,6 +251,28 @@ dc_status_t dc_vec_swap_remove(dc_vec_t* vec, size_t index, void* element) {
     return DC_OK;
 }
 
+/**
+ * @brief O(1) unordered insertion (move replaced element to end)
+ * @note Faster than dc_vec_insert for unordered collections
+ */
+dc_status_t dc_vec_insert_unordered(dc_vec_t* vec, size_t index, const void* element) {
+    if (DC_UNLIKELY(!vec || !element)) return DC_ERROR_NULL_POINTER;
+    if (DC_UNLIKELY(index > vec->length)) return DC_ERROR_INVALID_PARAM;
+
+    dc_status_t status = dc_vec_ensure_capacity(vec, vec->length + 1);
+    if (DC_UNLIKELY(status != DC_OK)) return status;
+
+    void* target = (void*)((uintptr_t)vec->data + index * vec->element_size);
+    if (index < vec->length) {
+        void* last = (void*)((uintptr_t)vec->data + vec->length * vec->element_size);
+        memcpy(last, target, vec->element_size);
+    }
+
+    memcpy(target, element, vec->element_size);
+    vec->length++;
+    return DC_OK;
+}
+
 dc_status_t dc_vec_insert(dc_vec_t* vec, size_t index, const void* element) {
     if (DC_UNLIKELY(!vec || !element)) return DC_ERROR_NULL_POINTER;
     if (DC_UNLIKELY(index > vec->length)) return DC_ERROR_INVALID_PARAM;
@@ -297,6 +319,10 @@ dc_status_t dc_vec_remove(dc_vec_t* vec, size_t index, void* element) {
 
     vec->length--;
     return DC_OK;
+}
+
+dc_status_t dc_vec_remove_unordered(dc_vec_t* vec, size_t index, void* element) {
+    return dc_vec_swap_remove(vec, index, element);
 }
 
 dc_status_t dc_vec_get(const dc_vec_t* vec, size_t index, void* element) {

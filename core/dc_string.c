@@ -212,34 +212,12 @@ dc_status_t dc_string_append_printf(dc_string_t* str, const char* format, ...) {
 
 dc_status_t dc_string_append_vprintf(dc_string_t* str, const char* format, va_list args) {
     if (!str || !format) return DC_ERROR_NULL_POINTER;
-
-    size_t available = (str->capacity > str->length) ? (str->capacity - str->length) : 0;
-    va_list args_copy;
-
-    if (available > 0 && str->data) {
-        va_copy(args_copy, args);
-        int written = vsnprintf(str->data + str->length, available, format, args_copy);
-        va_end(args_copy);
-        if (written >= 0 && (size_t)written < available) {
-            str->length += (size_t)written;
-            return DC_OK;
-        }
-        if (written >= 0) {
-            size_t needed = (size_t)written;
-            if (needed > SIZE_MAX - str->length - 1) {
-                return DC_ERROR_INVALID_PARAM;
-            }
-            dc_status_t status = dc_string_ensure_capacity(str, str->length + needed + 1);
-            if (status != DC_OK) return status;
-            va_copy(args_copy, args);
-            written = vsnprintf(str->data + str->length, str->capacity - str->length, format, args_copy);
-            va_end(args_copy);
-            if (written < 0) return DC_ERROR_INVALID_FORMAT;
-            str->length += (size_t)written;
-            return DC_OK;
-        }
+    if ((str->capacity == 0 && str->length > 0) ||
+        (str->capacity > 0 && str->length >= str->capacity)) {
+        return DC_ERROR_INVALID_PARAM;
     }
 
+    va_list args_copy;
     va_copy(args_copy, args);
     int required = vsnprintf(NULL, (size_t)0, format, args_copy);
     va_end(args_copy);
@@ -252,9 +230,9 @@ dc_status_t dc_string_append_vprintf(dc_string_t* str, const char* format, va_li
     dc_status_t status = dc_string_ensure_capacity(str, str->length + needed + 1);
     if (status != DC_OK) return status;
     va_copy(args_copy, args);
-    int written = vsnprintf(str->data + str->length, str->capacity - str->length, format, args_copy);
+    int written = vsnprintf(str->data + str->length, needed + 1, format, args_copy);
     va_end(args_copy);
-    if (written < 0) return DC_ERROR_INVALID_FORMAT;
+    if (written < 0 || (size_t)written != needed) return DC_ERROR_INVALID_FORMAT;
     str->length += (size_t)written;
     return DC_OK;
 }
