@@ -266,10 +266,21 @@ dc_status_t send_text_message(dc_client_t* client,
 | Function | Parameters | Return Value | Description |
 |----------|------------|--------------|-------------|
 | `dc_client_create_command_simple(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, const char* name, const char* description, const char* option_name, const char* option_description, int option_required)` | `client`: Discord client, `application_id`: Application ID, `guild_id`: Guild ID for guild command (0 for global), `name`: Command name, `description`: Command description, `option_name`: Option name (string), `option_description`: Option description, `option_required`: Non-zero if required | `dc_status_t`: `DC_OK` on success, error code on failure | Create simple slash command with one string option |
+| `dc_client_create_user_command_simple(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, const char* name)` | `client`: Discord client, `application_id`: Application ID, `guild_id`: Guild ID for guild command (0 for global), `name`: Command name | `dc_status_t`: `DC_OK` on success, error code on failure | Create simple USER context command |
+| `dc_client_create_message_command_simple(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, const char* name)` | `client`: Discord client, `application_id`: Application ID, `guild_id`: Guild ID for guild command (0 for global), `name`: Command name | `dc_status_t`: `DC_OK` on success, error code on failure | Create simple MESSAGE context command |
+| `dc_client_interaction_callback_json(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token, dc_interaction_callback_type_t callback_type, const char* data_json)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token, `callback_type`: Interaction callback type, `data_json`: Raw JSON object for callback `data` (NULL to omit) | `dc_status_t`: `DC_OK` on success, error code on failure | Generic interaction callback helper for component/modal/defer flows |
+| `dc_client_interaction_respond_message_json(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token, const char* data_json)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token, `data_json`: Raw callback data object for type 4 | `dc_status_t`: `DC_OK` on success, error code on failure | Respond with full message callback data (`type=4`) |
+| `dc_client_interaction_defer_message(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token, int ephemeral)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token, `ephemeral`: Set ephemeral flag for deferred response | `dc_status_t`: `DC_OK` on success, error code on failure | Defer response (`type=5`) |
+| `dc_client_interaction_defer_update(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token | `dc_status_t`: `DC_OK` on success, error code on failure | Defer component update (`type=6`) |
+| `dc_client_interaction_update_message_json(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token, const char* data_json)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token, `data_json`: Raw callback data object for type 7 | `dc_status_t`: `DC_OK` on success, error code on failure | Update source message from component interaction (`type=7`) |
+| `dc_client_interaction_show_modal_json(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token, const char* modal_json)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token, `modal_json`: Raw callback data object for modal | `dc_status_t`: `DC_OK` on success, error code on failure | Open modal response (`type=9`) |
 | `dc_client_interaction_respond_message(dc_client_t* client, dc_snowflake_t interaction_id, const char* interaction_token, const char* content, int ephemeral)` | `client`: Discord client, `interaction_id`: Interaction ID, `interaction_token`: Interaction token, `content`: Message content, `ephemeral`: Non-zero to send ephemeral response | `dc_status_t`: `DC_OK` on success, error code on failure | Send initial interaction message response |
+| `dc_client_interaction_edit_original_response_json(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, const char* json_body)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `json_body`: Raw JSON body for webhook patch | `dc_status_t`: `DC_OK` on success, error code on failure | Edit original interaction response with full JSON payload |
 | `dc_client_interaction_edit_original_response(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, const char* content)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `content`: New message content | `dc_status_t`: `DC_OK` on success, error code on failure | Edit original interaction response |
 | `dc_client_interaction_delete_original_response(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token | `dc_status_t`: `DC_OK` on success, error code on failure | Delete original interaction response |
+| `dc_client_interaction_create_followup_message_json(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, const char* json_body, dc_snowflake_t* message_id)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `json_body`: Raw JSON body for followup message, `message_id`: Optional output for created message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Create follow-up message with full JSON payload |
 | `dc_client_interaction_create_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, const char* content, int ephemeral, dc_snowflake_t* message_id)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `content`: Message content, `ephemeral`: Non-zero to send ephemeral response, `message_id`: Optional output for created followup message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Create follow-up message |
+| `dc_client_interaction_edit_followup_message_json(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, dc_snowflake_t message_id, const char* json_body)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `message_id`: Followup message ID, `json_body`: Raw JSON body for followup patch | `dc_status_t`: `DC_OK` on success, error code on failure | Edit follow-up message with full JSON payload |
 | `dc_client_interaction_edit_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, dc_snowflake_t message_id, const char* content)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `message_id`: Followup message ID, `content`: New message content | `dc_status_t`: `DC_OK` on success, error code on failure | Edit follow-up message |
 | `dc_client_interaction_delete_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, dc_snowflake_t message_id)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `message_id`: Followup message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Delete follow-up message |
 
@@ -305,6 +316,8 @@ Notes:
 | `dc_client_get_application_command_permissions_json` | `GET /applications/{application.id}/guilds/{guild.id}/commands/{command.id}/permissions` |
 | `dc_client_edit_application_command_permissions_json` | `PUT /applications/{application.id}/guilds/{guild.id}/commands/{command.id}/permissions` |
 | `dc_client_batch_edit_application_command_permissions_json` | `PUT /applications/{application.id}/guilds/{guild.id}/commands/permissions` |
+| `dc_client_create_user_command_simple` | Convenience helper for creating USER (type 2) commands |
+| `dc_client_create_message_command_simple` | Convenience helper for creating MESSAGE (type 3) commands |
 
 #### Messages and Channels
 
@@ -324,8 +337,22 @@ Notes:
 | `dc_client_delete_channel_permission` | `DELETE /channels/{channel.id}/permissions/{overwrite.id}` |
 | `dc_client_get_channel_invites_json` | `GET /channels/{channel.id}/invites` |
 | `dc_client_create_channel_invite_json` | `POST /channels/{channel.id}/invites` |
+| `dc_client_get_invite_json` | `GET /invites/{invite.code}` (supports `with_counts/with_expiration/guild_scheduled_event_id`) |
+| `dc_client_delete_invite_json` | `DELETE /invites/{invite.code}` |
 | `dc_client_follow_announcement_channel_json` | `POST /channels/{channel.id}/followers` |
 | `dc_client_trigger_typing_indicator` | `POST /channels/{channel.id}/typing` |
+| `dc_client_start_thread_from_message_json` | `POST /channels/{channel.id}/messages/{message.id}/threads` |
+| `dc_client_start_thread_without_message_json` | `POST /channels/{channel.id}/threads` |
+| `dc_client_start_forum_or_media_thread_json` | Alias of `POST /channels/{channel.id}/threads` for forum/media thread creation |
+| `dc_client_join_thread` | `PUT /channels/{thread.id}/thread-members/@me` |
+| `dc_client_add_thread_member` | `PUT /channels/{thread.id}/thread-members/{user.id}` |
+| `dc_client_leave_thread` | `DELETE /channels/{thread.id}/thread-members/@me` |
+| `dc_client_remove_thread_member` | `DELETE /channels/{thread.id}/thread-members/{user.id}` |
+| `dc_client_get_thread_member_json` | `GET /channels/{thread.id}/thread-members/{user.id}` (supports `with_member`) |
+| `dc_client_list_thread_members_json` | `GET /channels/{thread.id}/thread-members` (supports `with_member/after/limit`) |
+| `dc_client_list_public_archived_threads_json` | `GET /channels/{channel.id}/threads/archived/public` |
+| `dc_client_list_private_archived_threads_json` | `GET /channels/{channel.id}/threads/archived/private` |
+| `dc_client_list_joined_private_archived_threads_json` | `GET /channels/{channel.id}/users/@me/threads/archived/private` |
 
 #### Guilds and Moderation
 
@@ -351,6 +378,25 @@ Notes:
 | `dc_client_get_guild_invites_json` | `GET /guilds/{guild.id}/invites` |
 | `dc_client_get_guild_integrations_json` | `GET /guilds/{guild.id}/integrations` |
 | `dc_client_delete_guild_integration` | `DELETE /guilds/{guild.id}/integrations/{integration.id}` |
+| `dc_client_list_guild_scheduled_events_json` | `GET /guilds/{guild.id}/scheduled-events` |
+| `dc_client_create_guild_scheduled_event_json` | `POST /guilds/{guild.id}/scheduled-events` |
+| `dc_client_get_guild_scheduled_event_json` | `GET /guilds/{guild.id}/scheduled-events/{guild_scheduled_event.id}` |
+| `dc_client_modify_guild_scheduled_event_json` | `PATCH /guilds/{guild.id}/scheduled-events/{guild_scheduled_event.id}` |
+| `dc_client_delete_guild_scheduled_event` | `DELETE /guilds/{guild.id}/scheduled-events/{guild_scheduled_event.id}` |
+| `dc_client_get_guild_scheduled_event_users_json` | `GET /guilds/{guild.id}/scheduled-events/{guild_scheduled_event.id}/users` |
+| `dc_client_list_guild_emojis_json` | `GET /guilds/{guild.id}/emojis` |
+| `dc_client_get_guild_emoji_json` | `GET /guilds/{guild.id}/emojis/{emoji.id}` |
+| `dc_client_create_guild_emoji_json` | `POST /guilds/{guild.id}/emojis` |
+| `dc_client_modify_guild_emoji_json` | `PATCH /guilds/{guild.id}/emojis/{emoji.id}` |
+| `dc_client_delete_guild_emoji` | `DELETE /guilds/{guild.id}/emojis/{emoji.id}` |
+| `dc_client_get_sticker_json` | `GET /stickers/{sticker.id}` |
+| `dc_client_list_sticker_packs_json` | `GET /sticker-packs` |
+| `dc_client_get_sticker_pack_json` | `GET /sticker-packs/{pack.id}` |
+| `dc_client_list_guild_stickers_json` | `GET /guilds/{guild.id}/stickers` |
+| `dc_client_get_guild_sticker_json` | `GET /guilds/{guild.id}/stickers/{sticker.id}` |
+| `dc_client_create_guild_sticker_multipart` | `POST /guilds/{guild.id}/stickers` (multipart/form-data) |
+| `dc_client_modify_guild_sticker_json` | `PATCH /guilds/{guild.id}/stickers/{sticker.id}` |
+| `dc_client_delete_guild_sticker` | `DELETE /guilds/{guild.id}/stickers/{sticker.id}` |
 
 ### Gateway Send Helpers (Through Client)
 

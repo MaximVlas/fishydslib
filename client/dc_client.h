@@ -928,12 +928,68 @@ dc_status_t dc_client_create_channel_invite_json(dc_client_t* client,
                                                  dc_snowflake_t channel_id,
                                                  const char* json_body,
                                                  dc_string_t* invite_json);
+dc_status_t dc_client_get_invite_json(dc_client_t* client,
+                                      const char* invite_code,
+                                      int with_counts,
+                                      int with_expiration,
+                                      dc_snowflake_t guild_scheduled_event_id,
+                                      dc_string_t* invite_json);
+dc_status_t dc_client_delete_invite_json(dc_client_t* client,
+                                         const char* invite_code,
+                                         dc_string_t* invite_json);
 dc_status_t dc_client_follow_announcement_channel_json(dc_client_t* client,
                                                        dc_snowflake_t channel_id,
                                                        const char* json_body,
                                                        dc_string_t* followed_channel_json);
 dc_status_t dc_client_trigger_typing_indicator(dc_client_t* client,
                                                dc_snowflake_t channel_id);
+dc_status_t dc_client_start_thread_from_message_json(dc_client_t* client,
+                                                     dc_snowflake_t channel_id,
+                                                     dc_snowflake_t message_id,
+                                                     const char* json_body,
+                                                     dc_string_t* thread_json);
+dc_status_t dc_client_start_thread_without_message_json(dc_client_t* client,
+                                                        dc_snowflake_t channel_id,
+                                                        const char* json_body,
+                                                        dc_string_t* thread_json);
+dc_status_t dc_client_start_forum_or_media_thread_json(dc_client_t* client,
+                                                       dc_snowflake_t channel_id,
+                                                       const char* json_body,
+                                                       dc_string_t* thread_json);
+dc_status_t dc_client_join_thread(dc_client_t* client, dc_snowflake_t thread_id);
+dc_status_t dc_client_add_thread_member(dc_client_t* client,
+                                        dc_snowflake_t thread_id,
+                                        dc_snowflake_t user_id);
+dc_status_t dc_client_leave_thread(dc_client_t* client, dc_snowflake_t thread_id);
+dc_status_t dc_client_remove_thread_member(dc_client_t* client,
+                                           dc_snowflake_t thread_id,
+                                           dc_snowflake_t user_id);
+dc_status_t dc_client_get_thread_member_json(dc_client_t* client,
+                                             dc_snowflake_t thread_id,
+                                             dc_snowflake_t user_id,
+                                             int with_member,
+                                             dc_string_t* member_json);
+dc_status_t dc_client_list_thread_members_json(dc_client_t* client,
+                                               dc_snowflake_t thread_id,
+                                               int with_member,
+                                               dc_snowflake_t after,
+                                               uint32_t limit,
+                                               dc_string_t* members_json);
+dc_status_t dc_client_list_public_archived_threads_json(dc_client_t* client,
+                                                        dc_snowflake_t channel_id,
+                                                        const char* before_iso8601,
+                                                        uint32_t limit,
+                                                        dc_string_t* threads_json);
+dc_status_t dc_client_list_private_archived_threads_json(dc_client_t* client,
+                                                         dc_snowflake_t channel_id,
+                                                         const char* before_iso8601,
+                                                         uint32_t limit,
+                                                         dc_string_t* threads_json);
+dc_status_t dc_client_list_joined_private_archived_threads_json(dc_client_t* client,
+                                                                dc_snowflake_t channel_id,
+                                                                dc_snowflake_t before,
+                                                                uint32_t limit,
+                                                                dc_string_t* threads_json);
 
 dc_status_t dc_client_get_guild_preview_json(dc_client_t* client,
                                              dc_snowflake_t guild_id,
@@ -1011,6 +1067,87 @@ dc_status_t dc_client_get_guild_integrations_json(dc_client_t* client,
 dc_status_t dc_client_delete_guild_integration(dc_client_t* client,
                                                dc_snowflake_t guild_id,
                                                dc_snowflake_t integration_id);
+dc_status_t dc_client_list_guild_scheduled_events_json(dc_client_t* client,
+                                                       dc_snowflake_t guild_id,
+                                                       int with_user_count,
+                                                       dc_string_t* events_json);
+dc_status_t dc_client_create_guild_scheduled_event_json(dc_client_t* client,
+                                                        dc_snowflake_t guild_id,
+                                                        const char* json_body,
+                                                        dc_string_t* event_json);
+dc_status_t dc_client_get_guild_scheduled_event_json(dc_client_t* client,
+                                                     dc_snowflake_t guild_id,
+                                                     dc_snowflake_t event_id,
+                                                     int with_user_count,
+                                                     dc_string_t* event_json);
+dc_status_t dc_client_modify_guild_scheduled_event_json(dc_client_t* client,
+                                                        dc_snowflake_t guild_id,
+                                                        dc_snowflake_t event_id,
+                                                        const char* json_body,
+                                                        dc_string_t* event_json);
+dc_status_t dc_client_delete_guild_scheduled_event(dc_client_t* client,
+                                                   dc_snowflake_t guild_id,
+                                                   dc_snowflake_t event_id);
+dc_status_t dc_client_get_guild_scheduled_event_users_json(dc_client_t* client,
+                                                           dc_snowflake_t guild_id,
+                                                           dc_snowflake_t event_id,
+                                                           uint32_t limit,
+                                                           int with_member,
+                                                           dc_snowflake_t before,
+                                                           dc_snowflake_t after,
+                                                           dc_string_t* users_json);
+dc_status_t dc_client_list_guild_emojis_json(dc_client_t* client,
+                                             dc_snowflake_t guild_id,
+                                             dc_string_t* emojis_json);
+dc_status_t dc_client_get_guild_emoji_json(dc_client_t* client,
+                                           dc_snowflake_t guild_id,
+                                           dc_snowflake_t emoji_id,
+                                           dc_string_t* emoji_json);
+dc_status_t dc_client_create_guild_emoji_json(dc_client_t* client,
+                                              dc_snowflake_t guild_id,
+                                              const char* json_body,
+                                              dc_string_t* emoji_json);
+dc_status_t dc_client_modify_guild_emoji_json(dc_client_t* client,
+                                              dc_snowflake_t guild_id,
+                                              dc_snowflake_t emoji_id,
+                                              const char* json_body,
+                                              dc_string_t* emoji_json);
+dc_status_t dc_client_delete_guild_emoji(dc_client_t* client,
+                                         dc_snowflake_t guild_id,
+                                         dc_snowflake_t emoji_id);
+dc_status_t dc_client_get_sticker_json(dc_client_t* client,
+                                       dc_snowflake_t sticker_id,
+                                       dc_string_t* sticker_json);
+dc_status_t dc_client_list_sticker_packs_json(dc_client_t* client,
+                                              dc_string_t* sticker_packs_json);
+dc_status_t dc_client_get_sticker_pack_json(dc_client_t* client,
+                                            dc_snowflake_t pack_id,
+                                            dc_string_t* sticker_pack_json);
+dc_status_t dc_client_list_guild_stickers_json(dc_client_t* client,
+                                               dc_snowflake_t guild_id,
+                                               dc_string_t* stickers_json);
+dc_status_t dc_client_get_guild_sticker_json(dc_client_t* client,
+                                             dc_snowflake_t guild_id,
+                                             dc_snowflake_t sticker_id,
+                                             dc_string_t* sticker_json);
+dc_status_t dc_client_create_guild_sticker_multipart(dc_client_t* client,
+                                                     dc_snowflake_t guild_id,
+                                                     const char* name,
+                                                     const char* description,
+                                                     const char* tags,
+                                                     const void* file_data,
+                                                     size_t file_size,
+                                                     const char* filename,
+                                                     const char* content_type,
+                                                     dc_string_t* sticker_json);
+dc_status_t dc_client_modify_guild_sticker_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                dc_snowflake_t sticker_id,
+                                                const char* json_body,
+                                                dc_string_t* sticker_json);
+dc_status_t dc_client_delete_guild_sticker(dc_client_t* client,
+                                           dc_snowflake_t guild_id,
+                                           dc_snowflake_t sticker_id);
 
 /**
  * @brief Update presence
@@ -1043,6 +1180,106 @@ dc_status_t dc_client_create_command_simple(dc_client_t* client,
                                             const char* option_name,
                                             const char* option_description,
                                             int option_required);
+dc_status_t dc_client_create_user_command_simple(dc_client_t* client,
+                                                 dc_snowflake_t application_id,
+                                                 dc_snowflake_t guild_id,
+                                                 const char* name);
+dc_status_t dc_client_create_message_command_simple(dc_client_t* client,
+                                                    dc_snowflake_t application_id,
+                                                    dc_snowflake_t guild_id,
+                                                    const char* name);
+
+/**
+ * @brief Interaction callback types for POST /interactions/{id}/{token}/callback
+ */
+typedef enum {
+    DC_INTERACTION_CALLBACK_PONG = 1,
+    DC_INTERACTION_CALLBACK_CHANNEL_MESSAGE_WITH_SOURCE = 4,
+    DC_INTERACTION_CALLBACK_DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE = 5,
+    DC_INTERACTION_CALLBACK_DEFERRED_UPDATE_MESSAGE = 6,
+    DC_INTERACTION_CALLBACK_UPDATE_MESSAGE = 7,
+    DC_INTERACTION_CALLBACK_APPLICATION_COMMAND_AUTOCOMPLETE_RESULT = 8,
+    DC_INTERACTION_CALLBACK_MODAL = 9,
+    DC_INTERACTION_CALLBACK_LAUNCH_ACTIVITY = 12
+} dc_interaction_callback_type_t;
+
+/**
+ * @brief Send a raw interaction callback with optional JSON data object
+ * @param client Discord client
+ * @param interaction_id Interaction ID
+ * @param interaction_token Interaction token
+ * @param callback_type Interaction callback type
+ * @param data_json JSON object for "data" field (NULL to omit)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_callback_json(dc_client_t* client,
+                                                dc_snowflake_t interaction_id,
+                                                const char* interaction_token,
+                                                dc_interaction_callback_type_t callback_type,
+                                                const char* data_json);
+
+/**
+ * @brief Respond to an interaction with callback type 4 and raw data JSON
+ * @param client Discord client
+ * @param interaction_id Interaction ID
+ * @param interaction_token Interaction token
+ * @param data_json JSON object for callback "data"
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_respond_message_json(dc_client_t* client,
+                                                       dc_snowflake_t interaction_id,
+                                                       const char* interaction_token,
+                                                       const char* data_json);
+
+/**
+ * @brief Defer an interaction with callback type 5
+ * @param client Discord client
+ * @param interaction_id Interaction ID
+ * @param interaction_token Interaction token
+ * @param ephemeral Non-zero to set ephemeral flag (64)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_defer_message(dc_client_t* client,
+                                                dc_snowflake_t interaction_id,
+                                                const char* interaction_token,
+                                                int ephemeral);
+
+/**
+ * @brief Defer a message component interaction update (callback type 6)
+ * @param client Discord client
+ * @param interaction_id Interaction ID
+ * @param interaction_token Interaction token
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_defer_update(dc_client_t* client,
+                                               dc_snowflake_t interaction_id,
+                                               const char* interaction_token);
+
+/**
+ * @brief Update the originating message for a component interaction (callback type 7)
+ * @param client Discord client
+ * @param interaction_id Interaction ID
+ * @param interaction_token Interaction token
+ * @param data_json JSON object for callback "data"
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_update_message_json(dc_client_t* client,
+                                                      dc_snowflake_t interaction_id,
+                                                      const char* interaction_token,
+                                                      const char* data_json);
+
+/**
+ * @brief Open a modal in response to an interaction (callback type 9)
+ * @param client Discord client
+ * @param interaction_id Interaction ID
+ * @param interaction_token Interaction token
+ * @param modal_json JSON object for callback "data" modal payload
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_show_modal_json(dc_client_t* client,
+                                                  dc_snowflake_t interaction_id,
+                                                  const char* interaction_token,
+                                                  const char* modal_json);
 
 /**
  * @brief Respond to an interaction with a message
@@ -1058,6 +1295,19 @@ dc_status_t dc_client_interaction_respond_message(dc_client_t* client,
                                                   const char* interaction_token,
                                                   const char* content,
                                                   int ephemeral);
+
+/**
+ * @brief Edit the original interaction response using raw JSON
+ * @param client Discord client
+ * @param application_id Application ID
+ * @param interaction_token Interaction token
+ * @param json_body JSON body for PATCH /webhooks/{application.id}/{interaction.token}/messages/@original
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_edit_original_response_json(dc_client_t* client,
+                                                              dc_snowflake_t application_id,
+                                                              const char* interaction_token,
+                                                              const char* json_body);
 
 /**
  * @brief Edit the original interaction response
@@ -1084,6 +1334,21 @@ dc_status_t dc_client_interaction_delete_original_response(dc_client_t* client,
                                                            const char* interaction_token);
 
 /**
+ * @brief Create a followup message for an interaction using raw JSON
+ * @param client Discord client
+ * @param application_id Application ID
+ * @param interaction_token Interaction token
+ * @param json_body JSON body for POST /webhooks/{application.id}/{interaction.token}
+ * @param message_id Optional output for created followup message ID
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_create_followup_message_json(dc_client_t* client,
+                                                               dc_snowflake_t application_id,
+                                                               const char* interaction_token,
+                                                               const char* json_body,
+                                                               dc_snowflake_t* message_id);
+
+/**
  * @brief Create a followup message for an interaction
  * @param client Discord client
  * @param application_id Application ID
@@ -1099,6 +1364,21 @@ dc_status_t dc_client_interaction_create_followup_message(dc_client_t* client,
                                                           const char* content,
                                                           int ephemeral,
                                                           dc_snowflake_t* message_id);
+
+/**
+ * @brief Edit an interaction followup message using raw JSON
+ * @param client Discord client
+ * @param application_id Application ID
+ * @param interaction_token Interaction token
+ * @param message_id Followup message ID
+ * @param json_body JSON body for PATCH /webhooks/{application.id}/{interaction.token}/messages/{message.id}
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_edit_followup_message_json(dc_client_t* client,
+                                                             dc_snowflake_t application_id,
+                                                             const char* interaction_token,
+                                                             dc_snowflake_t message_id,
+                                                             const char* json_body);
 
 /**
  * @brief Edit an interaction followup message
