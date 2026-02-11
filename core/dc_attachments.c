@@ -12,11 +12,9 @@ int dc_attachment_filename_is_valid(const char* filename) {
     for (; *p; p++) {
         unsigned char c = *p;
         if (c & 0x80u) return 0;
-        if ((c - (unsigned char)'0') <= 9u) continue;
-        {
-            unsigned char lower = (unsigned char)(c | 0x20u);
-            if ((lower - (unsigned char)'a') <= (unsigned char)('z' - 'a')) continue;
-        }
+        if (c >= (unsigned char)'0' && c <= (unsigned char)'9') continue;
+        if (c >= (unsigned char)'A' && c <= (unsigned char)'Z') continue;
+        if (c >= (unsigned char)'a' && c <= (unsigned char)'z') continue;
         if (c == (unsigned char)'_' || c == (unsigned char)'-' || c == (unsigned char)'.') continue;
 
         return 0;

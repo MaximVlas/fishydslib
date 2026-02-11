@@ -781,6 +781,237 @@ dc_status_t dc_client_delete_webhook_message(dc_client_t* client,
                                              dc_snowflake_t message_id,
                                              dc_snowflake_t thread_id);
 
+/* Additional REST endpoints (JSON-oriented wrappers) */
+dc_status_t dc_client_get_current_application_json(dc_client_t* client,
+                                                   dc_string_t* application_json);
+dc_status_t dc_client_modify_current_application_json(dc_client_t* client,
+                                                      const char* json_body,
+                                                      dc_string_t* application_json);
+dc_status_t dc_client_get_application_role_connection_metadata_json(dc_client_t* client,
+                                                                    dc_snowflake_t application_id,
+                                                                    dc_string_t* metadata_json);
+dc_status_t dc_client_update_application_role_connection_metadata_json(dc_client_t* client,
+                                                                       dc_snowflake_t application_id,
+                                                                       const char* json_body,
+                                                                       dc_string_t* metadata_json);
+dc_status_t dc_client_get_global_application_commands_json(dc_client_t* client,
+                                                           dc_snowflake_t application_id,
+                                                           int with_localizations,
+                                                           dc_string_t* commands_json);
+dc_status_t dc_client_create_global_application_command_json(dc_client_t* client,
+                                                             dc_snowflake_t application_id,
+                                                             const char* json_body,
+                                                             dc_string_t* command_json);
+dc_status_t dc_client_get_global_application_command_json(dc_client_t* client,
+                                                          dc_snowflake_t application_id,
+                                                          dc_snowflake_t command_id,
+                                                          dc_string_t* command_json);
+dc_status_t dc_client_modify_global_application_command_json(dc_client_t* client,
+                                                             dc_snowflake_t application_id,
+                                                             dc_snowflake_t command_id,
+                                                             const char* json_body,
+                                                             dc_string_t* command_json);
+dc_status_t dc_client_delete_global_application_command(dc_client_t* client,
+                                                        dc_snowflake_t application_id,
+                                                        dc_snowflake_t command_id);
+dc_status_t dc_client_bulk_overwrite_global_application_commands_json(dc_client_t* client,
+                                                                      dc_snowflake_t application_id,
+                                                                      const char* json_body,
+                                                                      dc_string_t* commands_json);
+dc_status_t dc_client_get_guild_application_commands_json(dc_client_t* client,
+                                                          dc_snowflake_t application_id,
+                                                          dc_snowflake_t guild_id,
+                                                          int with_localizations,
+                                                          dc_string_t* commands_json);
+dc_status_t dc_client_create_guild_application_command_json(dc_client_t* client,
+                                                            dc_snowflake_t application_id,
+                                                            dc_snowflake_t guild_id,
+                                                            const char* json_body,
+                                                            dc_string_t* command_json);
+dc_status_t dc_client_get_guild_application_command_json(dc_client_t* client,
+                                                         dc_snowflake_t application_id,
+                                                         dc_snowflake_t guild_id,
+                                                         dc_snowflake_t command_id,
+                                                         dc_string_t* command_json);
+dc_status_t dc_client_modify_guild_application_command_json(dc_client_t* client,
+                                                            dc_snowflake_t application_id,
+                                                            dc_snowflake_t guild_id,
+                                                            dc_snowflake_t command_id,
+                                                            const char* json_body,
+                                                            dc_string_t* command_json);
+dc_status_t dc_client_delete_guild_application_command(dc_client_t* client,
+                                                       dc_snowflake_t application_id,
+                                                       dc_snowflake_t guild_id,
+                                                       dc_snowflake_t command_id);
+dc_status_t dc_client_bulk_overwrite_guild_application_commands_json(dc_client_t* client,
+                                                                     dc_snowflake_t application_id,
+                                                                     dc_snowflake_t guild_id,
+                                                                     const char* json_body,
+                                                                     dc_string_t* commands_json);
+dc_status_t dc_client_get_guild_application_command_permissions_json(dc_client_t* client,
+                                                                     dc_snowflake_t application_id,
+                                                                     dc_snowflake_t guild_id,
+                                                                     dc_string_t* permissions_json);
+dc_status_t dc_client_get_application_command_permissions_json(dc_client_t* client,
+                                                               dc_snowflake_t application_id,
+                                                               dc_snowflake_t guild_id,
+                                                               dc_snowflake_t command_id,
+                                                               dc_string_t* permission_json);
+dc_status_t dc_client_edit_application_command_permissions_json(dc_client_t* client,
+                                                                dc_snowflake_t application_id,
+                                                                dc_snowflake_t guild_id,
+                                                                dc_snowflake_t command_id,
+                                                                const char* json_body,
+                                                                dc_string_t* permission_json);
+dc_status_t dc_client_batch_edit_application_command_permissions_json(dc_client_t* client,
+                                                                      dc_snowflake_t application_id,
+                                                                      dc_snowflake_t guild_id,
+                                                                      const char* json_body,
+                                                                      dc_string_t* permissions_json);
+
+dc_status_t dc_client_crosspost_message_json(dc_client_t* client,
+                                             dc_snowflake_t channel_id,
+                                             dc_snowflake_t message_id,
+                                             dc_string_t* message_json);
+dc_status_t dc_client_edit_message_json(dc_client_t* client,
+                                        dc_snowflake_t channel_id,
+                                        dc_snowflake_t message_id,
+                                        const char* json_body,
+                                        dc_message_t* message);
+dc_status_t dc_client_bulk_delete_messages_json(dc_client_t* client,
+                                                dc_snowflake_t channel_id,
+                                                const char* json_body);
+dc_status_t dc_client_create_reaction_encoded(dc_client_t* client,
+                                              dc_snowflake_t channel_id,
+                                              dc_snowflake_t message_id,
+                                              const char* emoji_encoded);
+dc_status_t dc_client_delete_own_reaction_encoded(dc_client_t* client,
+                                                  dc_snowflake_t channel_id,
+                                                  dc_snowflake_t message_id,
+                                                  const char* emoji_encoded);
+dc_status_t dc_client_delete_user_reaction_encoded(dc_client_t* client,
+                                                   dc_snowflake_t channel_id,
+                                                   dc_snowflake_t message_id,
+                                                   const char* emoji_encoded,
+                                                   dc_snowflake_t user_id);
+dc_status_t dc_client_get_reactions_encoded_json(dc_client_t* client,
+                                                 dc_snowflake_t channel_id,
+                                                 dc_snowflake_t message_id,
+                                                 const char* emoji_encoded,
+                                                 int reaction_type,
+                                                 dc_snowflake_t after,
+                                                 uint32_t limit,
+                                                 dc_string_t* users_json);
+dc_status_t dc_client_delete_all_reactions(dc_client_t* client,
+                                           dc_snowflake_t channel_id,
+                                           dc_snowflake_t message_id);
+dc_status_t dc_client_delete_all_reactions_for_emoji_encoded(dc_client_t* client,
+                                                             dc_snowflake_t channel_id,
+                                                             dc_snowflake_t message_id,
+                                                             const char* emoji_encoded);
+dc_status_t dc_client_get_channel_pins_json(dc_client_t* client,
+                                            dc_snowflake_t channel_id,
+                                            const char* before_iso8601,
+                                            uint32_t limit,
+                                            dc_string_t* pins_json);
+dc_status_t dc_client_edit_channel_permissions_json(dc_client_t* client,
+                                                    dc_snowflake_t channel_id,
+                                                    dc_snowflake_t overwrite_id,
+                                                    const char* json_body);
+dc_status_t dc_client_delete_channel_permission(dc_client_t* client,
+                                                dc_snowflake_t channel_id,
+                                                dc_snowflake_t overwrite_id);
+dc_status_t dc_client_get_channel_invites_json(dc_client_t* client,
+                                               dc_snowflake_t channel_id,
+                                               dc_string_t* invites_json);
+dc_status_t dc_client_create_channel_invite_json(dc_client_t* client,
+                                                 dc_snowflake_t channel_id,
+                                                 const char* json_body,
+                                                 dc_string_t* invite_json);
+dc_status_t dc_client_follow_announcement_channel_json(dc_client_t* client,
+                                                       dc_snowflake_t channel_id,
+                                                       const char* json_body,
+                                                       dc_string_t* followed_channel_json);
+dc_status_t dc_client_trigger_typing_indicator(dc_client_t* client,
+                                               dc_snowflake_t channel_id);
+
+dc_status_t dc_client_get_guild_preview_json(dc_client_t* client,
+                                             dc_snowflake_t guild_id,
+                                             dc_string_t* preview_json);
+dc_status_t dc_client_modify_guild_channel_positions_json(dc_client_t* client,
+                                                          dc_snowflake_t guild_id,
+                                                          const char* json_body);
+dc_status_t dc_client_list_active_guild_threads_json(dc_client_t* client,
+                                                     dc_snowflake_t guild_id,
+                                                     dc_string_t* threads_json);
+dc_status_t dc_client_search_guild_members_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                const char* query,
+                                                uint32_t limit,
+                                                dc_string_t* members_json);
+dc_status_t dc_client_modify_guild_member_json(dc_client_t* client,
+                                               dc_snowflake_t guild_id,
+                                               dc_snowflake_t user_id,
+                                               const char* json_body,
+                                               dc_string_t* member_json);
+dc_status_t dc_client_modify_current_member_json(dc_client_t* client,
+                                                 dc_snowflake_t guild_id,
+                                                 const char* json_body,
+                                                 dc_string_t* member_json);
+dc_status_t dc_client_modify_current_user_nick_json(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    const char* json_body,
+                                                    dc_string_t* nick_json);
+dc_status_t dc_client_get_guild_bans_json(dc_client_t* client,
+                                          dc_snowflake_t guild_id,
+                                          uint32_t limit,
+                                          dc_snowflake_t before,
+                                          dc_snowflake_t after,
+                                          dc_string_t* bans_json);
+dc_status_t dc_client_get_guild_ban_json(dc_client_t* client,
+                                         dc_snowflake_t guild_id,
+                                         dc_snowflake_t user_id,
+                                         dc_string_t* ban_json);
+dc_status_t dc_client_create_guild_ban(dc_client_t* client,
+                                       dc_snowflake_t guild_id,
+                                       dc_snowflake_t user_id,
+                                       int delete_message_seconds);
+dc_status_t dc_client_remove_guild_ban(dc_client_t* client,
+                                       dc_snowflake_t guild_id,
+                                       dc_snowflake_t user_id);
+dc_status_t dc_client_bulk_guild_ban_json(dc_client_t* client,
+                                          dc_snowflake_t guild_id,
+                                          const char* json_body,
+                                          dc_string_t* result_json);
+dc_status_t dc_client_get_guild_role_json(dc_client_t* client,
+                                          dc_snowflake_t guild_id,
+                                          dc_snowflake_t role_id,
+                                          dc_string_t* role_json);
+dc_status_t dc_client_get_guild_role_member_counts_json(dc_client_t* client,
+                                                        dc_snowflake_t guild_id,
+                                                        dc_string_t* counts_json);
+dc_status_t dc_client_get_guild_prune_count_json(dc_client_t* client,
+                                                 dc_snowflake_t guild_id,
+                                                 uint32_t days,
+                                                 const char* include_roles_csv,
+                                                 dc_string_t* prune_json);
+dc_status_t dc_client_begin_guild_prune_json(dc_client_t* client,
+                                             dc_snowflake_t guild_id,
+                                             const char* json_body,
+                                             dc_string_t* prune_json);
+dc_status_t dc_client_get_guild_voice_regions_json(dc_client_t* client,
+                                                   dc_snowflake_t guild_id,
+                                                   dc_string_t* regions_json);
+dc_status_t dc_client_get_guild_invites_json(dc_client_t* client,
+                                             dc_snowflake_t guild_id,
+                                             dc_string_t* invites_json);
+dc_status_t dc_client_get_guild_integrations_json(dc_client_t* client,
+                                                  dc_snowflake_t guild_id,
+                                                  dc_string_t* integrations_json);
+dc_status_t dc_client_delete_guild_integration(dc_client_t* client,
+                                               dc_snowflake_t guild_id,
+                                               dc_snowflake_t integration_id);
+
 /**
  * @brief Update presence
  * @param client Discord client

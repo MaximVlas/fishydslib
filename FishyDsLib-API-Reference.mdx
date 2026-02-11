@@ -273,6 +273,85 @@ dc_status_t send_text_message(dc_client_t* client,
 | `dc_client_interaction_edit_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, dc_snowflake_t message_id, const char* content)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `message_id`: Followup message ID, `content`: New message content | `dc_status_t`: `DC_OK` on success, error code on failure | Edit follow-up message |
 | `dc_client_interaction_delete_followup_message(dc_client_t* client, dc_snowflake_t application_id, const char* interaction_token, dc_snowflake_t message_id)` | `client`: Discord client, `application_id`: Application ID, `interaction_token`: Interaction token, `message_id`: Followup message ID | `dc_status_t`: `DC_OK` on success, error code on failure | Delete follow-up message |
 
+### Extended REST Coverage (v10)
+
+These routes were added as JSON-oriented wrappers to expand REST coverage without introducing new model types yet.
+
+Notes:
+- Functions with `*_encoded` in their name expect pre-encoded values (for example, encoded emoji path segments).
+- Functions that include free-form query text currently expect caller-provided safe/encoded query text.
+
+#### Applications and Commands
+
+| Function | Description |
+|----------|-------------|
+| `dc_client_get_current_application_json` | `GET /applications/@me` |
+| `dc_client_modify_current_application_json` | `PATCH /applications/@me` |
+| `dc_client_get_application_role_connection_metadata_json` | `GET /applications/{application.id}/role-connections/metadata` |
+| `dc_client_update_application_role_connection_metadata_json` | `PUT /applications/{application.id}/role-connections/metadata` |
+| `dc_client_get_global_application_commands_json` | `GET /applications/{application.id}/commands` |
+| `dc_client_create_global_application_command_json` | `POST /applications/{application.id}/commands` |
+| `dc_client_get_global_application_command_json` | `GET /applications/{application.id}/commands/{command.id}` |
+| `dc_client_modify_global_application_command_json` | `PATCH /applications/{application.id}/commands/{command.id}` |
+| `dc_client_delete_global_application_command` | `DELETE /applications/{application.id}/commands/{command.id}` |
+| `dc_client_bulk_overwrite_global_application_commands_json` | `PUT /applications/{application.id}/commands` |
+| `dc_client_get_guild_application_commands_json` | `GET /applications/{application.id}/guilds/{guild.id}/commands` |
+| `dc_client_create_guild_application_command_json` | `POST /applications/{application.id}/guilds/{guild.id}/commands` |
+| `dc_client_get_guild_application_command_json` | `GET /applications/{application.id}/guilds/{guild.id}/commands/{command.id}` |
+| `dc_client_modify_guild_application_command_json` | `PATCH /applications/{application.id}/guilds/{guild.id}/commands/{command.id}` |
+| `dc_client_delete_guild_application_command` | `DELETE /applications/{application.id}/guilds/{guild.id}/commands/{command.id}` |
+| `dc_client_bulk_overwrite_guild_application_commands_json` | `PUT /applications/{application.id}/guilds/{guild.id}/commands` |
+| `dc_client_get_guild_application_command_permissions_json` | `GET /applications/{application.id}/guilds/{guild.id}/commands/permissions` |
+| `dc_client_get_application_command_permissions_json` | `GET /applications/{application.id}/guilds/{guild.id}/commands/{command.id}/permissions` |
+| `dc_client_edit_application_command_permissions_json` | `PUT /applications/{application.id}/guilds/{guild.id}/commands/{command.id}/permissions` |
+| `dc_client_batch_edit_application_command_permissions_json` | `PUT /applications/{application.id}/guilds/{guild.id}/commands/permissions` |
+
+#### Messages and Channels
+
+| Function | Description |
+|----------|-------------|
+| `dc_client_crosspost_message_json` | `POST /channels/{channel.id}/messages/{message.id}/crosspost` |
+| `dc_client_edit_message_json` | Generic JSON patch for `PATCH /channels/{channel.id}/messages/{message.id}` |
+| `dc_client_bulk_delete_messages_json` | `POST /channels/{channel.id}/messages/bulk-delete` |
+| `dc_client_create_reaction_encoded` | `PUT /channels/{channel.id}/messages/{message.id}/reactions/{emoji}/@me` |
+| `dc_client_delete_own_reaction_encoded` | `DELETE /channels/{channel.id}/messages/{message.id}/reactions/{emoji}/@me` |
+| `dc_client_delete_user_reaction_encoded` | `DELETE /channels/{channel.id}/messages/{message.id}/reactions/{emoji}/{user.id}` |
+| `dc_client_get_reactions_encoded_json` | `GET /channels/{channel.id}/messages/{message.id}/reactions/{emoji}` (supports `type/after/limit`) |
+| `dc_client_delete_all_reactions` | `DELETE /channels/{channel.id}/messages/{message.id}/reactions` |
+| `dc_client_delete_all_reactions_for_emoji_encoded` | `DELETE /channels/{channel.id}/messages/{message.id}/reactions/{emoji}` |
+| `dc_client_get_channel_pins_json` | `GET /channels/{channel.id}/messages/pins` (supports `before/limit`) |
+| `dc_client_edit_channel_permissions_json` | `PUT /channels/{channel.id}/permissions/{overwrite.id}` |
+| `dc_client_delete_channel_permission` | `DELETE /channels/{channel.id}/permissions/{overwrite.id}` |
+| `dc_client_get_channel_invites_json` | `GET /channels/{channel.id}/invites` |
+| `dc_client_create_channel_invite_json` | `POST /channels/{channel.id}/invites` |
+| `dc_client_follow_announcement_channel_json` | `POST /channels/{channel.id}/followers` |
+| `dc_client_trigger_typing_indicator` | `POST /channels/{channel.id}/typing` |
+
+#### Guilds and Moderation
+
+| Function | Description |
+|----------|-------------|
+| `dc_client_get_guild_preview_json` | `GET /guilds/{guild.id}/preview` |
+| `dc_client_modify_guild_channel_positions_json` | `PATCH /guilds/{guild.id}/channels` |
+| `dc_client_list_active_guild_threads_json` | `GET /guilds/{guild.id}/threads/active` |
+| `dc_client_search_guild_members_json` | `GET /guilds/{guild.id}/members/search` |
+| `dc_client_modify_guild_member_json` | `PATCH /guilds/{guild.id}/members/{user.id}` |
+| `dc_client_modify_current_member_json` | `PATCH /guilds/{guild.id}/members/@me` |
+| `dc_client_modify_current_user_nick_json` | `PATCH /guilds/{guild.id}/members/@me/nick` |
+| `dc_client_get_guild_bans_json` | `GET /guilds/{guild.id}/bans` |
+| `dc_client_get_guild_ban_json` | `GET /guilds/{guild.id}/bans/{user.id}` |
+| `dc_client_create_guild_ban` | `PUT /guilds/{guild.id}/bans/{user.id}` |
+| `dc_client_remove_guild_ban` | `DELETE /guilds/{guild.id}/bans/{user.id}` |
+| `dc_client_bulk_guild_ban_json` | `POST /guilds/{guild.id}/bulk-ban` |
+| `dc_client_get_guild_role_json` | `GET /guilds/{guild.id}/roles/{role.id}` |
+| `dc_client_get_guild_role_member_counts_json` | `GET /guilds/{guild.id}/roles/member-counts` |
+| `dc_client_get_guild_prune_count_json` | `GET /guilds/{guild.id}/prune` |
+| `dc_client_begin_guild_prune_json` | `POST /guilds/{guild.id}/prune` |
+| `dc_client_get_guild_voice_regions_json` | `GET /guilds/{guild.id}/regions` |
+| `dc_client_get_guild_invites_json` | `GET /guilds/{guild.id}/invites` |
+| `dc_client_get_guild_integrations_json` | `GET /guilds/{guild.id}/integrations` |
+| `dc_client_delete_guild_integration` | `DELETE /guilds/{guild.id}/integrations/{integration.id}` |
+
 ### Gateway Send Helpers (Through Client)
 
 | Function | Parameters | Return Value | Description |
