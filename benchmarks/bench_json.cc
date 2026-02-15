@@ -7,6 +7,9 @@ extern "C" {
 #include "model/dc_user.h"
 #include "model/dc_channel.h"
 #include "model/dc_message.h"
+#include "model/dc_role.h"
+#include "model/dc_guild.h"
+#include "model/dc_guild_member.h"
 }
 
 static const char* kSmallJson = "{\"id\":\"123456789012345678\",\"name\":\"test\",\"value\":42}";
@@ -89,6 +92,85 @@ static const char* kMessageJson = R"json({
     "application_id":"123456789012345680",
     "mention_roles":["111","222","333","444"],
     "thread":{"id":"555","type":11,"name":"bench-thread"}
+})json";
+
+static const char* kRoleJson = R"json({
+    "id":"111222333444555666",
+    "name":"Moderator",
+    "color":3447003,
+    "hoist":true,
+    "icon":null,
+    "unicode_emoji":null,
+    "position":5,
+    "permissions":"1099511627775",
+    "managed":false,
+    "mentionable":true,
+    "flags":0,
+    "tags":{"bot_id":"123456789012345678"}
+})json";
+
+static const char* kGuildMemberJson = R"json({
+    "user":{"id":"123456789012345678","username":"alice","discriminator":"0"},
+    "nick":"Alice",
+    "avatar":null,
+    "roles":["111","222","333"],
+    "joined_at":"2023-06-15T10:30:00.000Z",
+    "premium_since":null,
+    "deaf":false,
+    "mute":false,
+    "flags":0,
+    "pending":false,
+    "permissions":"1099511627775",
+    "communication_disabled_until":null
+})json";
+
+static const char* kGuildJson = R"json({
+    "id":"999888777666555444",
+    "name":"Test Server",
+    "icon":"iconhash123",
+    "icon_hash":null,
+    "splash":null,
+    "discovery_splash":null,
+    "owner_id":"123456789012345678",
+    "afk_channel_id":"111",
+    "afk_timeout":300,
+    "verification_level":2,
+    "default_message_notifications":1,
+    "explicit_content_filter":2,
+    "mfa_level":1,
+    "system_channel_id":"222",
+    "system_channel_flags":0,
+    "rules_channel_id":"333",
+    "vanity_url_code":null,
+    "description":"A test server for benchmarks",
+    "banner":null,
+    "premium_tier":2,
+    "premium_subscription_count":15,
+    "preferred_locale":"en-US",
+    "public_updates_channel_id":"444",
+    "nsfw_level":0,
+    "premium_progress_bar_enabled":true
+})json";
+
+static const char* kUserWithSubObjectsJson = R"json({
+    "id":"123456789012345678",
+    "username":"alice",
+    "discriminator":"0",
+    "global_name":"Alice",
+    "avatar":"abc123",
+    "banner":"bannerhash",
+    "accent_color":16711680,
+    "locale":"en-US",
+    "flags":64,
+    "premium_type":2,
+    "public_flags":256,
+    "avatar_decoration_data":{"asset":"a_decohash","sku_id":"999888777666555444"},
+    "collectibles":{"nameplate":{"sku_id":"111222333444555666","asset":"np_asset","label":"Cool Plate","palette":"#FF0000"}},
+    "primary_guild":{"identity_guild_id":"999888777666555444","identity_enabled":true,"tag":"TEST","badge":"badgehash"},
+    "bot":false,
+    "system":false,
+    "mfa_enabled":true,
+    "verified":true
 })json";
 
 static dc_status_t dc_bench_fill_user(dc_user_t* user) {
@@ -459,5 +541,247 @@ static void BM_JSON_Model_Message_Serialize(benchmark::State& state) {
     dc_message_free(&message);
 }
 BENCHMARK(BM_JSON_Model_Message_Serialize);
+
+static void BM_JSON_Model_Role_Parse(benchmark::State& state) {
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_role_t role;
+        dc_status_t st = dc_role_from_json(kRoleJson, &role);
+        benchmark::DoNotOptimize(st);
+        if (st == DC_OK) {
+            benchmark::DoNotOptimize(role.id);
+            dc_role_free(&role);
+        }
+        total_bytes += strlen(kRoleJson);
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_Role_Parse);
+
+static void BM_JSON_Model_Role_Serialize(benchmark::State& state) {
+    dc_role_t role;
+    dc_role_init(&role);
+    role.id = 111222333444555666ULL;
+    dc_string_set_cstr(&role.name, "Moderator");
+    role.color = 3447003;
+    role.hoist = 1;
+    role.position = 5;
+    role.permissions = 1099511627775ULL;
+    role.mentionable = 1;
+    dc_string_t out;
+    dc_string_init(&out);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_string_clear(&out);
+        dc_status_t st = dc_role_to_json(&role, &out);
+        benchmark::DoNotOptimize(st);
+        total_bytes += dc_string_length(&out);
+        benchmark::DoNotOptimize(dc_string_length(&out));
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+    dc_string_free(&out);
+    dc_role_free(&role);
+}
+BENCHMARK(BM_JSON_Model_Role_Serialize);
+
+static void BM_JSON_Model_GuildMember_Parse(benchmark::State& state) {
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_guild_member_t member;
+        dc_status_t st = dc_guild_member_from_json(kGuildMemberJson, &member);
+        benchmark::DoNotOptimize(st);
+        if (st == DC_OK) {
+            benchmark::DoNotOptimize(member.has_user);
+            dc_guild_member_free(&member);
+        }
+        total_bytes += strlen(kGuildMemberJson);
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_GuildMember_Parse);
+
+static void BM_JSON_Model_GuildMember_Serialize(benchmark::State& state) {
+    dc_guild_member_t member;
+    dc_guild_member_init(&member);
+    member.has_user = 1;
+    member.user.id = 123456789012345678ULL;
+    dc_string_set_cstr(&member.user.username, "alice");
+    member.nick.is_null = 0;
+    dc_string_set_cstr(&member.nick.value, "Alice");
+    dc_string_set_cstr(&member.joined_at, "2023-06-15T10:30:00.000Z");
+    dc_string_t out;
+    dc_string_init(&out);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_string_clear(&out);
+        dc_status_t st = dc_guild_member_to_json(&member, &out);
+        benchmark::DoNotOptimize(st);
+        total_bytes += dc_string_length(&out);
+        benchmark::DoNotOptimize(dc_string_length(&out));
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+    dc_string_free(&out);
+    dc_guild_member_free(&member);
+}
+BENCHMARK(BM_JSON_Model_GuildMember_Serialize);
+
+static void BM_JSON_Model_Guild_Parse(benchmark::State& state) {
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_guild_t guild;
+        dc_status_t st = dc_guild_from_json(kGuildJson, &guild);
+        benchmark::DoNotOptimize(st);
+        if (st == DC_OK) {
+            benchmark::DoNotOptimize(guild.id);
+            dc_guild_free(&guild);
+        }
+        total_bytes += strlen(kGuildJson);
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_Guild_Parse);
+
+static void BM_JSON_Model_Guild_Serialize(benchmark::State& state) {
+    dc_guild_t guild;
+    dc_guild_init(&guild);
+    guild.id = 999888777666555444ULL;
+    dc_string_set_cstr(&guild.name, "Test Server");
+    guild.icon.is_null = 0;
+    dc_string_set_cstr(&guild.icon.value, "iconhash123");
+    guild.verification_level = 2;
+    guild.default_message_notifications = 1;
+    guild.explicit_content_filter = 2;
+    guild.mfa_level = 1;
+    guild.premium_tier = 2;
+    dc_string_set_cstr(&guild.preferred_locale, "en-US");
+    guild.premium_progress_bar_enabled = 1;
+    dc_string_t out;
+    dc_string_init(&out);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_string_clear(&out);
+        dc_status_t st = dc_guild_to_json(&guild, &out);
+        benchmark::DoNotOptimize(st);
+        total_bytes += dc_string_length(&out);
+        benchmark::DoNotOptimize(dc_string_length(&out));
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+    dc_string_free(&out);
+    dc_guild_free(&guild);
+}
+BENCHMARK(BM_JSON_Model_Guild_Serialize);
+
+static void BM_JSON_Model_User_WithSubObjects_Parse(benchmark::State& state) {
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_user_t user;
+        dc_status_t st = dc_user_from_json(kUserWithSubObjectsJson, &user);
+        benchmark::DoNotOptimize(st);
+        if (st == DC_OK) {
+            benchmark::DoNotOptimize(user.has_avatar_decoration_data);
+            benchmark::DoNotOptimize(user.has_collectibles);
+            benchmark::DoNotOptimize(user.has_primary_guild);
+            dc_user_free(&user);
+        }
+        total_bytes += strlen(kUserWithSubObjectsJson);
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_User_WithSubObjects_Parse);
+
+static void BM_JSON_Model_User_WithSubObjects_Serialize(benchmark::State& state) {
+    dc_user_t user;
+    dc_user_init(&user);
+    user.id = 123456789012345678ULL;
+    dc_string_set_cstr(&user.username, "alice");
+    dc_string_set_cstr(&user.global_name, "Alice");
+    dc_string_set_cstr(&user.avatar, "abc123");
+    user.flags = 64;
+    user.public_flags = 256;
+    user.has_avatar_decoration_data = 1;
+    dc_string_set_cstr(&user.avatar_decoration_data.asset, "a_decohash");
+    user.avatar_decoration_data.sku_id = 999888777666555444ULL;
+    user.has_collectibles = 1;
+    user.collectibles.has_nameplate = 1;
+    user.collectibles.nameplate.sku_id = 111222333444555666ULL;
+    dc_string_set_cstr(&user.collectibles.nameplate.asset, "np_asset");
+    dc_string_set_cstr(&user.collectibles.nameplate.label, "Cool Plate");
+    dc_string_set_cstr(&user.collectibles.nameplate.palette, "#FF0000");
+    user.has_primary_guild = 1;
+    user.primary_guild.identity_guild_id.is_null = 0;
+    user.primary_guild.identity_guild_id.value = 999888777666555444ULL;
+    user.primary_guild.identity_enabled.is_null = 0;
+    user.primary_guild.identity_enabled.value = 1;
+    user.primary_guild.tag.is_null = 0;
+    dc_string_set_cstr(&user.primary_guild.tag.value, "TEST");
+    user.primary_guild.badge.is_null = 0;
+    dc_string_set_cstr(&user.primary_guild.badge.value, "badgehash");
+    dc_string_t out;
+    dc_string_init(&out);
+    size_t total_bytes = 0;
+    for (auto _ : state) {
+        dc_string_clear(&out);
+        dc_status_t st = dc_user_to_json(&user, &out);
+        benchmark::DoNotOptimize(st);
+        total_bytes += dc_string_length(&out);
+        benchmark::DoNotOptimize(dc_string_length(&out));
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(total_bytes));
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+    dc_string_free(&out);
+    dc_user_free(&user);
+}
+BENCHMARK(BM_JSON_Model_User_WithSubObjects_Serialize);
+
+static void BM_JSON_Model_InitFree_Role(benchmark::State& state) {
+    for (auto _ : state) {
+        dc_role_t role;
+        dc_role_init(&role);
+        benchmark::DoNotOptimize(role.id);
+        dc_role_free(&role);
+    }
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_InitFree_Role);
+
+static void BM_JSON_Model_InitFree_Guild(benchmark::State& state) {
+    for (auto _ : state) {
+        dc_guild_t guild;
+        dc_guild_init(&guild);
+        benchmark::DoNotOptimize(guild.id);
+        dc_guild_free(&guild);
+    }
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_InitFree_Guild);
+
+static void BM_JSON_Model_InitFree_GuildMember(benchmark::State& state) {
+    for (auto _ : state) {
+        dc_guild_member_t member;
+        dc_guild_member_init(&member);
+        benchmark::DoNotOptimize(member.has_user);
+        dc_guild_member_free(&member);
+    }
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_InitFree_GuildMember);
+
+static void BM_JSON_Model_InitFree_Message(benchmark::State& state) {
+    for (auto _ : state) {
+        dc_message_t message;
+        dc_message_init(&message);
+        benchmark::DoNotOptimize(message.id);
+        dc_message_free(&message);
+    }
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+BENCHMARK(BM_JSON_Model_InitFree_Message);
 
 BENCHMARK_MAIN();
