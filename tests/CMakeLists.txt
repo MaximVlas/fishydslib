@@ -75,6 +75,7 @@ if(FISHYDS_ENABLE_SANITIZERS AND FISHYDS_LINK_FLAGS)
     target_link_options(test_http PRIVATE ${FISHYDS_LINK_FLAGS})
     target_link_options(test_rest PRIVATE ${FISHYDS_LINK_FLAGS})
     target_link_options(test_gateway PRIVATE ${FISHYDS_LINK_FLAGS})
+    target_link_options(test_events_expansion PRIVATE ${FISHYDS_LINK_FLAGS})
 endif()
 
 # Add tests to CTest

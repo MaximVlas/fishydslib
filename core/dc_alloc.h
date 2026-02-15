@@ -130,13 +130,23 @@ char* dc_strndup(const char* str, size_t max_len);
 /**
  * @brief Allocate aligned memory (alignment must be power of two)
  * @param size Number of bytes to allocate
- * @param alignment Alignment in bytes
+ * @param alignment Alignment in bytes (clamped to at least sizeof(void*))
  * @return Pointer to allocated memory or NULL on failure
  *
- * @note Caller must free the returned pointer with dc_free when supported.
- * @note Returns NULL if alignment is invalid or not supported on this platform.
+ * @note Caller must free the returned pointer with dc_free_aligned.
+ * @note Works with standard libc (aligned_alloc / posix_memalign)
+ *       and with custom backends via manual over-allocation fallback.
  */
 void* dc_alloc_aligned(size_t size, size_t alignment);
+
+/**
+ * @brief Free memory allocated by dc_alloc_aligned
+ * @param ptr Pointer returned by dc_alloc_aligned, or NULL
+ *
+ * @note Safe to call with NULL pointer.
+ * @note Do NOT use dc_free on aligned pointers from custom backends.
+ */
+void dc_free_aligned(void* ptr);
 
 #ifdef __cplusplus
 }
