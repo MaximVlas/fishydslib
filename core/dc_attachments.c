@@ -4,9 +4,11 @@
  */
 
 #include "dc_attachments.h"
+#include <string.h>
 
 int dc_attachment_filename_is_valid(const char* filename) {
     if (!filename) return 0;
+    if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) return 0;
     const unsigned char* p = (const unsigned char*)filename;
     if (*p == '\0') return 0;
     for (; *p; p++) {

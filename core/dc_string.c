@@ -10,6 +10,14 @@
 #include <limits.h>
 #include <stdint.h>
 
+static void dc_secure_zero(void* ptr, size_t len) {
+    if (!ptr || len == 0) return;
+    volatile unsigned char* p = (volatile unsigned char*)ptr;
+    for (size_t i = 0; i < len; i++) {
+        p[i] = 0;
+    }
+}
+
 static dc_status_t dc_string_ensure_capacity(dc_string_t* str, size_t min_capacity) {
     if (!str) return DC_ERROR_NULL_POINTER;
     if (min_capacity == 0) return DC_OK;
@@ -96,6 +104,9 @@ dc_status_t dc_string_init_from_buffer(dc_string_t* str, const char* data, size_
 
 void dc_string_free(dc_string_t* str) {
     if (str) {
+        if (str->data && str->capacity > 0) {
+            dc_secure_zero(str->data, str->capacity);
+        }
         dc_free(str->data);
         str->data = NULL;
         str->length = 0;

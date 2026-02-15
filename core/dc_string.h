@@ -58,6 +58,8 @@ dc_status_t dc_string_init_from_buffer(dc_string_t* str, const char* data, size_
 /**
  * @brief Free string resources
  * @param str Pointer to string structure
+ *
+ * @note Buffer bytes are overwritten with zeros before release.
  */
 void dc_string_free(dc_string_t* str);
 

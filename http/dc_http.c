@@ -369,6 +369,8 @@ dc_status_t dc_http_client_execute(dc_http_client_t* client,
     curl_easy_reset(client->curl);
     curl_easy_setopt(client->curl, CURLOPT_URL, dc_string_cstr(&request->url));
     curl_easy_setopt(client->curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
+    curl_easy_setopt(client->curl, CURLOPT_SSL_VERIFYPEER, 1L);
+    curl_easy_setopt(client->curl, CURLOPT_SSL_VERIFYHOST, 2L);
     curl_easy_setopt(client->curl, CURLOPT_WRITEFUNCTION, dc_http_write_cb);
     curl_easy_setopt(client->curl, CURLOPT_WRITEDATA, response);
     curl_easy_setopt(client->curl, CURLOPT_HEADERFUNCTION, dc_http_header_cb);

@@ -15,6 +15,8 @@ int test_attachments_main(void) {
     TEST_ASSERT(dc_attachment_filename_is_valid("my_file-1.png"), "filename valid underscore dash");
     TEST_ASSERT(dc_attachment_filename_is_valid("A1.B2"), "filename valid dots");
     TEST_ASSERT(!dc_attachment_filename_is_valid("file name.png"), "filename invalid space");
+    TEST_ASSERT(!dc_attachment_filename_is_valid("."), "filename dot segment invalid");
+    TEST_ASSERT(!dc_attachment_filename_is_valid(".."), "filename parent segment invalid");
     TEST_ASSERT(!dc_attachment_filename_is_valid("../file.png"), "filename invalid path");
     TEST_ASSERT(!dc_attachment_filename_is_valid("file@.png"), "filename invalid char");
     TEST_ASSERT(!dc_attachment_filename_is_valid("file~.png"), "filename invalid tilde");
