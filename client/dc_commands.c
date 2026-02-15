@@ -80,7 +80,12 @@ static dc_status_t dc_cmd_message_from_json(const char* json, dc_message_t* out)
     const char* timestamp = "";
     st = dc_json_get_string_opt(doc.root, "timestamp", &timestamp, "");
     if (st == DC_OK && timestamp && timestamp[0] != '\0') {
-        dc_string_set_cstr(&tmp.timestamp, timestamp);
+        st = dc_string_set_cstr(&tmp.timestamp, timestamp);
+        if (st != DC_OK) {
+            dc_json_doc_free(&doc);
+            dc_message_free(&tmp);
+            return st;
+        }
     }
 
     yyjson_val* author = NULL;
@@ -92,7 +97,12 @@ static dc_status_t dc_cmd_message_from_json(const char* json, dc_message_t* out)
         }
         const char* username = "";
         if (dc_json_get_string_opt(author, "username", &username, "") == DC_OK) {
-            dc_string_set_cstr(&tmp.author.username, username);
+            st = dc_string_set_cstr(&tmp.author.username, username);
+            if (st != DC_OK) {
+                dc_json_doc_free(&doc);
+                dc_message_free(&tmp);
+                return st;
+            }
         }
     }
 

@@ -199,7 +199,7 @@ void dc_gateway_thread_members_update_free(dc_gateway_thread_members_update_t* u
     if (!update) return;
     for (size_t i = 0; i < dc_vec_length(&update->members); i++) {
         dc_channel_thread_member_t* member = (dc_channel_thread_member_t*)dc_vec_at(&update->members, i);
-        dc_channel_thread_member_free(member);
+        if (member) dc_channel_thread_member_free(member);
     }
     dc_vec_free(&update->members);
     dc_vec_free(&update->removed_member_ids);
@@ -276,11 +276,11 @@ void dc_gateway_thread_list_sync_free(dc_gateway_thread_list_sync_t* sync) {
     if (!sync) return;
     for (size_t i = 0; i < dc_vec_length(&sync->threads); i++) {
         dc_channel_t* channel = (dc_channel_t*)dc_vec_at(&sync->threads, i);
-        dc_channel_free(channel);
+        if (channel) dc_channel_free(channel);
     }
     for (size_t i = 0; i < dc_vec_length(&sync->members); i++) {
         dc_channel_thread_member_t* member = (dc_channel_thread_member_t*)dc_vec_at(&sync->members, i);
-        dc_channel_thread_member_free(member);
+        if (member) dc_channel_thread_member_free(member);
     }
     dc_vec_free(&sync->threads);
     dc_vec_free(&sync->members);
@@ -515,27 +515,32 @@ void dc_gateway_guild_create_free(dc_gateway_guild_create_t* guild) {
     dc_string_free(&guild->joined_at);
     
     for (size_t i = 0; i < dc_vec_length(&guild->members); i++) {
-        dc_guild_member_free((dc_guild_member_t*)dc_vec_at(&guild->members, i));
+        dc_guild_member_t* m = (dc_guild_member_t*)dc_vec_at(&guild->members, i);
+        if (m) dc_guild_member_free(m);
     }
     dc_vec_free(&guild->members);
 
     for (size_t i = 0; i < dc_vec_length(&guild->channels); i++) {
-        dc_channel_free((dc_channel_t*)dc_vec_at(&guild->channels, i));
+        dc_channel_t* c = (dc_channel_t*)dc_vec_at(&guild->channels, i);
+        if (c) dc_channel_free(c);
     }
     dc_vec_free(&guild->channels);
 
     for (size_t i = 0; i < dc_vec_length(&guild->threads); i++) {
-        dc_channel_free((dc_channel_t*)dc_vec_at(&guild->threads, i));
+        dc_channel_t* t = (dc_channel_t*)dc_vec_at(&guild->threads, i);
+        if (t) dc_channel_free(t);
     }
     dc_vec_free(&guild->threads);
     
     for (size_t i = 0; i < dc_vec_length(&guild->voice_states); i++) {
-        dc_voice_state_free((dc_voice_state_t*)dc_vec_at(&guild->voice_states, i));
+        dc_voice_state_t* v = (dc_voice_state_t*)dc_vec_at(&guild->voice_states, i);
+        if (v) dc_voice_state_free(v);
     }
     dc_vec_free(&guild->voice_states);
 
     for (size_t i = 0; i < dc_vec_length(&guild->presences); i++) {
-        dc_presence_free((dc_presence_t*)dc_vec_at(&guild->presences, i));
+        dc_presence_t* p = (dc_presence_t*)dc_vec_at(&guild->presences, i);
+        if (p) dc_presence_free(p);
     }
     dc_vec_free(&guild->presences);
 

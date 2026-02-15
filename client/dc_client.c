@@ -928,7 +928,7 @@ dc_status_t dc_client_get_current_user(dc_client_t* client, dc_user_t* user) {
     if (st != DC_OK) goto cleanup;
 
     if (resp.http.status_code < 200 || resp.http.status_code >= 300) {
-        dc_client_log(client, DC_LOG_WARN, "Create message HTTP %d", resp.http.status_code);
+        dc_client_log(client, DC_LOG_WARN, "Get current user HTTP %d", resp.http.status_code);
         st = dc_status_from_http(resp.http.status_code);
         goto cleanup;
     }

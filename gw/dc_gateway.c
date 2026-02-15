@@ -144,7 +144,9 @@ static void dc_gateway_schedule_reconnect(dc_gateway_client_t* client) {
     if (client->reconnect_backoff_ms == 0) {
         client->reconnect_backoff_ms = DC_GATEWAY_RECONNECT_MIN_MS;
     } else if (client->reconnect_backoff_ms < DC_GATEWAY_RECONNECT_MAX_MS) {
-        uint32_t next = client->reconnect_backoff_ms * 2u;
+        uint32_t next = client->reconnect_backoff_ms <= DC_GATEWAY_RECONNECT_MAX_MS / 2u
+                        ? client->reconnect_backoff_ms * 2u
+                        : DC_GATEWAY_RECONNECT_MAX_MS;
         if (next > DC_GATEWAY_RECONNECT_MAX_MS) {
             next = DC_GATEWAY_RECONNECT_MAX_MS;
         }
@@ -152,7 +154,11 @@ static void dc_gateway_schedule_reconnect(dc_gateway_client_t* client) {
     }
     uint32_t jitter = client->reconnect_backoff_ms / 5u;
     uint32_t jitter_add = jitter > 0 ? (uint32_t)(rand() % (jitter + 1u)) : 0u;
-    client->reconnect_at_ms = now + (uint64_t)client->reconnect_backoff_ms + jitter_add;
+    uint64_t total = (uint64_t)client->reconnect_backoff_ms + jitter_add;
+    if (total > DC_GATEWAY_RECONNECT_MAX_MS) {
+        total = DC_GATEWAY_RECONNECT_MAX_MS;
+    }
+    client->reconnect_at_ms = now + total;
     client->reconnect_requested = 1;
     client->awaiting_heartbeat_ack = 0;
     client->heartbeat_interval_ms = 0;
@@ -742,6 +748,7 @@ static dc_status_t dc_gateway_handle_payload(dc_gateway_client_t* client, const 
                 st = dc_gateway_build_resume_payload(client, &payload);
                 if (st == DC_OK) {
                     uint64_t now = dc_gateway_now_ms();
+                    client->awaiting_heartbeat_ack = 0;
                     dc_gateway_send_payload(client, &payload, 1, now, DC_GATEWAY_OP_RESUME);
                     dc_gateway_set_state(client, DC_GATEWAY_RESUMING);
                     if (client->wsi) lws_callback_on_writable(client->wsi);
@@ -936,6 +943,7 @@ static int dc_gateway_lws_callback(struct lws* wsi, enum lws_callback_reasons re
             if (idx == SIZE_MAX) break;
 
             dc_gateway_outgoing_t msg;
+            memset(&msg, 0, sizeof(msg));
             if (dc_vec_remove(&client->outbox, idx, &msg) != DC_OK) break;
 
             size_t payload_len = dc_string_length(&msg.payload);
@@ -1246,7 +1254,6 @@ static void dc_gateway_maybe_send_heartbeat(dc_gateway_client_t* client) {
     dc_string_t payload;
     dc_string_init(&payload);
     if (dc_gateway_build_heartbeat_payload(client, &payload) == DC_OK) {
-        uint64_t now = dc_gateway_now_ms();
         dc_gateway_send_payload(client, &payload, 1, now, DC_GATEWAY_OP_HEARTBEAT);
         client->last_heartbeat_sent_ms = now;
         client->awaiting_heartbeat_ack = 1;
