@@ -525,8 +525,8 @@ Use this router setup with client config like:
 
 | Function | Parameters | Return Value | Description |
 |----------|------------|--------------|-------------|
-| `dc_alloc_set_hooks(const dc_alloc_hooks_t* hooks)` | `hooks`: Custom allocation hooks to install | `void` | Install custom alloc/realloc/free hooks |
-| `dc_alloc_get_hooks(dc_alloc_hooks_t* hooks)` | `hooks`: Pointer to store current hooks | `void` | Retrieve currently active memory hooks |
+| `dc_alloc_set_hooks(const dc_alloc_hooks_t* hooks)` | `hooks`: Custom allocation hooks to install | `dc_status_t`: `DC_OK` on success, error code on failure | Install custom alloc/realloc/free hooks |
+| `dc_alloc_get_hooks(dc_alloc_hooks_t* hooks)` | `hooks`: Pointer to store current hooks | `dc_status_t`: `DC_OK` on success, error code on failure | Retrieve currently active memory hooks |
 | `dc_alloc_reset_hooks(void)` | None | `void` | Restore default `malloc/realloc/free` hooks |
 | `dc_alloc(size_t size)` | `size`: Size in bytes to allocate | `void*`: Pointer to allocated memory, or NULL on failure | Allocate memory with guard checks |
 | `dc_calloc(size_t count, size_t size)` | `count`: Number of elements, `size`: Size of each element | `void*`: Pointer to zeroed allocated memory, or NULL on failure | Allocate zeroed memory |
@@ -534,7 +534,7 @@ Use this router setup with client config like:
 | `dc_free(void* ptr)` | `ptr`: Pointer to memory to free | `void` | Free allocation (NULL-safe) |
 | `dc_strdup(const char* str)` | `str`: String to duplicate | `char*`: Pointer to duplicated string, or NULL on failure | Duplicate full C string using library allocator |
 | `dc_strndup(const char* str, size_t max_len)` | `str`: String to duplicate, `max_len`: Maximum length to copy | `char*`: Pointer to duplicated string, or NULL on failure | Duplicate C string up to max length |
-| `dc_alloc_aligned(size_t size, size_t alignment)` | `size`: Size in bytes to allocate, `alignment`: Alignment requirement in bytes | `void*`: Pointer to aligned allocated memory, or NULL on failure | Allocate aligned block |
+| `dc_alloc_aligned(size_t size, size_t alignment)` | `size`: Size in bytes to allocate, `alignment`: Alignment requirement in bytes | `void*`: Pointer to aligned allocated memory, or NULL on failure | Allocate aligned block (default libc hooks only) |
 
 ### Dynamic Strings (`core/dc_string.h`)
 
