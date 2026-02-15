@@ -1242,7 +1242,7 @@ static void dc_gateway_maybe_send_heartbeat(dc_gateway_client_t* client) {
     if (client->awaiting_heartbeat_ack) {
         uint64_t timeout_ms = client->heartbeat_timeout_ms > 0 ?
                               client->heartbeat_timeout_ms :
-                              client->heartbeat_interval_ms * 2u;
+                              client->heartbeat_interval_ms;
         if (now - client->last_heartbeat_sent_ms > timeout_ms) {
             client->last_error = DC_ERROR_TIMEOUT;
             lws_close_reason(client->wsi, LWS_CLOSE_STATUS_NORMAL, NULL, (size_t)0);

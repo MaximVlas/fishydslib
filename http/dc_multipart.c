@@ -6,9 +6,12 @@
 #include "dc_multipart.h"
 #include "core/dc_attachments.h"
 #include <stdio.h>
+#include <stdatomic.h>
 #include <string.h>
 
-static unsigned long g_multipart_counter = 0;
+static _Atomic unsigned long g_multipart_counter = 0;
+
+#define DC_MULTIPART_BOUNDARY_MAX_LEN 70u
 
 static int dc_multipart_value_is_valid(const char* value) {
     if (!value) return 0;
@@ -18,9 +21,42 @@ static int dc_multipart_value_is_valid(const char* value) {
     return 1;
 }
 
+static int dc_multipart_boundary_char_is_valid(int c) {
+    if (c >= (int)'0' && c <= (int)'9') return 1;
+    if (c >= (int)'A' && c <= (int)'Z') return 1;
+    if (c >= (int)'a' && c <= (int)'z') return 1;
+    switch (c) {
+        case (int)'\'':
+        case (int)'(':
+        case (int)')':
+        case (int)'+':
+        case (int)'_':
+        case (int)',':
+        case (int)'-':
+        case (int)'.':
+        case (int)'/':
+        case (int)':':
+        case (int)'=':
+        case (int)'?':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static int dc_multipart_boundary_is_valid(const char* boundary) {
+    if (!boundary) return 0;
+    size_t len = strlen(boundary);
+    if (len == 0 || len > DC_MULTIPART_BOUNDARY_MAX_LEN) return 0;
+    for (const unsigned char* p = (const unsigned char*)boundary; *p; p++) {
+        if (!dc_multipart_boundary_char_is_valid(*p)) return 0;
+    }
+    return 1;
+}
+
 static dc_status_t dc_multipart_set_default_boundary(dc_multipart_t* mp) {
-    g_multipart_counter++;
-    return dc_string_printf(&mp->boundary, "dc_boundary_%lu", g_multipart_counter);
+    unsigned long next = atomic_fetch_add_explicit(&g_multipart_counter, 1u, memory_order_relaxed) + 1u;
+    return dc_string_printf(&mp->boundary, "dc_boundary_%lu", next);
 }
 
 static dc_status_t dc_multipart_append_boundary(dc_multipart_t* mp) {
@@ -97,8 +133,7 @@ void dc_multipart_free(dc_multipart_t* mp) {
 
 dc_status_t dc_multipart_set_boundary(dc_multipart_t* mp, const char* boundary) {
     if (!mp || !boundary) return DC_ERROR_NULL_POINTER;
-    if (boundary[0] == '\0') return DC_ERROR_INVALID_PARAM;
-    if (!dc_multipart_value_is_valid(boundary)) return DC_ERROR_INVALID_PARAM;
+    if (!dc_multipart_boundary_is_valid(boundary)) return DC_ERROR_INVALID_PARAM;
     if (mp->part_count > 0) return DC_ERROR_INVALID_STATE;
     return dc_string_set_cstr(&mp->boundary, boundary);
 }

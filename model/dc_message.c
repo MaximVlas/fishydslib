@@ -46,22 +46,25 @@ void dc_message_free(dc_message_t* message) {
     // Free all components
     for (size_t i = 0; i < dc_vec_length(&message->components); i++) {
         dc_component_t* component = (dc_component_t*)dc_vec_at(&message->components, i);
-        dc_component_free(component);
+        if (component) dc_component_free(component);
     }
     dc_vec_free(&message->components);
 
     for (size_t i = 0; i < dc_vec_length(&message->attachments); i++) {
-        dc_attachment_free((dc_attachment_t*)dc_vec_at(&message->attachments, i));
+        dc_attachment_t* attachment = (dc_attachment_t*)dc_vec_at(&message->attachments, i);
+        if (attachment) dc_attachment_free(attachment);
     }
     dc_vec_free(&message->attachments);
 
     for (size_t i = 0; i < dc_vec_length(&message->embeds); i++) {
-        dc_embed_free((dc_embed_t*)dc_vec_at(&message->embeds, i));
+        dc_embed_t* embed = (dc_embed_t*)dc_vec_at(&message->embeds, i);
+        if (embed) dc_embed_free(embed);
     }
     dc_vec_free(&message->embeds);
 
     for (size_t i = 0; i < dc_vec_length(&message->mentions); i++) {
-        dc_guild_member_free((dc_guild_member_t*)dc_vec_at(&message->mentions, i));
+        dc_guild_member_t* mention = (dc_guild_member_t*)dc_vec_at(&message->mentions, i);
+        if (mention) dc_guild_member_free(mention);
     }
     dc_vec_free(&message->mentions);
     

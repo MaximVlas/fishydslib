@@ -7,6 +7,8 @@
 #include "core/dc_alloc.h"
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <yyjson.h>
 
@@ -38,6 +40,19 @@ static int dc_ct_matches(const char* value, const char* token) {
         return (p && (*p == '\0' || *p == ';'));
     }
     return 0;
+}
+
+static int dc_parse_nonnegative_int(const char* value, int* out) {
+    if (!value || !out) return 0;
+    errno = 0;
+    char* end = NULL;
+    long parsed = strtol(value, &end, 10);
+    if (errno != 0 || end == value) return 0;
+    while (*end == ' ' || *end == '\t') end++;
+    if (*end != '\0') return 0;
+    if (parsed < 0 || parsed > INT_MAX) return 0;
+    *out = (int)parsed;
+    return 1;
 }
 
 int dc_http_is_discord_api_url(const char* url) {
@@ -339,13 +354,19 @@ dc_status_t dc_http_rate_limit_parse(
     /* Parse X-RateLimit-Limit */
     st = get_header(userdata, "X-RateLimit-Limit", &value);
     if (st == DC_OK && value) {
-        rl->limit = atoi(value);
+        int parsed = 0;
+        if (dc_parse_nonnegative_int(value, &parsed)) {
+            rl->limit = parsed;
+        }
     }
 
     /* Parse X-RateLimit-Remaining */
     st = get_header(userdata, "X-RateLimit-Remaining", &value);
     if (st == DC_OK && value) {
-        rl->remaining = atoi(value);
+        int parsed = 0;
+        if (dc_parse_nonnegative_int(value, &parsed)) {
+            rl->remaining = parsed;
+        }
     }
 
     /* Parse X-RateLimit-Reset */
