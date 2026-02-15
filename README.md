@@ -38,7 +38,6 @@ If you install it via CMake, headers install under `include/fishydslib/`.
 ## Docs / Status
 
 - API reference: `FishyDsLib-API-Reference.mdx`
-- High-level API plan: `FishyDsLib-High-Level-API-Plan.mdx`
 
 ## License
 
