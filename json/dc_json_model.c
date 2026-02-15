@@ -5,8 +5,10 @@
 
 #include "dc_json_model.h"
 #include "core/dc_time.h"
+#include "core/dc_alloc.h"
 #include "model/dc_user.h"
 #include <limits.h>
+#include <inttypes.h>
 #include <string.h>
 #include <yyjson.h>
 
@@ -973,6 +975,249 @@ dc_status_t dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channe
     return DC_OK;
 }
 
+static dc_status_t dc_json_model_message_reference_from_val(yyjson_val* val, dc_message_reference_t* ref) {
+    if (!val || !ref) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    int64_t type_i64 = 0;
+    dc_status_t st = dc_json_get_int64_opt(val, "type", &type_i64, 0);
+    if (st != DC_OK) return st;
+    int type_int = 0;
+    st = dc_int64_to_int_checked(type_i64, &type_int);
+    if (st != DC_OK) return st;
+    ref->type = (dc_message_reference_type_t)type_int;
+
+    st = dc_json_get_snowflake_optional_field(val, "message_id", &ref->message_id);
+    if (st != DC_OK) return st;
+    st = dc_json_get_snowflake_optional_field(val, "channel_id", &ref->channel_id);
+    if (st != DC_OK) return st;
+    st = dc_json_get_snowflake_optional_field(val, "guild_id", &ref->guild_id);
+    if (st != DC_OK) return st;
+
+    st = dc_json_get_bool_opt(val, "fail_if_not_exists", &ref->fail_if_not_exists, 1);
+    if (st != DC_OK) return st;
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_reaction_from_val(yyjson_val* val, dc_reaction_t* reaction) {
+    if (!val || !reaction) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    int64_t count_i64 = 0;
+    dc_status_t st = dc_json_get_int64_opt(val, "count", &count_i64, 0);
+    if (st != DC_OK) return st;
+    int count_int = 0;
+    st = dc_int64_to_int_checked(count_i64, &count_int);
+    if (st != DC_OK) return st;
+    reaction->count = count_int;
+
+    st = dc_json_get_bool_opt(val, "me", &reaction->me, 0);
+    if (st != DC_OK) return st;
+    st = dc_json_get_bool_opt(val, "me_burst", &reaction->me_burst, 0);
+    if (st != DC_OK) return st;
+
+    yyjson_val* count_details_val = yyjson_obj_get(val, "count_details");
+    if (count_details_val && yyjson_is_obj(count_details_val)) {
+        int64_t burst_i64 = 0, normal_i64 = 0;
+        st = dc_json_get_int64_opt(count_details_val, "burst", &burst_i64, 0);
+        if (st != DC_OK) return st;
+        st = dc_json_get_int64_opt(count_details_val, "normal", &normal_i64, 0);
+        if (st != DC_OK) return st;
+        int burst_int = 0, normal_int = 0;
+        st = dc_int64_to_int_checked(burst_i64, &burst_int);
+        if (st != DC_OK) return st;
+        st = dc_int64_to_int_checked(normal_i64, &normal_int);
+        if (st != DC_OK) return st;
+        reaction->count_details.burst = burst_int;
+        reaction->count_details.normal = normal_int;
+    }
+
+    yyjson_val* emoji_val = yyjson_obj_get(val, "emoji");
+    if (emoji_val && yyjson_is_obj(emoji_val)) {
+        st = dc_json_get_snowflake_optional_field(emoji_val, "id", &reaction->emoji_id);
+        if (st != DC_OK) return st;
+        const char* name = "";
+        st = dc_json_get_string_opt(emoji_val, "name", &name, "");
+        if (st != DC_OK) return st;
+        st = dc_json_copy_cstr(&reaction->emoji_name, name);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* burst_colors_val = yyjson_obj_get(val, "burst_colors");
+    if (burst_colors_val && yyjson_is_arr(burst_colors_val)) {
+        size_t idx, max;
+        yyjson_val* color_val;
+        yyjson_arr_foreach(burst_colors_val, idx, max, color_val) {
+            if (!yyjson_is_str(color_val)) continue;
+            dc_string_t color;
+            st = dc_string_init(&color);
+            if (st != DC_OK) return st;
+            st = dc_json_copy_cstr(&color, yyjson_get_str(color_val));
+            if (st != DC_OK) { dc_string_free(&color); return st; }
+            st = dc_vec_push(&reaction->burst_colors, &color);
+            if (st != DC_OK) { dc_string_free(&color); return st; }
+        }
+    }
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_sticker_item_from_val(yyjson_val* val, dc_sticker_item_t* item) {
+    if (!val || !item) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    dc_status_t st = dc_json_get_snowflake(val, "id", &item->id);
+    if (st != DC_OK) return st;
+
+    const char* name = "";
+    st = dc_json_get_string(val, "name", &name);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&item->name, name);
+    if (st != DC_OK) return st;
+
+    int64_t fmt_i64 = 0;
+    st = dc_json_get_int64(val, "format_type", &fmt_i64);
+    if (st != DC_OK) return st;
+    int fmt_int = 0;
+    st = dc_int64_to_int_checked(fmt_i64, &fmt_int);
+    if (st != DC_OK) return st;
+    item->format_type = (dc_sticker_format_type_t)fmt_int;
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_channel_mention_from_val(yyjson_val* val, dc_channel_mention_t* mention) {
+    if (!val || !mention) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    dc_status_t st = dc_json_get_snowflake(val, "id", &mention->id);
+    if (st != DC_OK) return st;
+    st = dc_json_get_snowflake(val, "guild_id", &mention->guild_id);
+    if (st != DC_OK) return st;
+
+    int64_t type_i64 = 0;
+    st = dc_json_get_int64(val, "type", &type_i64);
+    if (st != DC_OK) return st;
+    int type_int = 0;
+    st = dc_int64_to_int_checked(type_i64, &type_int);
+    if (st != DC_OK) return st;
+    mention->type = type_int;
+
+    const char* name = "";
+    st = dc_json_get_string(val, "name", &name);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&mention->name, name);
+    if (st != DC_OK) return st;
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_role_subscription_data_from_val(yyjson_val* val, dc_role_subscription_data_t* data) {
+    if (!val || !data) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    dc_status_t st = dc_json_get_snowflake(val, "role_subscription_listing_id", &data->role_subscription_listing_id);
+    if (st != DC_OK) return st;
+
+    const char* tier_name = "";
+    st = dc_json_get_string(val, "tier_name", &tier_name);
+    if (st != DC_OK) return st;
+    st = dc_json_copy_cstr(&data->tier_name, tier_name);
+    if (st != DC_OK) return st;
+
+    int64_t months_i64 = 0;
+    st = dc_json_get_int64(val, "total_months_subscribed", &months_i64);
+    if (st != DC_OK) return st;
+    int months_int = 0;
+    st = dc_int64_to_int_checked(months_i64, &months_int);
+    if (st != DC_OK) return st;
+    data->total_months_subscribed = months_int;
+
+    st = dc_json_get_bool(val, "is_renewal", &data->is_renewal);
+    if (st != DC_OK) return st;
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_message_call_from_val(yyjson_val* val, dc_message_call_t* call) {
+    if (!val || !call) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    yyjson_val* participants_val = yyjson_obj_get(val, "participants");
+    if (participants_val) {
+        dc_status_t st = dc_json_parse_snowflake_array(participants_val, &call->participants);
+        if (st != DC_OK) return st;
+    }
+
+    dc_status_t st = dc_json_get_nullable_string_field(val, "ended_timestamp", &call->ended_timestamp, 1);
+    if (st != DC_OK) return st;
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_model_message_activity_from_val(yyjson_val* val, dc_message_activity_t* activity) {
+    if (!val || !activity) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
+
+    int64_t type_i64 = 0;
+    dc_status_t st = dc_json_get_int64(val, "type", &type_i64);
+    if (st != DC_OK) return st;
+    int type_int = 0;
+    st = dc_int64_to_int_checked(type_i64, &type_int);
+    if (st != DC_OK) return st;
+    activity->type = (dc_message_activity_type_t)type_int;
+
+    yyjson_val* party_id_val = yyjson_obj_get(val, "party_id");
+    if (party_id_val && yyjson_is_str(party_id_val)) {
+        activity->party_id.is_set = 1;
+        st = dc_json_copy_cstr(&activity->party_id.value, yyjson_get_str(party_id_val));
+        if (st != DC_OK) return st;
+    }
+
+    return DC_OK;
+}
+
+static dc_status_t dc_json_get_optional_i32_field(yyjson_val* obj, const char* key, dc_optional_i32_t* out) {
+    if (!obj || !key || !out) return DC_ERROR_NULL_POINTER;
+    yyjson_val* field = yyjson_obj_get(obj, key);
+    if (!field || yyjson_is_null(field)) {
+        out->is_set = 0;
+        out->value = 0;
+        return DC_OK;
+    }
+    if (!yyjson_is_int(field) && !yyjson_is_uint(field)) return DC_ERROR_INVALID_FORMAT;
+    int64_t v = yyjson_get_sint(field);
+    int v_int = 0;
+    dc_status_t st = dc_int64_to_int_checked(v, &v_int);
+    if (st != DC_OK) return st;
+    out->is_set = 1;
+    out->value = (int32_t)v_int;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_get_optional_string_field(yyjson_val* obj, const char* key,
+                                                     dc_optional_string_t* out) {
+    if (!obj || !key || !out) return DC_ERROR_NULL_POINTER;
+    yyjson_val* field = yyjson_obj_get(obj, key);
+    if (!field || yyjson_is_null(field)) {
+        out->is_set = 0;
+        return DC_OK;
+    }
+    if (yyjson_is_str(field)) {
+        out->is_set = 1;
+        return dc_json_copy_cstr(&out->value, yyjson_get_str(field));
+    }
+    /* nonce can be integer or string */
+    if (yyjson_is_int(field) || yyjson_is_uint(field)) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%" PRId64, yyjson_get_sint(field));
+        out->is_set = 1;
+        return dc_json_copy_cstr(&out->value, buf);
+    }
+    return DC_ERROR_INVALID_FORMAT;
+}
+
 dc_status_t dc_json_model_message_from_val(yyjson_val* val, dc_message_t* message) {
     if (!val || !message) return DC_ERROR_NULL_POINTER;
     if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
@@ -1147,6 +1392,132 @@ dc_status_t dc_json_model_message_from_val(yyjson_val* val, dc_message_t* messag
         }
     }
     
+    /* message_reference */
+    yyjson_val* msg_ref_val = yyjson_obj_get(val, "message_reference");
+    if (msg_ref_val && !yyjson_is_null(msg_ref_val)) {
+        st = dc_json_model_message_reference_from_val(msg_ref_val, &message->message_reference);
+        if (st != DC_OK) return st;
+        message->has_message_reference = 1;
+    }
+
+    /* referenced_message */
+    yyjson_val* ref_msg_val = yyjson_obj_get(val, "referenced_message");
+    if (ref_msg_val && !yyjson_is_null(ref_msg_val)) {
+        message->referenced_message = (dc_message_t*)dc_calloc((size_t)1, sizeof(dc_message_t));
+        if (!message->referenced_message) return DC_ERROR_OUT_OF_MEMORY;
+        st = dc_message_init(message->referenced_message);
+        if (st != DC_OK) {
+            dc_free(message->referenced_message);
+            message->referenced_message = NULL;
+            return st;
+        }
+        st = dc_json_model_message_from_val(ref_msg_val, message->referenced_message);
+        if (st != DC_OK) {
+            dc_message_free(message->referenced_message);
+            dc_free(message->referenced_message);
+            message->referenced_message = NULL;
+            return st;
+        }
+    }
+
+    /* nonce */
+    st = dc_json_get_optional_string_field(val, "nonce", &message->nonce);
+    if (st != DC_OK) return st;
+
+    /* reactions */
+    yyjson_val* reactions_val = yyjson_obj_get(val, "reactions");
+    if (reactions_val && yyjson_is_arr(reactions_val)) {
+        size_t idx, max;
+        yyjson_val* react_val;
+        yyjson_arr_foreach(reactions_val, idx, max, react_val) {
+            dc_reaction_t reaction;
+            st = dc_reaction_init(&reaction);
+            if (st != DC_OK) return st;
+            st = dc_json_model_reaction_from_val(react_val, &reaction);
+            if (st != DC_OK) {
+                dc_reaction_free(&reaction);
+                return st;
+            }
+            st = dc_vec_push(&message->reactions, &reaction);
+            if (st != DC_OK) {
+                dc_reaction_free(&reaction);
+                return st;
+            }
+        }
+    }
+
+    /* sticker_items */
+    yyjson_val* sticker_items_val = yyjson_obj_get(val, "sticker_items");
+    if (sticker_items_val && yyjson_is_arr(sticker_items_val)) {
+        size_t idx, max;
+        yyjson_val* si_val;
+        yyjson_arr_foreach(sticker_items_val, idx, max, si_val) {
+            dc_sticker_item_t item;
+            st = dc_sticker_item_init(&item);
+            if (st != DC_OK) return st;
+            st = dc_json_model_sticker_item_from_val(si_val, &item);
+            if (st != DC_OK) {
+                dc_sticker_item_free(&item);
+                return st;
+            }
+            st = dc_vec_push(&message->sticker_items, &item);
+            if (st != DC_OK) {
+                dc_sticker_item_free(&item);
+                return st;
+            }
+        }
+    }
+
+    /* mention_channels */
+    yyjson_val* mention_channels_val = yyjson_obj_get(val, "mention_channels");
+    if (mention_channels_val && yyjson_is_arr(mention_channels_val)) {
+        size_t idx, max;
+        yyjson_val* mc_val;
+        yyjson_arr_foreach(mention_channels_val, idx, max, mc_val) {
+            dc_channel_mention_t cm;
+            st = dc_channel_mention_init(&cm);
+            if (st != DC_OK) return st;
+            st = dc_json_model_channel_mention_from_val(mc_val, &cm);
+            if (st != DC_OK) {
+                dc_channel_mention_free(&cm);
+                return st;
+            }
+            st = dc_vec_push(&message->mention_channels, &cm);
+            if (st != DC_OK) {
+                dc_channel_mention_free(&cm);
+                return st;
+            }
+        }
+    }
+
+    /* position */
+    st = dc_json_get_optional_i32_field(val, "position", &message->position);
+    if (st != DC_OK) return st;
+
+    /* role_subscription_data */
+    yyjson_val* rsd_val = yyjson_obj_get(val, "role_subscription_data");
+    if (rsd_val && !yyjson_is_null(rsd_val)) {
+        st = dc_json_model_role_subscription_data_from_val(rsd_val, &message->role_subscription_data);
+        if (st != DC_OK) return st;
+        message->has_role_subscription_data = 1;
+    }
+
+    /* call */
+    yyjson_val* call_val = yyjson_obj_get(val, "call");
+    if (call_val && !yyjson_is_null(call_val)) {
+        st = dc_json_model_message_call_from_val(call_val, &message->call);
+        if (st != DC_OK) return st;
+        message->has_call = 1;
+    }
+
+    /* activity */
+    yyjson_val* activity_val = yyjson_obj_get(val, "activity");
+    if (activity_val && !yyjson_is_null(activity_val)) {
+        st = dc_json_model_message_activity_from_val(activity_val, &message->activity);
+        if (st != DC_OK) return st;
+        message->has_activity = 1;
+    }
+
     return DC_OK;
 }
 
@@ -1708,6 +2079,149 @@ dc_status_t dc_json_model_message_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
     if (!author_obj) return DC_ERROR_OUT_OF_MEMORY;
     st = dc_json_model_user_to_mut(doc, author_obj, &message->author);
     if (st != DC_OK) return st;
+
+    /* message_reference */
+    if (message->has_message_reference) {
+        yyjson_mut_val* ref_obj = yyjson_mut_obj_add_obj(doc->doc, obj, "message_reference");
+        if (!ref_obj) return DC_ERROR_OUT_OF_MEMORY;
+        st = dc_json_mut_set_int64(doc, ref_obj, "type", (int64_t)message->message_reference.type);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_add_optional_snowflake(doc, ref_obj, "message_id", &message->message_reference.message_id);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_add_optional_snowflake(doc, ref_obj, "channel_id", &message->message_reference.channel_id);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_add_optional_snowflake(doc, ref_obj, "guild_id", &message->message_reference.guild_id);
+        if (st != DC_OK) return st;
+    }
+
+    /* nonce */
+    if (message->nonce.is_set) {
+        st = dc_json_mut_set_string(doc, obj, "nonce", dc_string_cstr(&message->nonce.value));
+        if (st != DC_OK) return st;
+    }
+
+    /* reactions */
+    if (!dc_vec_is_empty(&message->reactions)) {
+        yyjson_mut_val* reactions_arr = yyjson_mut_obj_add_arr(doc->doc, obj, "reactions");
+        if (!reactions_arr) return DC_ERROR_OUT_OF_MEMORY;
+        for (size_t i = 0; i < dc_vec_length(&message->reactions); i++) {
+            const dc_reaction_t* reaction = dc_vec_at(&message->reactions, i);
+            yyjson_mut_val* react_obj = yyjson_mut_arr_add_obj(doc->doc, reactions_arr);
+            if (!react_obj) return DC_ERROR_OUT_OF_MEMORY;
+            st = dc_json_mut_set_int64(doc, react_obj, "count", (int64_t)reaction->count);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_bool(doc, react_obj, "me", reaction->me);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_bool(doc, react_obj, "me_burst", reaction->me_burst);
+            if (st != DC_OK) return st;
+
+            yyjson_mut_val* cd_obj = yyjson_mut_obj_add_obj(doc->doc, react_obj, "count_details");
+            if (!cd_obj) return DC_ERROR_OUT_OF_MEMORY;
+            st = dc_json_mut_set_int64(doc, cd_obj, "burst", (int64_t)reaction->count_details.burst);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_int64(doc, cd_obj, "normal", (int64_t)reaction->count_details.normal);
+            if (st != DC_OK) return st;
+
+            yyjson_mut_val* emoji_obj = yyjson_mut_obj_add_obj(doc->doc, react_obj, "emoji");
+            if (!emoji_obj) return DC_ERROR_OUT_OF_MEMORY;
+            st = dc_json_mut_add_optional_snowflake(doc, emoji_obj, "id", &reaction->emoji_id);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_add_string_if_set(doc, emoji_obj, "name", &reaction->emoji_name);
+            if (st != DC_OK) return st;
+
+            if (!dc_vec_is_empty(&reaction->burst_colors)) {
+                yyjson_mut_val* bc_arr = yyjson_mut_obj_add_arr(doc->doc, react_obj, "burst_colors");
+                if (!bc_arr) return DC_ERROR_OUT_OF_MEMORY;
+                for (size_t j = 0; j < dc_vec_length(&reaction->burst_colors); j++) {
+                    const dc_string_t* color = dc_vec_at(&reaction->burst_colors, j);
+                    if (!yyjson_mut_arr_add_strcpy(doc->doc, bc_arr, dc_string_cstr(color)))
+                        return DC_ERROR_OUT_OF_MEMORY;
+                }
+            }
+        }
+    }
+
+    /* sticker_items */
+    if (!dc_vec_is_empty(&message->sticker_items)) {
+        yyjson_mut_val* si_arr = yyjson_mut_obj_add_arr(doc->doc, obj, "sticker_items");
+        if (!si_arr) return DC_ERROR_OUT_OF_MEMORY;
+        for (size_t i = 0; i < dc_vec_length(&message->sticker_items); i++) {
+            const dc_sticker_item_t* item = dc_vec_at(&message->sticker_items, i);
+            yyjson_mut_val* si_obj = yyjson_mut_arr_add_obj(doc->doc, si_arr);
+            if (!si_obj) return DC_ERROR_OUT_OF_MEMORY;
+            st = dc_json_mut_set_snowflake(doc, si_obj, "id", item->id);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_string(doc, si_obj, "name", dc_string_cstr(&item->name));
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_int64(doc, si_obj, "format_type", (int64_t)item->format_type);
+            if (st != DC_OK) return st;
+        }
+    }
+
+    /* mention_channels */
+    if (!dc_vec_is_empty(&message->mention_channels)) {
+        yyjson_mut_val* mc_arr = yyjson_mut_obj_add_arr(doc->doc, obj, "mention_channels");
+        if (!mc_arr) return DC_ERROR_OUT_OF_MEMORY;
+        for (size_t i = 0; i < dc_vec_length(&message->mention_channels); i++) {
+            const dc_channel_mention_t* cm = dc_vec_at(&message->mention_channels, i);
+            yyjson_mut_val* mc_obj = yyjson_mut_arr_add_obj(doc->doc, mc_arr);
+            if (!mc_obj) return DC_ERROR_OUT_OF_MEMORY;
+            st = dc_json_mut_set_snowflake(doc, mc_obj, "id", cm->id);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_snowflake(doc, mc_obj, "guild_id", cm->guild_id);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_int64(doc, mc_obj, "type", (int64_t)cm->type);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_string(doc, mc_obj, "name", dc_string_cstr(&cm->name));
+            if (st != DC_OK) return st;
+        }
+    }
+
+    /* position */
+    if (message->position.is_set) {
+        st = dc_json_mut_set_int64(doc, obj, "position", (int64_t)message->position.value);
+        if (st != DC_OK) return st;
+    }
+
+    /* role_subscription_data */
+    if (message->has_role_subscription_data) {
+        yyjson_mut_val* rsd_obj = yyjson_mut_obj_add_obj(doc->doc, obj, "role_subscription_data");
+        if (!rsd_obj) return DC_ERROR_OUT_OF_MEMORY;
+        st = dc_json_mut_set_snowflake(doc, rsd_obj, "role_subscription_listing_id",
+                                       message->role_subscription_data.role_subscription_listing_id);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_set_string(doc, rsd_obj, "tier_name",
+                                    dc_string_cstr(&message->role_subscription_data.tier_name));
+        if (st != DC_OK) return st;
+        st = dc_json_mut_set_int64(doc, rsd_obj, "total_months_subscribed",
+                                   (int64_t)message->role_subscription_data.total_months_subscribed);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_set_bool(doc, rsd_obj, "is_renewal", message->role_subscription_data.is_renewal);
+        if (st != DC_OK) return st;
+    }
+
+    /* call */
+    if (message->has_call) {
+        yyjson_mut_val* call_obj = yyjson_mut_obj_add_obj(doc->doc, obj, "call");
+        if (!call_obj) return DC_ERROR_OUT_OF_MEMORY;
+        st = dc_json_mut_add_snowflake_array(doc, call_obj, "participants", &message->call.participants);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_add_nullable_string(doc, call_obj, "ended_timestamp", &message->call.ended_timestamp);
+        if (st != DC_OK) return st;
+    }
+
+    /* activity */
+    if (message->has_activity) {
+        yyjson_mut_val* act_obj = yyjson_mut_obj_add_obj(doc->doc, obj, "activity");
+        if (!act_obj) return DC_ERROR_OUT_OF_MEMORY;
+        st = dc_json_mut_set_int64(doc, act_obj, "type", (int64_t)message->activity.type);
+        if (st != DC_OK) return st;
+        if (message->activity.party_id.is_set) {
+            st = dc_json_mut_set_string(doc, act_obj, "party_id",
+                                        dc_string_cstr(&message->activity.party_id.value));
+            if (st != DC_OK) return st;
+        }
+    }
 
     return DC_OK;
 }
