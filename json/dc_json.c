@@ -146,6 +146,7 @@ dc_status_t dc_json_get_string(yyjson_val* val, const char* key, const char** re
     if (!yyjson_is_str(field)) return DC_ERROR_INVALID_FORMAT;
     
     *result = yyjson_get_str(field);
+    if (!*result) return DC_ERROR_INVALID_FORMAT;
     return DC_OK;
 }
 
@@ -234,6 +235,7 @@ dc_status_t dc_json_get_string_opt(yyjson_val* val, const char* key, const char*
     if (!yyjson_is_str(field)) return DC_ERROR_INVALID_FORMAT;
     
     *result = yyjson_get_str(field);
+    if (!*result) return DC_ERROR_INVALID_FORMAT;
     return DC_OK;
 }
 
@@ -343,6 +345,7 @@ dc_status_t dc_json_get_string_optional(yyjson_val* val, const char* key, dc_opt
 
     out->is_set = 1;
     out->value = yyjson_get_str(field);
+    if (!out->value) return DC_ERROR_INVALID_FORMAT;
     return DC_OK;
 }
 
@@ -361,6 +364,7 @@ dc_status_t dc_json_get_string_nullable(yyjson_val* val, const char* key, dc_nul
 
     out->is_null = 0;
     out->value = yyjson_get_str(field);
+    if (!out->value) return DC_ERROR_INVALID_FORMAT;
     return DC_OK;
 }
 

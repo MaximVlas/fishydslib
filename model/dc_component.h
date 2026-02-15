@@ -89,7 +89,7 @@ typedef struct {
     dc_string_t label;
     dc_string_t value;
     dc_optional_string_t description;
-    dc_partial_emoji_t* emoji;
+    dc_partial_emoji_t* emoji;  /**< Heap-allocated via dc_calloc; freed by dc_select_option_free */
     dc_optional_bool_t default_val;
 } dc_select_option_t;
 
@@ -109,7 +109,7 @@ struct dc_component {
     dc_optional_string_t custom_id;
     dc_optional_i32_t style;  // For buttons and text inputs
     dc_optional_string_t label;
-    dc_partial_emoji_t* emoji;
+    dc_partial_emoji_t* emoji;  /**< Heap-allocated via dc_calloc; freed by dc_component_free */
     dc_optional_string_t url;
     dc_optional_snowflake_t sku_id;
     dc_optional_bool_t disabled;
@@ -124,15 +124,15 @@ struct dc_component {
     dc_optional_string_t value;
     dc_vec_t channel_types;  // int (channel types)
     dc_vec_t components;  // dc_component_t (child components)
-    dc_component_t* accessory;  // dc_component_t (for sections)
-    dc_unfurled_media_item_t* media;  // dc_unfurled_media_item_t (for thumbnails)
+    dc_component_t* accessory;  /**< Heap-allocated; freed by dc_component_free */
+    dc_unfurled_media_item_t* media;  /**< Heap-allocated; freed by dc_component_free */
     dc_optional_string_t description;
     dc_optional_bool_t spoiler;
     dc_optional_i32_t accent_color;
     dc_optional_bool_t divider;
     dc_optional_i32_t spacing;
-    dc_component_t* component;  // dc_component_t (for labels)
-    dc_unfurled_media_item_t* file;  // dc_unfurled_media_item_t (for file components)
+    dc_component_t* component;  /**< Heap-allocated; freed by dc_component_free */
+    dc_unfurled_media_item_t* file;  /**< Heap-allocated; freed by dc_component_free */
     dc_optional_string_t content;
     dc_optional_i32_t size;
     dc_optional_string_t name;

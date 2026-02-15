@@ -21,6 +21,20 @@ static int dc_multipart_value_is_valid(const char* value) {
     return 1;
 }
 
+/* Escape quotes and backslashes in Content-Disposition parameter values (RFC 7578) */
+static dc_status_t dc_multipart_append_escaped(dc_string_t* out, const char* value) {
+    if (!out || !value) return DC_ERROR_NULL_POINTER;
+    for (const char* p = value; *p; p++) {
+        if (*p == '"' || *p == '\\') {
+            dc_status_t st = dc_string_append_char(out, '\\');
+            if (st != DC_OK) return st;
+        }
+        dc_status_t st = dc_string_append_char(out, *p);
+        if (st != DC_OK) return st;
+    }
+    return DC_OK;
+}
+
 static int dc_multipart_boundary_char_is_valid(int c) {
     if (c >= (int)'0' && c <= (int)'9') return 1;
     if (c >= (int)'A' && c <= (int)'Z') return 1;
@@ -231,9 +245,15 @@ dc_status_t dc_multipart_add_file_named(dc_multipart_t* mp, const char* field_na
 
     dc_status_t st = dc_multipart_append_boundary(mp);
     if (st != DC_OK) return st;
-    st = dc_string_append_printf(&mp->body,
-                                 "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\n",
-                                 field_name, filename);
+    st = dc_string_append_cstr(&mp->body, "Content-Disposition: form-data; name=\"");
+    if (st != DC_OK) return st;
+    st = dc_multipart_append_escaped(&mp->body, field_name);
+    if (st != DC_OK) return st;
+    st = dc_string_append_cstr(&mp->body, "\"; filename=\"");
+    if (st != DC_OK) return st;
+    st = dc_multipart_append_escaped(&mp->body, filename);
+    if (st != DC_OK) return st;
+    st = dc_string_append_cstr(&mp->body, "\"\r\n");
     if (st != DC_OK) return st;
     if (content_type && content_type[0] != '\0') {
         st = dc_string_append_printf(&mp->body, "Content-Type: %s\r\n", content_type);

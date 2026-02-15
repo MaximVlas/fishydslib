@@ -274,6 +274,8 @@ dc_status_t dc_http_error_parse(const char* body, size_t body_len, dc_http_error
             return DC_ERROR_JSON;
         }
         dc_status_t st = dc_string_set_buffer(&err->errors, json, json_len);
+        /* yyjson_val_write_opts with NULL allocator uses standard malloc;
+           free() is correct here, not dc_free() */
         free(json);
         if (st != DC_OK) {
             yyjson_doc_free(doc);

@@ -1202,7 +1202,8 @@ void dc_gateway_client_free(dc_gateway_client_t* client) {
 dc_status_t dc_gateway_client_connect(dc_gateway_client_t* client, const char* gateway_url) {
     if (!client) return DC_ERROR_NULL_POINTER;
     if (!gateway_url || gateway_url[0] == '\0') {
-        if (dc_string_length(&client->resume_url) > 0) {
+        if (dc_string_length(&client->resume_url) > 0 &&
+            dc_string_length(&client->session_id) > 0) {
             gateway_url = dc_string_cstr(&client->resume_url);
             client->should_resume = 1;
         } else if (dc_string_length(&client->base_url) > 0) {

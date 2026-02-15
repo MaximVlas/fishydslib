@@ -320,21 +320,29 @@ static size_t dc_http_header_cb(char* buffer, size_t size, size_t nitems, void* 
         value_len--;
     }
 
-    char name_buf[128];
-    if (name_len == 0 || name_len >= sizeof(name_buf)) return total;
-    memcpy(name_buf, buffer, name_len);
-    name_buf[name_len] = '\0';
+    char name_buf[256];
+    char* name_ptr = name_buf;
+    if (name_len == 0) return total;
+    if (name_len >= sizeof(name_buf)) {
+        name_ptr = (char*)dc_alloc(name_len + 1);
+        if (!name_ptr) return 0;
+    }
+    memcpy(name_ptr, buffer, name_len);
+    name_ptr[name_len] = '\0';
 
     dc_string_t value_str;
     if (dc_string_init_from_buffer(&value_str, value_start, value_len) != DC_OK) {
+        if (name_ptr != name_buf) dc_free(name_ptr);
         return 0;
     }
     dc_http_header_t header;
-    if (dc_http_header_init(&header, name_buf, dc_string_cstr(&value_str)) != DC_OK) {
+    if (dc_http_header_init(&header, name_ptr, dc_string_cstr(&value_str)) != DC_OK) {
         dc_string_free(&value_str);
+        if (name_ptr != name_buf) dc_free(name_ptr);
         return 0;
     }
     dc_string_free(&value_str);
+    if (name_ptr != name_buf) dc_free(name_ptr);
     if (dc_vec_push(&response->headers, &header) != DC_OK) {
         dc_http_header_free(&header);
         return 0;

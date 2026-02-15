@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <yyjson.h>
 
+#define DC_MESSAGE_CONTENT_MAX_LEN 2000u
+
 struct dc_client {
     dc_rest_client_t* rest;
     dc_gateway_client_t* gateway;
@@ -32,9 +34,23 @@ static void dc_client_log(const dc_client_t* client, dc_log_level_t level, const
     char buf[512];
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
+    int needed = vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-    client->log_callback(level, buf, client->log_user_data);
+    if (needed < 0) return;
+    if ((size_t)needed < sizeof(buf)) {
+        client->log_callback(level, buf, client->log_user_data);
+        return;
+    }
+    char* heap_buf = (char*)dc_alloc((size_t)needed + 1);
+    if (!heap_buf) {
+        client->log_callback(level, buf, client->log_user_data);
+        return;
+    }
+    va_start(args, fmt);
+    vsnprintf(heap_buf, (size_t)needed + 1, fmt, args);
+    va_end(args);
+    client->log_callback(level, heap_buf, client->log_user_data);
+    dc_free(heap_buf);
 }
 
 static dc_status_t dc_client_i64_to_u32(int64_t val, uint32_t* out) {
@@ -995,6 +1011,7 @@ dc_status_t dc_client_create_message(dc_client_t* client, dc_snowflake_t channel
                                      const char* content, dc_snowflake_t* message_id) {
     if (!content) return DC_ERROR_NULL_POINTER;
     if (content[0] == '\0') return DC_ERROR_INVALID_PARAM;
+    if (strlen(content) > DC_MESSAGE_CONTENT_MAX_LEN) return DC_ERROR_INVALID_PARAM;
 
     dc_client_log(client, DC_LOG_DEBUG, "Create message channel=%llu len=%zu",
                   (unsigned long long)channel_id, strlen(content));
