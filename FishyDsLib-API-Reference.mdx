@@ -13,6 +13,7 @@ The API is actively evolving, so review release notes and headers when upgrading
 - [6) JSON Helpers](#6-json-helpers)
 - [7) Typed Models](#7-typed-models)
 - [8) Enums and Constants](#8-Notes-on-Enums-and-Constants)
+- [9) Header Parity Update](#9-header-parity-update)
 
 ## Conventions
 
@@ -1187,6 +1188,137 @@ These are intended to be used directly when constructing requests, parsing event
 | `DC_LOG_DEBUG` | Debug level |
 | `DC_LOG_TRACE` | Trace level |
 
+## 9) Header Parity Update
+
+Added on February 15, 2026 to reflect exported APIs present in headers and missing from earlier sections.
+
+### Additional APIs from `client/dc_client.h` (Lack documentation)
+
+```c
+dc_status_t dc_client_add_thread_member(dc_client_t* client, dc_snowflake_t thread_id, dc_snowflake_t user_id);
+dc_status_t dc_client_batch_edit_application_command_permissions_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, const char* json_body, dc_string_t* permissions_json);
+dc_status_t dc_client_begin_guild_prune_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_string_t* prune_json);
+dc_status_t dc_client_bulk_delete_messages_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body);
+dc_status_t dc_client_bulk_guild_ban_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_string_t* result_json);
+dc_status_t dc_client_bulk_overwrite_global_application_commands_json(dc_client_t* client, dc_snowflake_t application_id, const char* json_body, dc_string_t* commands_json);
+dc_status_t dc_client_bulk_overwrite_guild_application_commands_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, const char* json_body, dc_string_t* commands_json);
+dc_status_t dc_client_create_channel_invite_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body, dc_string_t* invite_json);
+dc_status_t dc_client_create_global_application_command_json(dc_client_t* client, dc_snowflake_t application_id, const char* json_body, dc_string_t* command_json);
+dc_status_t dc_client_create_guild_application_command_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, const char* json_body, dc_string_t* command_json);
+dc_status_t dc_client_create_guild_ban(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id, int delete_message_seconds);
+dc_status_t dc_client_create_guild_emoji_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_string_t* emoji_json);
+dc_status_t dc_client_create_guild_scheduled_event_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_string_t* event_json);
+dc_status_t dc_client_create_guild_sticker_multipart(dc_client_t* client, dc_snowflake_t guild_id, const char* name, const char* description, const char* tags, const void* file_data, size_t file_size, const char* filename, const char* content_type, dc_string_t* sticker_json);
+dc_status_t dc_client_create_reaction_encoded(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* emoji_encoded);
+dc_status_t dc_client_crosspost_message_json(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, dc_string_t* message_json);
+dc_status_t dc_client_delete_all_reactions(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id);
+dc_status_t dc_client_delete_all_reactions_for_emoji_encoded(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* emoji_encoded);
+dc_status_t dc_client_delete_channel_permission(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t overwrite_id);
+dc_status_t dc_client_delete_global_application_command(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t command_id);
+dc_status_t dc_client_delete_guild_application_command(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, dc_snowflake_t command_id);
+dc_status_t dc_client_delete_guild_emoji(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t emoji_id);
+dc_status_t dc_client_delete_guild_integration(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t integration_id);
+dc_status_t dc_client_delete_guild_scheduled_event(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t event_id);
+dc_status_t dc_client_delete_guild_sticker(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t sticker_id);
+dc_status_t dc_client_delete_invite_json(dc_client_t* client, const char* invite_code, dc_string_t* invite_json);
+dc_status_t dc_client_delete_own_reaction_encoded(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* emoji_encoded);
+dc_status_t dc_client_delete_user_reaction_encoded(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* emoji_encoded, dc_snowflake_t user_id);
+dc_status_t dc_client_edit_application_command_permissions_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, dc_snowflake_t command_id, const char* json_body, dc_string_t* permission_json);
+dc_status_t dc_client_edit_channel_permissions_json(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t overwrite_id, const char* json_body);
+dc_status_t dc_client_edit_message_json(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* json_body, dc_message_t* message);
+dc_status_t dc_client_follow_announcement_channel_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body, dc_string_t* followed_channel_json);
+dc_status_t dc_client_get_application_command_permissions_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, dc_snowflake_t command_id, dc_string_t* permission_json);
+dc_status_t dc_client_get_application_role_connection_metadata_json(dc_client_t* client, dc_snowflake_t application_id, dc_string_t* metadata_json);
+dc_status_t dc_client_get_channel_invites_json(dc_client_t* client, dc_snowflake_t channel_id, dc_string_t* invites_json);
+dc_status_t dc_client_get_channel_pins_json(dc_client_t* client, dc_snowflake_t channel_id, const char* before_iso8601, uint32_t limit, dc_string_t* pins_json);
+dc_status_t dc_client_get_current_application_json(dc_client_t* client, dc_string_t* application_json);
+dc_status_t dc_client_get_global_application_command_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t command_id, dc_string_t* command_json);
+dc_status_t dc_client_get_global_application_commands_json(dc_client_t* client, dc_snowflake_t application_id, int with_localizations, dc_string_t* commands_json);
+dc_status_t dc_client_get_guild_application_command_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, dc_snowflake_t command_id, dc_string_t* command_json);
+dc_status_t dc_client_get_guild_application_command_permissions_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, dc_string_t* permissions_json);
+dc_status_t dc_client_get_guild_application_commands_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, int with_localizations, dc_string_t* commands_json);
+dc_status_t dc_client_get_guild_ban_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id, dc_string_t* ban_json);
+dc_status_t dc_client_get_guild_bans_json(dc_client_t* client, dc_snowflake_t guild_id, uint32_t limit, dc_snowflake_t before, dc_snowflake_t after, dc_string_t* bans_json);
+dc_status_t dc_client_get_guild_emoji_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t emoji_id, dc_string_t* emoji_json);
+dc_status_t dc_client_get_guild_integrations_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* integrations_json);
+dc_status_t dc_client_get_guild_invites_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* invites_json);
+dc_status_t dc_client_get_guild_preview_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* preview_json);
+dc_status_t dc_client_get_guild_prune_count_json(dc_client_t* client, dc_snowflake_t guild_id, uint32_t days, const char* include_roles_csv, dc_string_t* prune_json);
+dc_status_t dc_client_get_guild_role_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t role_id, dc_string_t* role_json);
+dc_status_t dc_client_get_guild_role_member_counts_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* counts_json);
+dc_status_t dc_client_get_guild_scheduled_event_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t event_id, int with_user_count, dc_string_t* event_json);
+dc_status_t dc_client_get_guild_scheduled_event_users_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t event_id, uint32_t limit, int with_member, dc_snowflake_t before, dc_snowflake_t after, dc_string_t* users_json);
+dc_status_t dc_client_get_guild_sticker_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t sticker_id, dc_string_t* sticker_json);
+dc_status_t dc_client_get_guild_voice_regions_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* regions_json);
+dc_status_t dc_client_get_invite_json(dc_client_t* client, const char* invite_code, int with_counts, int with_expiration, dc_snowflake_t guild_scheduled_event_id, dc_string_t* invite_json);
+dc_status_t dc_client_get_reactions_encoded_json(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* emoji_encoded, int reaction_type, dc_snowflake_t after, uint32_t limit, dc_string_t* users_json);
+dc_status_t dc_client_get_sticker_json(dc_client_t* client, dc_snowflake_t sticker_id, dc_string_t* sticker_json);
+dc_status_t dc_client_get_sticker_pack_json(dc_client_t* client, dc_snowflake_t pack_id, dc_string_t* sticker_pack_json);
+dc_status_t dc_client_get_thread_member_json(dc_client_t* client, dc_snowflake_t thread_id, dc_snowflake_t user_id, int with_member, dc_string_t* member_json);
+dc_status_t dc_client_join_thread(dc_client_t* client, dc_snowflake_t thread_id);
+dc_status_t dc_client_leave_thread(dc_client_t* client, dc_snowflake_t thread_id);
+dc_status_t dc_client_list_active_guild_threads_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* threads_json);
+dc_status_t dc_client_list_guild_emojis_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* emojis_json);
+dc_status_t dc_client_list_guild_scheduled_events_json(dc_client_t* client, dc_snowflake_t guild_id, int with_user_count, dc_string_t* events_json);
+dc_status_t dc_client_list_guild_stickers_json(dc_client_t* client, dc_snowflake_t guild_id, dc_string_t* stickers_json);
+dc_status_t dc_client_list_joined_private_archived_threads_json(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t before, uint32_t limit, dc_string_t* threads_json);
+dc_status_t dc_client_list_private_archived_threads_json(dc_client_t* client, dc_snowflake_t channel_id, const char* before_iso8601, uint32_t limit, dc_string_t* threads_json);
+dc_status_t dc_client_list_public_archived_threads_json(dc_client_t* client, dc_snowflake_t channel_id, const char* before_iso8601, uint32_t limit, dc_string_t* threads_json);
+dc_status_t dc_client_list_sticker_packs_json(dc_client_t* client, dc_string_t* sticker_packs_json);
+dc_status_t dc_client_list_thread_members_json(dc_client_t* client, dc_snowflake_t thread_id, int with_member, dc_snowflake_t after, uint32_t limit, dc_string_t* members_json);
+dc_status_t dc_client_modify_current_application_json(dc_client_t* client, const char* json_body, dc_string_t* application_json);
+dc_status_t dc_client_modify_current_member_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_string_t* member_json);
+dc_status_t dc_client_modify_current_user_nick_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body, dc_string_t* nick_json);
+dc_status_t dc_client_modify_global_application_command_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t command_id, const char* json_body, dc_string_t* command_json);
+dc_status_t dc_client_modify_guild_application_command_json(dc_client_t* client, dc_snowflake_t application_id, dc_snowflake_t guild_id, dc_snowflake_t command_id, const char* json_body, dc_string_t* command_json);
+dc_status_t dc_client_modify_guild_channel_positions_json(dc_client_t* client, dc_snowflake_t guild_id, const char* json_body);
+dc_status_t dc_client_modify_guild_emoji_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t emoji_id, const char* json_body, dc_string_t* emoji_json);
+dc_status_t dc_client_modify_guild_member_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id, const char* json_body, dc_string_t* member_json);
+dc_status_t dc_client_modify_guild_scheduled_event_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t event_id, const char* json_body, dc_string_t* event_json);
+dc_status_t dc_client_modify_guild_sticker_json(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t sticker_id, const char* json_body, dc_string_t* sticker_json);
+dc_status_t dc_client_remove_guild_ban(dc_client_t* client, dc_snowflake_t guild_id, dc_snowflake_t user_id);
+dc_status_t dc_client_remove_thread_member(dc_client_t* client, dc_snowflake_t thread_id, dc_snowflake_t user_id);
+dc_status_t dc_client_search_guild_members_json(dc_client_t* client, dc_snowflake_t guild_id, const char* query, uint32_t limit, dc_string_t* members_json);
+dc_status_t dc_client_start_forum_or_media_thread_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body, dc_string_t* thread_json);
+dc_status_t dc_client_start_thread_from_message_json(dc_client_t* client, dc_snowflake_t channel_id, dc_snowflake_t message_id, const char* json_body, dc_string_t* thread_json);
+dc_status_t dc_client_start_thread_without_message_json(dc_client_t* client, dc_snowflake_t channel_id, const char* json_body, dc_string_t* thread_json);
+dc_status_t dc_client_trigger_typing_indicator(dc_client_t* client, dc_snowflake_t channel_id);
+dc_status_t dc_client_update_application_role_connection_metadata_json(dc_client_t* client, dc_snowflake_t application_id, const char* json_body, dc_string_t* metadata_json);
+```
+
+### Additional APIs from `model/dc_message.h`
+
+```c
+void dc_channel_mention_free(dc_channel_mention_t* mention);
+dc_status_t dc_channel_mention_init(dc_channel_mention_t* mention);
+void dc_message_activity_free(dc_message_activity_t* activity);
+dc_status_t dc_message_activity_init(dc_message_activity_t* activity);
+void dc_message_call_free(dc_message_call_t* call);
+dc_status_t dc_message_call_init(dc_message_call_t* call);
+void dc_message_reference_free(dc_message_reference_t* ref);
+dc_status_t dc_message_reference_init(dc_message_reference_t* ref);
+void dc_reaction_free(dc_reaction_t* reaction);
+dc_status_t dc_reaction_init(dc_reaction_t* reaction);
+void dc_role_subscription_data_free(dc_role_subscription_data_t* data);
+dc_status_t dc_role_subscription_data_init(dc_role_subscription_data_t* data);
+void dc_sticker_item_free(dc_sticker_item_t* item);
+dc_status_t dc_sticker_item_init(dc_sticker_item_t* item);
+```
+
+### Additional APIs from `model/dc_user.h`
+
+```c
+void dc_avatar_decoration_data_free(dc_avatar_decoration_data_t* data);
+dc_status_t dc_avatar_decoration_data_init(dc_avatar_decoration_data_t* data);
+void dc_collectibles_free(dc_collectibles_t* data);
+dc_status_t dc_collectibles_init(dc_collectibles_t* data);
+void dc_nameplate_data_free(dc_nameplate_data_t* data);
+dc_status_t dc_nameplate_data_init(dc_nameplate_data_t* data);
+void dc_user_primary_guild_free(dc_user_primary_guild_t* data);
+dc_status_t dc_user_primary_guild_init(dc_user_primary_guild_t* data);
+```
+
+
 ## Conclusion
 
 The Fishy Discord Library provides a C API for interacting with Discord's API v10. This reference covers all public functions, data structures, and constants available in the library. The library follows consistent patterns for error handling using `dc_status_t` return values and provides extensive utilities for JSON parsing, HTTP requests, and gateway connections.
@@ -1198,3 +1330,4 @@ For more information about Discord's API, refer to the official [Discord Develop
 - [Discord API v10 Documentation](https://discord.com/developers/docs/reference)
 - [Discord Gateway Events](https://discord.com/developers/docs/topics/gateway-events)
 - [Discord Rate Limits](https://discord.com/developers/docs/topics/rate-limits)
+
