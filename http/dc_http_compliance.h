@@ -29,7 +29,7 @@ extern "C" {
 #define DC_HTTP_LIBRARY_VERSION "0.1.0"
 #endif
 #ifndef DC_HTTP_LIBRARY_URL
-#define DC_HTTP_LIBRARY_URL ""
+#define DC_HTTP_LIBRARY_URL "https://github.com"
 #endif
 
 /**

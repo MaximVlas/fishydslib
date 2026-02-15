@@ -111,8 +111,10 @@ dc_status_t dc_iso8601_parse(const char* str, dc_iso8601_t* timestamp) {
         i++;
         int ms = 0;
         int digits = 0;
-        while (i < len && digits < 3 && str[i] >= '0' && str[i] <= '9') {
-            ms = ms * 10 + (str[i] - '0');
+        while (i < len && str[i] >= '0' && str[i] <= '9') {
+            if (digits < 3) {
+                ms = ms * 10 + (str[i] - '0');
+            }
             digits++;
             i++;
         }
@@ -122,9 +124,6 @@ dc_status_t dc_iso8601_parse(const char* str, dc_iso8601_t* timestamp) {
             digits++;
         }
         timestamp->millisecond = ms;
-        if (i < len && str[i] >= '0' && str[i] <= '9') {
-            return DC_ERROR_INVALID_FORMAT;
-        }
     }
 
     timestamp->is_utc = 0;
