@@ -22,6 +22,68 @@ static int dc_user_avatar_format_valid(const char* format) {
            strcmp(format, "gif") == 0;
 }
 
+dc_status_t dc_avatar_decoration_data_init(dc_avatar_decoration_data_t* data) {
+    if (!data) return DC_ERROR_NULL_POINTER;
+    memset(data, 0, sizeof(*data));
+    return dc_string_init(&data->asset);
+}
+
+void dc_avatar_decoration_data_free(dc_avatar_decoration_data_t* data) {
+    if (!data) return;
+    dc_string_free(&data->asset);
+    data->sku_id = 0;
+}
+
+dc_status_t dc_nameplate_data_init(dc_nameplate_data_t* data) {
+    if (!data) return DC_ERROR_NULL_POINTER;
+    memset(data, 0, sizeof(*data));
+    dc_status_t st = dc_string_init(&data->asset);
+    if (st != DC_OK) return st;
+    st = dc_string_init(&data->label);
+    if (st != DC_OK) return st;
+    return dc_string_init(&data->palette);
+}
+
+void dc_nameplate_data_free(dc_nameplate_data_t* data) {
+    if (!data) return;
+    dc_string_free(&data->asset);
+    dc_string_free(&data->label);
+    dc_string_free(&data->palette);
+    data->sku_id = 0;
+}
+
+dc_status_t dc_collectibles_init(dc_collectibles_t* data) {
+    if (!data) return DC_ERROR_NULL_POINTER;
+    memset(data, 0, sizeof(*data));
+    return dc_nameplate_data_init(&data->nameplate);
+}
+
+void dc_collectibles_free(dc_collectibles_t* data) {
+    if (!data) return;
+    dc_nameplate_data_free(&data->nameplate);
+    data->has_nameplate = 0;
+}
+
+dc_status_t dc_user_primary_guild_init(dc_user_primary_guild_t* data) {
+    if (!data) return DC_ERROR_NULL_POINTER;
+    memset(data, 0, sizeof(*data));
+    dc_nullable_snowflake_set_null(&data->identity_guild_id);
+    dc_nullable_bool_set_null(&data->identity_enabled);
+    dc_status_t st = dc_nullable_string_init(&data->tag);
+    if (st != DC_OK) return st;
+    return dc_nullable_string_init(&data->badge);
+}
+
+void dc_user_primary_guild_free(dc_user_primary_guild_t* data) {
+    if (!data) return;
+    dc_nullable_string_free(&data->tag);
+    dc_nullable_string_free(&data->badge);
+    data->identity_guild_id.is_null = 1;
+    data->identity_guild_id.value = 0;
+    data->identity_enabled.is_null = 1;
+    data->identity_enabled.value = 0;
+}
+
 dc_status_t dc_user_init(dc_user_t* user) {
     if (!user) return DC_ERROR_NULL_POINTER;
     memset(user, 0, sizeof(*user));
@@ -41,6 +103,12 @@ dc_status_t dc_user_init(dc_user_t* user) {
     if (st != DC_OK) return st;
     st = dc_string_init(&user->avatar_decoration);
     if (st != DC_OK) return st;
+    st = dc_avatar_decoration_data_init(&user->avatar_decoration_data);
+    if (st != DC_OK) return st;
+    st = dc_collectibles_init(&user->collectibles);
+    if (st != DC_OK) return st;
+    st = dc_user_primary_guild_init(&user->primary_guild);
+    if (st != DC_OK) return st;
     return DC_OK;
 }
 
@@ -54,6 +122,9 @@ void dc_user_free(dc_user_t* user) {
     dc_string_free(&user->locale);
     dc_string_free(&user->email);
     dc_string_free(&user->avatar_decoration);
+    dc_avatar_decoration_data_free(&user->avatar_decoration_data);
+    dc_collectibles_free(&user->collectibles);
+    dc_user_primary_guild_free(&user->primary_guild);
     memset(user, 0, sizeof(*user));
 }
 

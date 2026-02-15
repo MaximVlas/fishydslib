@@ -10,6 +10,7 @@
 #include "core/dc_status.h"
 #include "core/dc_string.h"
 #include "core/dc_snowflake.h"
+#include "model/dc_model_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +48,46 @@ typedef enum {
 } dc_user_flag_t;
 
 /**
+ * @brief Avatar decoration data object
+ * @see https://discord.com/developers/docs/resources/user#avatar-decoration-data-object
+ */
+typedef struct {
+    dc_string_t asset;      /**< Avatar decoration hash */
+    dc_snowflake_t sku_id;  /**< SKU ID of the avatar decoration */
+} dc_avatar_decoration_data_t;
+
+/**
+ * @brief Nameplate data object
+ * @see https://discord.com/developers/docs/resources/user#nameplate
+ */
+typedef struct {
+    dc_snowflake_t sku_id;  /**< ID of the nameplate SKU */
+    dc_string_t asset;      /**< Path to the nameplate asset */
+    dc_string_t label;      /**< Label of this nameplate */
+    dc_string_t palette;    /**< Background color palette */
+} dc_nameplate_data_t;
+
+/**
+ * @brief User collectibles object
+ * @see https://discord.com/developers/docs/resources/user#collectibles
+ */
+typedef struct {
+    int has_nameplate;               /**< Whether nameplate is present */
+    dc_nameplate_data_t nameplate;   /**< Nameplate data */
+} dc_collectibles_t;
+
+/**
+ * @brief User primary guild object
+ * @see https://discord.com/developers/docs/resources/user#user-object-user-primary-guild
+ */
+typedef struct {
+    dc_nullable_snowflake_t identity_guild_id;  /**< Primary guild ID */
+    dc_nullable_bool_t identity_enabled;        /**< Whether identity is enabled */
+    dc_nullable_string_t tag;                   /**< Server tag text (max 4 chars) */
+    dc_nullable_string_t badge;                 /**< Server tag badge hash */
+} dc_user_primary_guild_t;
+
+/**
  * @brief Discord User structure
  */
 typedef struct {
@@ -62,7 +103,13 @@ typedef struct {
     uint32_t flags;                     /**< User flags */
     dc_user_premium_type_t premium_type; /**< Premium type */
     uint32_t public_flags;              /**< Public flags */
-    dc_string_t avatar_decoration;      /**< Avatar decoration hash */
+    dc_string_t avatar_decoration;      /**< Avatar decoration hash (deprecated) */
+    int has_avatar_decoration_data;     /**< Whether avatar_decoration_data is present */
+    dc_avatar_decoration_data_t avatar_decoration_data; /**< Parsed avatar decoration data */
+    int has_collectibles;               /**< Whether collectibles is present */
+    dc_collectibles_t collectibles;     /**< User collectibles */
+    int has_primary_guild;              /**< Whether primary_guild is present */
+    dc_user_primary_guild_t primary_guild; /**< User primary guild */
     int bot;                            /**< Is bot */
     int system;                         /**< Is system user */
     int mfa_enabled;                    /**< MFA enabled */
@@ -81,6 +128,15 @@ dc_status_t dc_user_init(dc_user_t* user);
  * @param user User to free
  */
 void dc_user_free(dc_user_t* user);
+
+dc_status_t dc_avatar_decoration_data_init(dc_avatar_decoration_data_t* data);
+void dc_avatar_decoration_data_free(dc_avatar_decoration_data_t* data);
+dc_status_t dc_nameplate_data_init(dc_nameplate_data_t* data);
+void dc_nameplate_data_free(dc_nameplate_data_t* data);
+dc_status_t dc_collectibles_init(dc_collectibles_t* data);
+void dc_collectibles_free(dc_collectibles_t* data);
+dc_status_t dc_user_primary_guild_init(dc_user_primary_guild_t* data);
+void dc_user_primary_guild_free(dc_user_primary_guild_t* data);
 
 /**
  * @brief Parse user from JSON

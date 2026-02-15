@@ -21,6 +21,7 @@ typedef DC_OPTIONAL(dc_snowflake_t) dc_optional_snowflake_t;
 typedef DC_NULLABLE(dc_snowflake_t) dc_nullable_snowflake_t;
 typedef DC_OPTIONAL(int32_t) dc_optional_i32_t;
 typedef DC_OPTIONAL(int) dc_optional_bool_t;
+typedef DC_NULLABLE(int) dc_nullable_bool_t;
 
 typedef struct {
     int is_set;
@@ -82,6 +83,12 @@ static inline void dc_optional_i32_clear(dc_optional_i32_t* opt) {
 static inline void dc_optional_bool_clear(dc_optional_bool_t* opt) {
     if (!opt) return;
     opt->is_set = 0;
+    opt->value = 0;
+}
+
+static inline void dc_nullable_bool_set_null(dc_nullable_bool_t* opt) {
+    if (!opt) return;
+    opt->is_null = 1;
     opt->value = 0;
 }
 

@@ -5,6 +5,7 @@
 
 #include "dc_json_model.h"
 #include "core/dc_time.h"
+#include "model/dc_user.h"
 #include <limits.h>
 #include <string.h>
 #include <yyjson.h>
@@ -92,6 +93,41 @@ static dc_status_t dc_json_get_nullable_string_field(yyjson_val* obj, const char
     if (!yyjson_is_str(field)) return DC_ERROR_INVALID_FORMAT;
     out->is_null = 0;
     return dc_json_copy_cstr(&out->value, yyjson_get_str(field));
+}
+
+static dc_status_t dc_json_get_nullable_snowflake_field(yyjson_val* obj, const char* key,
+                                                        dc_nullable_snowflake_t* out) {
+    if (!obj || !key || !out) return DC_ERROR_NULL_POINTER;
+    yyjson_val* field = yyjson_obj_get(obj, key);
+    if (!field || yyjson_is_null(field)) {
+        out->is_null = 1;
+        out->value = 0;
+        return DC_OK;
+    }
+    if (!yyjson_is_str(field)) return DC_ERROR_INVALID_FORMAT;
+    const char* str = yyjson_get_str(field);
+    if (!str) return DC_ERROR_INVALID_FORMAT;
+    dc_snowflake_t sf = 0;
+    dc_status_t st = dc_snowflake_from_string(str, &sf);
+    if (st != DC_OK) return st;
+    out->is_null = 0;
+    out->value = sf;
+    return DC_OK;
+}
+
+static dc_status_t dc_json_get_nullable_bool_field(yyjson_val* obj, const char* key,
+                                                   dc_nullable_bool_t* out) {
+    if (!obj || !key || !out) return DC_ERROR_NULL_POINTER;
+    yyjson_val* field = yyjson_obj_get(obj, key);
+    if (!field || yyjson_is_null(field)) {
+        out->is_null = 1;
+        out->value = 0;
+        return DC_OK;
+    }
+    if (!yyjson_is_bool(field)) return DC_ERROR_INVALID_FORMAT;
+    out->is_null = 0;
+    out->value = yyjson_get_bool(field) ? 1 : 0;
+    return DC_OK;
 }
 
 static dc_status_t dc_json_parse_snowflake_array(yyjson_val* arr, dc_vec_t* out) {
@@ -427,6 +463,21 @@ dc_status_t dc_json_model_user_from_val(yyjson_val* val, dc_user_t* user) {
     st = dc_json_get_string_opt(val, "avatar_decoration", &avatar_decoration, "");
     if (st != DC_OK) return st;
 
+    /* avatar_decoration_data sub-object */
+    yyjson_val* add_obj = NULL;
+    st = dc_json_get_object_opt(val, "avatar_decoration_data", &add_obj);
+    if (st != DC_OK) return st;
+
+    /* collectibles sub-object */
+    yyjson_val* collectibles_obj = NULL;
+    st = dc_json_get_object_opt(val, "collectibles", &collectibles_obj);
+    if (st != DC_OK) return st;
+
+    /* primary_guild sub-object */
+    yyjson_val* primary_guild_obj = NULL;
+    st = dc_json_get_object_opt(val, "primary_guild", &primary_guild_obj);
+    if (st != DC_OK) return st;
+
     int bot = 0;
     st = dc_json_get_bool_opt(val, "bot", &bot, 0);
     if (st != DC_OK) return st;
@@ -469,6 +520,64 @@ dc_status_t dc_json_model_user_from_val(yyjson_val* val, dc_user_t* user) {
     if (st != DC_OK) return st;
     st = dc_json_copy_cstr(&user->avatar_decoration, avatar_decoration);
     if (st != DC_OK) return st;
+
+    /* Parse avatar_decoration_data sub-object */
+    if (add_obj) {
+        user->has_avatar_decoration_data = 1;
+        const char* add_asset = NULL;
+        st = dc_json_get_string(add_obj, "asset", &add_asset);
+        if (st != DC_OK) return st;
+        st = dc_json_copy_cstr(&user->avatar_decoration_data.asset, add_asset);
+        if (st != DC_OK) return st;
+        st = dc_json_get_snowflake(add_obj, "sku_id", &user->avatar_decoration_data.sku_id);
+        if (st != DC_OK) return st;
+    }
+
+    /* Parse collectibles sub-object */
+    if (collectibles_obj) {
+        user->has_collectibles = 1;
+        yyjson_val* nameplate_obj = NULL;
+        st = dc_json_get_object_opt(collectibles_obj, "nameplate", &nameplate_obj);
+        if (st != DC_OK) return st;
+        if (nameplate_obj) {
+            user->collectibles.has_nameplate = 1;
+            st = dc_json_get_snowflake(nameplate_obj, "sku_id",
+                                       &user->collectibles.nameplate.sku_id);
+            if (st != DC_OK) return st;
+            const char* np_asset = NULL;
+            st = dc_json_get_string(nameplate_obj, "asset", &np_asset);
+            if (st != DC_OK) return st;
+            st = dc_json_copy_cstr(&user->collectibles.nameplate.asset, np_asset);
+            if (st != DC_OK) return st;
+            const char* np_label = NULL;
+            st = dc_json_get_string(nameplate_obj, "label", &np_label);
+            if (st != DC_OK) return st;
+            st = dc_json_copy_cstr(&user->collectibles.nameplate.label, np_label);
+            if (st != DC_OK) return st;
+            const char* np_palette = NULL;
+            st = dc_json_get_string(nameplate_obj, "palette", &np_palette);
+            if (st != DC_OK) return st;
+            st = dc_json_copy_cstr(&user->collectibles.nameplate.palette, np_palette);
+            if (st != DC_OK) return st;
+        }
+    }
+
+    /* Parse primary_guild sub-object */
+    if (primary_guild_obj) {
+        user->has_primary_guild = 1;
+        st = dc_json_get_nullable_snowflake_field(primary_guild_obj, "identity_guild_id",
+                                                  &user->primary_guild.identity_guild_id);
+        if (st != DC_OK) return st;
+        st = dc_json_get_nullable_bool_field(primary_guild_obj, "identity_enabled",
+                                             &user->primary_guild.identity_enabled);
+        if (st != DC_OK) return st;
+        st = dc_json_get_nullable_string_field(primary_guild_obj, "tag",
+                                               &user->primary_guild.tag, 1);
+        if (st != DC_OK) return st;
+        st = dc_json_get_nullable_string_field(primary_guild_obj, "badge",
+                                               &user->primary_guild.badge, 1);
+        if (st != DC_OK) return st;
+    }
 
     return DC_OK;
 }
@@ -1070,6 +1179,20 @@ static dc_status_t dc_json_mut_add_nullable_string(dc_json_mut_doc_t* doc, yyjso
     return dc_json_mut_set_string(doc, obj, key, dc_string_cstr(&val->value));
 }
 
+static dc_status_t dc_json_mut_add_nullable_snowflake(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
+                                                      const char* key, const dc_nullable_snowflake_t* val) {
+    if (!doc || !doc->doc || !obj || !key || !val) return DC_ERROR_NULL_POINTER;
+    if (val->is_null) return dc_json_mut_set_null(doc, obj, key);
+    return dc_json_mut_set_snowflake(doc, obj, key, val->value);
+}
+
+static dc_status_t dc_json_mut_add_nullable_bool(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
+                                                  const char* key, const dc_nullable_bool_t* val) {
+    if (!doc || !doc->doc || !obj || !key || !val) return DC_ERROR_NULL_POINTER;
+    if (val->is_null) return dc_json_mut_set_null(doc, obj, key);
+    return dc_json_mut_set_bool(doc, obj, key, val->value);
+}
+
 static dc_status_t dc_json_mut_add_forum_tags(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
                                               const char* key, const dc_vec_t* tags) {
     if (!doc || !doc->doc || !obj || !key || !tags) return DC_ERROR_NULL_POINTER;
@@ -1232,6 +1355,59 @@ dc_status_t dc_json_model_user_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* ob
     }
     st = dc_json_mut_add_string_if_set(doc, obj, "avatar_decoration", &user->avatar_decoration);
     if (st != DC_OK) return st;
+
+    /* Serialize avatar_decoration_data */
+    if (user->has_avatar_decoration_data) {
+        yyjson_mut_val* add_obj = yyjson_mut_obj_add_obj(doc->doc, obj, "avatar_decoration_data");
+        if (!add_obj) return DC_ERROR_OUT_OF_MEMORY;
+        st = dc_json_mut_set_string(doc, add_obj, "asset",
+                                    dc_string_cstr(&user->avatar_decoration_data.asset));
+        if (st != DC_OK) return st;
+        st = dc_json_mut_set_snowflake(doc, add_obj, "sku_id",
+                                       user->avatar_decoration_data.sku_id);
+        if (st != DC_OK) return st;
+    }
+
+    /* Serialize collectibles */
+    if (user->has_collectibles) {
+        yyjson_mut_val* coll_obj = yyjson_mut_obj_add_obj(doc->doc, obj, "collectibles");
+        if (!coll_obj) return DC_ERROR_OUT_OF_MEMORY;
+        if (user->collectibles.has_nameplate) {
+            yyjson_mut_val* np_obj = yyjson_mut_obj_add_obj(doc->doc, coll_obj, "nameplate");
+            if (!np_obj) return DC_ERROR_OUT_OF_MEMORY;
+            st = dc_json_mut_set_snowflake(doc, np_obj, "sku_id",
+                                           user->collectibles.nameplate.sku_id);
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_string(doc, np_obj, "asset",
+                                        dc_string_cstr(&user->collectibles.nameplate.asset));
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_string(doc, np_obj, "label",
+                                        dc_string_cstr(&user->collectibles.nameplate.label));
+            if (st != DC_OK) return st;
+            st = dc_json_mut_set_string(doc, np_obj, "palette",
+                                        dc_string_cstr(&user->collectibles.nameplate.palette));
+            if (st != DC_OK) return st;
+        }
+    }
+
+    /* Serialize primary_guild */
+    if (user->has_primary_guild) {
+        yyjson_mut_val* pg_obj = yyjson_mut_obj_add_obj(doc->doc, obj, "primary_guild");
+        if (!pg_obj) return DC_ERROR_OUT_OF_MEMORY;
+        st = dc_json_mut_add_nullable_snowflake(doc, pg_obj, "identity_guild_id",
+                                                &user->primary_guild.identity_guild_id);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_add_nullable_bool(doc, pg_obj, "identity_enabled",
+                                           &user->primary_guild.identity_enabled);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_add_nullable_string(doc, pg_obj, "tag",
+                                             &user->primary_guild.tag);
+        if (st != DC_OK) return st;
+        st = dc_json_mut_add_nullable_string(doc, pg_obj, "badge",
+                                             &user->primary_guild.badge);
+        if (st != DC_OK) return st;
+    }
+
     if (user->bot) {
         st = dc_json_mut_set_bool(doc, obj, "bot", user->bot);
         if (st != DC_OK) return st;
