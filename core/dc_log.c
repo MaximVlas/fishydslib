@@ -1,6 +1,6 @@
 /**
  * @file dc_log.c
- * @brief Simple logging helpers implementation
+ * @brief Logging helpers implementation
  */
 
 #include "dc_log.h"
@@ -26,7 +26,7 @@ static int dc_log_localtime_safe(const time_t* t, struct tm* out) {
 #elif defined(_POSIX_VERSION) || defined(__unix__) || defined(__APPLE__)
     return localtime_r(t, out) != NULL;
 #else
-    /* Best-effort fallback: localtime() may use static storage (not thread-safe). */
+    /* Fallback: localtime() may use static storage (not thread-safe). */
     struct tm* tmp = localtime(t);
     if (!tmp) return 0;
     *out = *tmp;
@@ -50,30 +50,30 @@ static int dc_log_gmtime_safe(const time_t* t, struct tm* out) {
 
 void dc_log_default_callback(dc_log_level_t level, const char* message, void* user_data) {
     (void)user_data;
-    char ts[32];
-    ts[0] = '\0';
-
-    time_t now = time(NULL);
+    char ts[32] = {0};
     int have_ts = 0;
+    time_t now = time(NULL);
     if (now != (time_t)-1) {
         struct tm tm_buf;
         if (dc_log_localtime_safe(&now, &tm_buf) || dc_log_gmtime_safe(&now, &tm_buf)) {
-            /* "YYYY-mm-dd HH:MM:SS" is 19 chars (+NUL); buffer is intentionally larger. */
-            if (strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", &tm_buf) != 0) {
+            if (strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", &tm_buf) > 0) {
                 have_ts = 1;
+                ts[sizeof(ts) - 1] = '\0';
             }
         }
     }
-    if (!have_ts) {
-        (void)snprintf(ts, sizeof(ts), "unknown-time");
-    }
 
+    if (!have_ts) {
+        snprintf(ts, sizeof(ts), "%s", "unknown-time");
+    }
+    const char* level_str = dc_log_level_string(level);
+    if (!level_str) {
+        level_str = "UNKNOWN";
+    }
     const char* msg = message ? message : "";
     size_t msg_len = strlen(msg);
     int ends_with_nl = (msg_len > 0 && msg[msg_len - 1] == '\n');
-
-    /* Avoid double-newlines if caller already included a trailing newline. */
-    fprintf(stderr, "[%s] %s: %s", ts, dc_log_level_string(level), msg);
+    fprintf(stderr, "[%s] %s: %s", ts, level_str, msg);
     if (!ends_with_nl) {
         fputc('\n', stderr);
     }
