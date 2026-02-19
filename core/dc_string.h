@@ -175,7 +175,6 @@ dc_status_t dc_string_vprintf(dc_string_t* str, const char* format, va_list args
  * @brief Get C string pointer (null-terminated)
  * @param str Pointer to string structure
  * @return C string pointer (empty string if invalid or uninitialized)
- * 
  * @note The returned pointer is valid until the string is modified
  */
 const char* dc_string_cstr(const dc_string_t* str);
