@@ -1,9 +1,0 @@
-{
-  "name": "fishydslib-benchmarks-other-lang",
-  "private": true,
-  "version": "0.1.0",
-  "type": "commonjs",
-  "dependencies": {
-    "discord.js": "^14.25.1"
-  }
-}
