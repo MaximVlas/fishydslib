@@ -19,7 +19,7 @@ cmake-build*/
 examples/
 
 # Github copilot instructions
-.github/
+*.github/
 
 # Keep only one markdown document for publishing, the rest are notes/outdated
 **/*.md
