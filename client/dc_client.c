@@ -558,6 +558,21 @@ static dc_status_t dc_client_append_query_bool(dc_string_t* path, const char* ke
     return dc_string_append_cstr(path, value ? "true" : "false");
 }
 
+static dc_status_t dc_client_append_query_u32(dc_string_t* path, const char* key, uint32_t value) {
+    if (!path || !key) return DC_ERROR_NULL_POINTER;
+    if (key[0] == '\0') return DC_ERROR_INVALID_PARAM;
+    char value_buf[16];
+    int written = snprintf(value_buf, sizeof(value_buf), "%u", value);
+    if (written <= 0 || written >= (int)sizeof(value_buf)) return DC_ERROR_INVALID_PARAM;
+    dc_status_t st = dc_client_append_query_separator(path);
+    if (st != DC_OK) return st;
+    st = dc_string_append_cstr(path, key);
+    if (st != DC_OK) return st;
+    st = dc_string_append_cstr(path, "=");
+    if (st != DC_OK) return st;
+    return dc_string_append_cstr(path, value_buf);
+}
+
 dc_status_t dc_gateway_info_init(dc_gateway_info_t* info) {
     if (!info) return DC_ERROR_NULL_POINTER;
     memset(info, 0, sizeof(*info));
@@ -1004,6 +1019,225 @@ dc_status_t dc_client_get_user(dc_client_t* client, dc_snowflake_t user_id, dc_u
 cleanup:
     dc_rest_response_free(&resp);
     dc_rest_request_free(&req);
+    return st;
+}
+
+dc_status_t dc_client_modify_current_user_json(dc_client_t* client,
+                                               const char* json_body,
+                                               dc_user_t* user) {
+    if (!client || !client->rest || !json_body) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    dc_rest_response_t resp;
+    dc_status_t st = dc_rest_response_init(&resp);
+    if (st != DC_OK) return st;
+
+    st = dc_client_execute_json_request(client, DC_HTTP_PATCH, "/users/@me", json_body, 0, &resp);
+    if (st == DC_OK && user) {
+        st = dc_client_parse_user(dc_string_cstr(&resp.http.body),
+                                  dc_string_length(&resp.http.body),
+                                  user);
+    }
+
+    dc_rest_response_free(&resp);
+    return st;
+}
+
+dc_status_t dc_client_get_current_user_guilds_json(dc_client_t* client,
+                                                   uint32_t limit,
+                                                   dc_snowflake_t before,
+                                                   dc_snowflake_t after,
+                                                   int with_counts,
+                                                   dc_string_t* guilds_json) {
+    if (!client || !client->rest || !guilds_json) return DC_ERROR_NULL_POINTER;
+    if (dc_snowflake_is_valid(before) && dc_snowflake_is_valid(after)) return DC_ERROR_INVALID_PARAM;
+    if (limit == 0u) limit = 200u;
+    if (limit > 200u) return DC_ERROR_INVALID_PARAM;
+
+    dc_string_t path;
+    dc_status_t st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+
+    st = dc_string_printf(&path, "/users/@me/guilds?limit=%u", limit);
+    if (st == DC_OK && dc_snowflake_is_valid(before)) {
+        st = dc_client_append_query_snowflake(&path, "before", before);
+    } else if (st == DC_OK && dc_snowflake_is_valid(after)) {
+        st = dc_client_append_query_snowflake(&path, "after", after);
+    }
+    if (st == DC_OK && with_counts) {
+        st = dc_client_append_query_bool(&path, "with_counts", 1);
+    }
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                guilds_json);
+    }
+
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_current_user_guild_member_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         dc_string_t* member_json) {
+    if (!client || !client->rest || !member_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/users/@me/guilds/%s/member", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                member_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_current_user_guild_member(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_guild_member_t* member) {
+    if (!member) return DC_ERROR_NULL_POINTER;
+
+    dc_string_t member_json;
+    dc_status_t st = dc_string_init(&member_json);
+    if (st != DC_OK) return st;
+
+    st = dc_client_get_current_user_guild_member_json(client, guild_id, &member_json);
+    if (st == DC_OK) {
+        st = dc_client_parse_guild_member(dc_string_cstr(&member_json),
+                                          dc_string_length(&member_json),
+                                          member);
+    }
+
+    dc_string_free(&member_json);
+    return st;
+}
+
+dc_status_t dc_client_leave_guild(dc_client_t* client, dc_snowflake_t guild_id) {
+    if (!client || !client->rest) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/users/@me/guilds/%s", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_DELETE, dc_string_cstr(&path), NULL, 0,
+                                                NULL);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_create_dm_channel_json(dc_client_t* client,
+                                             const char* json_body,
+                                             dc_channel_t* channel) {
+    if (!client || !client->rest || !json_body) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    dc_rest_response_t resp;
+    dc_status_t st = dc_rest_response_init(&resp);
+    if (st != DC_OK) return st;
+
+    st = dc_client_execute_json_request(client, DC_HTTP_POST, "/users/@me/channels", json_body, 0, &resp);
+    if (st == DC_OK && channel) {
+        st = dc_client_parse_channel(dc_string_cstr(&resp.http.body),
+                                     dc_string_length(&resp.http.body),
+                                     channel);
+    }
+
+    dc_rest_response_free(&resp);
+    return st;
+}
+
+dc_status_t dc_client_create_dm_channel(dc_client_t* client,
+                                        dc_snowflake_t recipient_id,
+                                        dc_channel_t* channel) {
+    if (!dc_snowflake_is_valid(recipient_id)) return DC_ERROR_INVALID_PARAM;
+
+    dc_json_mut_doc_t doc;
+    dc_status_t st = dc_json_mut_doc_create(&doc);
+    if (st != DC_OK) return st;
+
+    st = dc_json_mut_set_snowflake(&doc, doc.root, "recipient_id", recipient_id);
+    if (st != DC_OK) {
+        dc_json_mut_doc_free(&doc);
+        return st;
+    }
+
+    dc_string_t json_body;
+    st = dc_string_init(&json_body);
+    if (st != DC_OK) {
+        dc_json_mut_doc_free(&doc);
+        return st;
+    }
+    st = dc_json_mut_doc_serialize(&doc, &json_body);
+    dc_json_mut_doc_free(&doc);
+    if (st != DC_OK) {
+        dc_string_free(&json_body);
+        return st;
+    }
+
+    st = dc_client_create_dm_channel_json(client, dc_string_cstr(&json_body), channel);
+    dc_string_free(&json_body);
+    return st;
+}
+
+dc_status_t dc_client_get_current_user_connections_json(dc_client_t* client,
+                                                        dc_string_t* connections_json) {
+    if (!client || !client->rest || !connections_json) return DC_ERROR_NULL_POINTER;
+    return dc_client_execute_json_request_out(client, DC_HTTP_GET, "/users/@me/connections", NULL, 0,
+                                              connections_json);
+}
+
+dc_status_t dc_client_get_current_user_application_role_connection_json(dc_client_t* client,
+                                                                        dc_snowflake_t application_id,
+                                                                        dc_string_t* role_connection_json) {
+    if (!client || !client->rest || !role_connection_json) return DC_ERROR_NULL_POINTER;
+
+    char app_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(application_id, app_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/users/@me/applications/%s/role-connection", app_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                role_connection_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_update_current_user_application_role_connection_json(dc_client_t* client,
+                                                                           dc_snowflake_t application_id,
+                                                                           const char* json_body,
+                                                                           dc_string_t* role_connection_json) {
+    if (!client || !client->rest || !json_body || !role_connection_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char app_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(application_id, app_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/users/@me/applications/%s/role-connection", app_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PUT, dc_string_cstr(&path), json_body, 0,
+                                                role_connection_json);
+    }
+    dc_string_free(&path);
     return st;
 }
 
@@ -4081,6 +4315,748 @@ dc_status_t dc_client_delete_guild_integration(dc_client_t* client,
     st = dc_string_printf(&path, "/guilds/%s/integrations/%s", guild_buf, integration_buf);
     if (st == DC_OK) {
         st = dc_client_execute_json_request_out(client, DC_HTTP_DELETE, dc_string_cstr(&path), NULL,
+                                                0, NULL);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_guild_audit_log_json(dc_client_t* client,
+                                               dc_snowflake_t guild_id,
+                                               dc_snowflake_t user_id,
+                                               uint32_t action_type,
+                                               dc_snowflake_t before,
+                                               dc_snowflake_t after,
+                                               uint32_t limit,
+                                               dc_string_t* audit_log_json) {
+    if (!client || !client->rest || !audit_log_json) return DC_ERROR_NULL_POINTER;
+    if (limit > 100) return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+
+    st = dc_string_printf(&path, "/guilds/%s/audit-logs", guild_buf);
+    if (st == DC_OK && dc_snowflake_is_valid(user_id)) {
+        st = dc_client_append_query_snowflake(&path, "user_id", user_id);
+    }
+    if (st == DC_OK && action_type != 0) {
+        st = dc_client_append_query_u32(&path, "action_type", action_type);
+    }
+    if (st == DC_OK && dc_snowflake_is_valid(before)) {
+        st = dc_client_append_query_snowflake(&path, "before", before);
+    } else if (st == DC_OK && dc_snowflake_is_valid(after)) {
+        st = dc_client_append_query_snowflake(&path, "after", after);
+    }
+    if (st == DC_OK) {
+        st = dc_client_append_query_u32(&path, "limit", limit == 0 ? 50u : limit);
+    }
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                audit_log_json);
+    }
+
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_guild_widget_settings_json(dc_client_t* client,
+                                                     dc_snowflake_t guild_id,
+                                                     dc_string_t* widget_json) {
+    if (!client || !client->rest || !widget_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/widget", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                widget_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_guild_widget_json(dc_client_t* client,
+                                               dc_snowflake_t guild_id,
+                                               const char* json_body,
+                                               dc_string_t* widget_json) {
+    if (!client || !client->rest || !json_body || !widget_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/widget", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PATCH, dc_string_cstr(&path), json_body,
+                                                0, widget_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_guild_widget_json(dc_client_t* client,
+                                            dc_snowflake_t guild_id,
+                                            dc_string_t* widget_json) {
+    if (!client || !client->rest || !widget_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/widget.json", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                widget_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_guild_vanity_url_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                dc_string_t* vanity_json) {
+    if (!client || !client->rest || !vanity_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/vanity-url", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                vanity_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_guild_welcome_screen_json(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_string_t* welcome_screen_json) {
+    if (!client || !client->rest || !welcome_screen_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/welcome-screen", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                welcome_screen_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_guild_welcome_screen_json(dc_client_t* client,
+                                                       dc_snowflake_t guild_id,
+                                                       const char* json_body,
+                                                       dc_string_t* welcome_screen_json) {
+    if (!client || !client->rest || !json_body || !welcome_screen_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/welcome-screen", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PATCH, dc_string_cstr(&path), json_body,
+                                                0, welcome_screen_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_guild_onboarding_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                dc_string_t* onboarding_json) {
+    if (!client || !client->rest || !onboarding_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/onboarding", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                onboarding_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_guild_onboarding_json(dc_client_t* client,
+                                                   dc_snowflake_t guild_id,
+                                                   const char* json_body,
+                                                   dc_string_t* onboarding_json) {
+    if (!client || !client->rest || !json_body || !onboarding_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/onboarding", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PUT, dc_string_cstr(&path), json_body,
+                                                0, onboarding_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_guild_incident_actions_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         const char* json_body,
+                                                         dc_string_t* incidents_json) {
+    if (!client || !client->rest || !json_body || !incidents_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/incident-actions", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PUT, dc_string_cstr(&path), json_body,
+                                                0, incidents_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_list_auto_moderation_rules_json(dc_client_t* client,
+                                                      dc_snowflake_t guild_id,
+                                                      dc_string_t* rules_json) {
+    if (!client || !client->rest || !rules_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/auto-moderation/rules", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                rules_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_auto_moderation_rule_json(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_snowflake_t rule_id,
+                                                    dc_string_t* rule_json) {
+    if (!client || !client->rest || !rule_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    char rule_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(rule_id, rule_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/auto-moderation/rules/%s", guild_buf, rule_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                rule_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_create_auto_moderation_rule_json(dc_client_t* client,
+                                                       dc_snowflake_t guild_id,
+                                                       const char* json_body,
+                                                       dc_string_t* rule_json) {
+    if (!client || !client->rest || !json_body || !rule_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/auto-moderation/rules", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_POST, dc_string_cstr(&path), json_body,
+                                                0, rule_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_auto_moderation_rule_json(dc_client_t* client,
+                                                       dc_snowflake_t guild_id,
+                                                       dc_snowflake_t rule_id,
+                                                       const char* json_body,
+                                                       dc_string_t* rule_json) {
+    if (!client || !client->rest || !json_body || !rule_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    char rule_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(rule_id, rule_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/auto-moderation/rules/%s", guild_buf, rule_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PATCH, dc_string_cstr(&path), json_body,
+                                                0, rule_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_delete_auto_moderation_rule(dc_client_t* client,
+                                                  dc_snowflake_t guild_id,
+                                                  dc_snowflake_t rule_id) {
+    if (!client || !client->rest) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    char rule_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(rule_id, rule_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/auto-moderation/rules/%s", guild_buf, rule_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_DELETE, dc_string_cstr(&path), NULL, 0,
+                                                NULL);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_create_stage_instance_json(dc_client_t* client,
+                                                 const char* json_body,
+                                                 dc_string_t* stage_instance_json) {
+    if (!client || !client->rest || !json_body || !stage_instance_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    return dc_client_execute_json_request_out(client, DC_HTTP_POST, "/stage-instances", json_body, 0,
+                                              stage_instance_json);
+}
+
+dc_status_t dc_client_get_stage_instance_json(dc_client_t* client,
+                                              dc_snowflake_t channel_id,
+                                              dc_string_t* stage_instance_json) {
+    if (!client || !client->rest || !stage_instance_json) return DC_ERROR_NULL_POINTER;
+
+    char channel_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(channel_id, channel_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/stage-instances/%s", channel_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                stage_instance_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_stage_instance_json(dc_client_t* client,
+                                                 dc_snowflake_t channel_id,
+                                                 const char* json_body,
+                                                 dc_string_t* stage_instance_json) {
+    if (!client || !client->rest || !json_body || !stage_instance_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char channel_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(channel_id, channel_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/stage-instances/%s", channel_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PATCH, dc_string_cstr(&path), json_body,
+                                                0, stage_instance_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_delete_stage_instance(dc_client_t* client, dc_snowflake_t channel_id) {
+    if (!client || !client->rest) return DC_ERROR_NULL_POINTER;
+
+    char channel_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(channel_id, channel_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/stage-instances/%s", channel_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_DELETE, dc_string_cstr(&path), NULL, 0,
+                                                NULL);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_poll_answer_voters_json(dc_client_t* client,
+                                                  dc_snowflake_t channel_id,
+                                                  dc_snowflake_t message_id,
+                                                  uint32_t answer_id,
+                                                  dc_snowflake_t after,
+                                                  uint32_t limit,
+                                                  dc_string_t* voters_json) {
+    if (!client || !client->rest || !voters_json) return DC_ERROR_NULL_POINTER;
+    if (answer_id == 0) return DC_ERROR_INVALID_PARAM;
+    if (limit > 100) return DC_ERROR_INVALID_PARAM;
+
+    char channel_buf[32];
+    char message_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(channel_id, channel_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(message_id, message_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/channels/%s/polls/%s/answers/%u", channel_buf, message_buf, answer_id);
+    if (st == DC_OK && dc_snowflake_is_valid(after)) {
+        st = dc_client_append_query_snowflake(&path, "after", after);
+    }
+    if (st == DC_OK) {
+        st = dc_client_append_query_u32(&path, "limit", limit == 0 ? 25u : limit);
+    }
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                voters_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_end_poll_json(dc_client_t* client,
+                                    dc_snowflake_t channel_id,
+                                    dc_snowflake_t message_id,
+                                    dc_string_t* message_json) {
+    if (!client || !client->rest || !message_json) return DC_ERROR_NULL_POINTER;
+
+    char channel_buf[32];
+    char message_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(channel_id, channel_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(message_id, message_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/channels/%s/polls/%s/expire", channel_buf, message_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_POST, dc_string_cstr(&path), NULL, 0,
+                                                message_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_send_soundboard_sound_json(dc_client_t* client,
+                                                 dc_snowflake_t channel_id,
+                                                 const char* json_body) {
+    if (!client || !client->rest || !json_body) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char channel_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(channel_id, channel_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/channels/%s/send-soundboard-sound", channel_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_POST, dc_string_cstr(&path), json_body, 0,
+                                                NULL);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_list_default_soundboard_sounds_json(dc_client_t* client,
+                                                          dc_string_t* sounds_json) {
+    if (!client || !client->rest || !sounds_json) return DC_ERROR_NULL_POINTER;
+    return dc_client_execute_json_request_out(client, DC_HTTP_GET, "/soundboard-default-sounds", NULL, 0,
+                                              sounds_json);
+}
+
+dc_status_t dc_client_list_guild_soundboard_sounds_json(dc_client_t* client,
+                                                        dc_snowflake_t guild_id,
+                                                        dc_string_t* sounds_json) {
+    if (!client || !client->rest || !sounds_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/soundboard-sounds", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                sounds_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_guild_soundboard_sound_json(dc_client_t* client,
+                                                      dc_snowflake_t guild_id,
+                                                      dc_snowflake_t sound_id,
+                                                      dc_string_t* sound_json) {
+    if (!client || !client->rest || !sound_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    char sound_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(sound_id, sound_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/soundboard-sounds/%s", guild_buf, sound_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                sound_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_create_guild_soundboard_sound_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         const char* json_body,
+                                                         dc_string_t* sound_json) {
+    if (!client || !client->rest || !json_body || !sound_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/soundboard-sounds", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_POST, dc_string_cstr(&path), json_body, 0,
+                                                sound_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_guild_soundboard_sound_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         dc_snowflake_t sound_id,
+                                                         const char* json_body,
+                                                         dc_string_t* sound_json) {
+    if (!client || !client->rest || !json_body || !sound_json) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    char sound_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(sound_id, sound_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/soundboard-sounds/%s", guild_buf, sound_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PATCH, dc_string_cstr(&path), json_body, 0,
+                                                sound_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_delete_guild_soundboard_sound(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_snowflake_t sound_id) {
+    if (!client || !client->rest) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    char sound_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(sound_id, sound_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/soundboard-sounds/%s", guild_buf, sound_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_DELETE, dc_string_cstr(&path), NULL, 0,
+                                                NULL);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_list_voice_regions_json(dc_client_t* client, dc_string_t* regions_json) {
+    if (!client || !client->rest || !regions_json) return DC_ERROR_NULL_POINTER;
+    return dc_client_execute_json_request_out(client, DC_HTTP_GET, "/voice/regions", NULL, 0, regions_json);
+}
+
+dc_status_t dc_client_get_current_user_voice_state_json(dc_client_t* client,
+                                                        dc_snowflake_t guild_id,
+                                                        dc_string_t* voice_state_json) {
+    if (!client || !client->rest || !voice_state_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/voice-states/@me", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                voice_state_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_get_user_voice_state_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                dc_snowflake_t user_id,
+                                                dc_string_t* voice_state_json) {
+    if (!client || !client->rest || !voice_state_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    char user_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(user_id, user_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/voice-states/%s", guild_buf, user_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                voice_state_json);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_current_user_voice_state_json(dc_client_t* client,
+                                                           dc_snowflake_t guild_id,
+                                                           const char* json_body) {
+    if (!client || !client->rest || !json_body) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/voice-states/@me", guild_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PATCH, dc_string_cstr(&path), json_body,
+                                                0, NULL);
+    }
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_modify_user_voice_state_json(dc_client_t* client,
+                                                   dc_snowflake_t guild_id,
+                                                   dc_snowflake_t user_id,
+                                                   const char* json_body) {
+    if (!client || !client->rest || !json_body) return DC_ERROR_NULL_POINTER;
+    if (json_body[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char guild_buf[32];
+    char user_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+    st = dc_client_snowflake_to_buf(user_id, user_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+    st = dc_string_printf(&path, "/guilds/%s/voice-states/%s", guild_buf, user_buf);
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_PATCH, dc_string_cstr(&path), json_body,
                                                 0, NULL);
     }
     dc_string_free(&path);

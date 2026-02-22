@@ -144,6 +144,7 @@ set(FISHYDS_SOURCES
     model/dc_attachment.c
     model/dc_embed.c
     model/dc_message.c
+    model/dc_interaction.c
     model/dc_guild.c
     model/dc_voice_state.c
     model/dc_presence.c

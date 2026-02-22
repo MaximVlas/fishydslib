@@ -9,12 +9,50 @@
 #include "model/dc_user.h"
 #include <limits.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 #include <yyjson.h>
 
 static dc_status_t dc_json_copy_cstr(dc_string_t* dst, const char* src) {
     if (!dst) return DC_ERROR_NULL_POINTER;
     return dc_string_set_cstr(dst, src ? src : "");
+}
+
+static dc_status_t dc_json_copy_val_raw_json(yyjson_val* val, dc_string_t* out) {
+    if (!val || !out) return DC_ERROR_NULL_POINTER;
+    size_t len = 0;
+    char* json = yyjson_val_write(val, 0, &len);
+    if (!json) return DC_ERROR_OUT_OF_MEMORY;
+    dc_status_t st = dc_string_set_cstr(out, json);
+    free(json);
+    return st;
+}
+
+static dc_status_t dc_json_mut_add_raw_json_if_set(dc_json_mut_doc_t* doc,
+                                                   yyjson_mut_val* obj,
+                                                   const char* key,
+                                                   int has_field,
+                                                   const dc_string_t* raw_json) {
+    if (!doc || !doc->doc || !obj || !key || !raw_json) return DC_ERROR_NULL_POINTER;
+    if (!has_field) return DC_OK;
+    if (dc_string_is_empty(raw_json)) return DC_ERROR_INVALID_PARAM;
+
+    dc_json_doc_t raw_doc;
+    dc_status_t st = dc_json_parse(dc_string_cstr(raw_json), &raw_doc);
+    if (st != DC_OK) return st;
+
+    yyjson_mut_val* copied = yyjson_val_mut_copy(doc->doc, raw_doc.root);
+    if (!copied) {
+        dc_json_doc_free(&raw_doc);
+        return DC_ERROR_OUT_OF_MEMORY;
+    }
+    if (!yyjson_mut_obj_add_val(doc->doc, obj, key, copied)) {
+        dc_json_doc_free(&raw_doc);
+        return DC_ERROR_OUT_OF_MEMORY;
+    }
+
+    dc_json_doc_free(&raw_doc);
+    return DC_OK;
 }
 
 static dc_status_t dc_json_parse_iso8601_if_set(const char* str) {
@@ -1293,6 +1331,13 @@ dc_status_t dc_json_model_message_from_val(yyjson_val* val, dc_message_t* messag
     if (st != DC_OK) return st;
     st = dc_json_get_snowflake_optional_field(val, "application_id", &message->application_id);
     if (st != DC_OK) return st;
+    yyjson_val* application_val = yyjson_obj_get(val, "application");
+    if (application_val && !yyjson_is_null(application_val)) {
+        if (!yyjson_is_obj(application_val)) return DC_ERROR_INVALID_FORMAT;
+        st = dc_json_copy_val_raw_json(application_val, &message->application_json);
+        if (st != DC_OK) return st;
+        message->has_application = 1;
+    }
 
     yyjson_val* mention_roles_val = yyjson_obj_get(val, "mention_roles");
     if (mention_roles_val) {
@@ -1419,6 +1464,20 @@ dc_status_t dc_json_model_message_from_val(yyjson_val* val, dc_message_t* messag
             return st;
         }
     }
+    yyjson_val* msg_snapshots_val = yyjson_obj_get(val, "message_snapshots");
+    if (msg_snapshots_val && !yyjson_is_null(msg_snapshots_val)) {
+        if (!yyjson_is_arr(msg_snapshots_val)) return DC_ERROR_INVALID_FORMAT;
+        st = dc_json_copy_val_raw_json(msg_snapshots_val, &message->message_snapshots_json);
+        if (st != DC_OK) return st;
+        message->has_message_snapshots = 1;
+    }
+    yyjson_val* interaction_metadata_val = yyjson_obj_get(val, "interaction_metadata");
+    if (interaction_metadata_val && !yyjson_is_null(interaction_metadata_val)) {
+        if (!yyjson_is_obj(interaction_metadata_val)) return DC_ERROR_INVALID_FORMAT;
+        st = dc_json_copy_val_raw_json(interaction_metadata_val, &message->interaction_metadata_json);
+        if (st != DC_OK) return st;
+        message->has_interaction_metadata = 1;
+    }
 
     /* nonce */
     st = dc_json_get_optional_string_field(val, "nonce", &message->nonce);
@@ -1500,6 +1559,20 @@ dc_status_t dc_json_model_message_from_val(yyjson_val* val, dc_message_t* messag
         st = dc_json_model_role_subscription_data_from_val(rsd_val, &message->role_subscription_data);
         if (st != DC_OK) return st;
         message->has_role_subscription_data = 1;
+    }
+    yyjson_val* resolved_val = yyjson_obj_get(val, "resolved");
+    if (resolved_val && !yyjson_is_null(resolved_val)) {
+        if (!yyjson_is_obj(resolved_val)) return DC_ERROR_INVALID_FORMAT;
+        st = dc_json_copy_val_raw_json(resolved_val, &message->resolved_json);
+        if (st != DC_OK) return st;
+        message->has_resolved = 1;
+    }
+    yyjson_val* poll_val = yyjson_obj_get(val, "poll");
+    if (poll_val && !yyjson_is_null(poll_val)) {
+        if (!yyjson_is_obj(poll_val)) return DC_ERROR_INVALID_FORMAT;
+        st = dc_json_copy_val_raw_json(poll_val, &message->poll_json);
+        if (st != DC_OK) return st;
+        message->has_poll = 1;
     }
 
     /* call */
@@ -2052,6 +2125,9 @@ dc_status_t dc_json_model_message_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
     if (st != DC_OK) return st;
     st = dc_json_mut_add_optional_snowflake(doc, obj, "application_id", &message->application_id);
     if (st != DC_OK) return st;
+    st = dc_json_mut_add_raw_json_if_set(doc, obj, "application",
+                                         message->has_application, &message->application_json);
+    if (st != DC_OK) return st;
 
     st = dc_json_mut_add_snowflake_array(doc, obj, "mention_roles", &message->mention_roles);
     if (st != DC_OK) return st;
@@ -2093,6 +2169,14 @@ dc_status_t dc_json_model_message_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
         st = dc_json_mut_add_optional_snowflake(doc, ref_obj, "guild_id", &message->message_reference.guild_id);
         if (st != DC_OK) return st;
     }
+    st = dc_json_mut_add_raw_json_if_set(doc, obj, "message_snapshots",
+                                         message->has_message_snapshots,
+                                         &message->message_snapshots_json);
+    if (st != DC_OK) return st;
+    st = dc_json_mut_add_raw_json_if_set(doc, obj, "interaction_metadata",
+                                         message->has_interaction_metadata,
+                                         &message->interaction_metadata_json);
+    if (st != DC_OK) return st;
 
     /* nonce */
     if (message->nonce.is_set) {
@@ -2199,6 +2283,12 @@ dc_status_t dc_json_model_message_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
         st = dc_json_mut_set_bool(doc, rsd_obj, "is_renewal", message->role_subscription_data.is_renewal);
         if (st != DC_OK) return st;
     }
+    st = dc_json_mut_add_raw_json_if_set(doc, obj, "resolved",
+                                         message->has_resolved, &message->resolved_json);
+    if (st != DC_OK) return st;
+    st = dc_json_mut_add_raw_json_if_set(doc, obj, "poll",
+                                         message->has_poll, &message->poll_json);
+    if (st != DC_OK) return st;
 
     /* call */
     if (message->has_call) {

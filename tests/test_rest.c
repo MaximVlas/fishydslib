@@ -511,3 +511,222 @@ void test_rest_auth_header_injection(void) {
     
     
 }
+
+void test_rest_execute_documented_routes(void) {
+    mock_transport_ctx_t mock_ctx = {0};
+    dc_http_response_t mock_response;
+    dc_http_response_init(&mock_response);
+    mock_response.status_code = 200;
+    dc_string_set_cstr(&mock_response.body, "{}");
+    mock_ctx.mock_response = &mock_response;
+    dc_http_request_init(&mock_ctx.last_request);
+
+    dc_rest_client_config_t config = {
+        .token = "test_token",
+        .auth_type = DC_HTTP_AUTH_BOT,
+        .transport = mock_transport,
+        .transport_userdata = &mock_ctx
+    };
+
+    dc_rest_client_t* client = NULL;
+    TEST_ASSERT_EQ(DC_OK, dc_rest_client_create(&config, &client),
+                   "create client for documented routes");
+
+    typedef struct {
+        dc_http_method_t method;
+        const char* path;
+        const char* json_body;
+    } route_case_t;
+
+    const route_case_t cases[] = {
+        {DC_HTTP_POST, "/stage-instances", "{\"channel_id\":\"123\",\"topic\":\"t\"}"},
+        {DC_HTTP_PATCH, "/stage-instances/123", "{\"topic\":\"updated\"}"},
+        {DC_HTTP_DELETE, "/stage-instances/123", NULL},
+        {DC_HTTP_GET, "/channels/111/polls/222/answers/1?limit=25&after=333", NULL},
+        {DC_HTTP_POST, "/channels/111/polls/222/expire", NULL},
+        {DC_HTTP_POST, "/channels/111/send-soundboard-sound", "{\"sound_id\":\"444\"}"},
+        {DC_HTTP_GET, "/soundboard-default-sounds", NULL},
+        {DC_HTTP_PATCH, "/guilds/999/voice-states/@me", "{\"suppress\":true}"},
+        {DC_HTTP_PATCH, "/guilds/999/voice-states/123", "{\"suppress\":false}"},
+        {DC_HTTP_GET, "https://discord.com/api/v10/voice/regions", NULL}
+    };
+
+    for (size_t i = 0; i < (sizeof(cases) / sizeof(cases[0])); ++i) {
+        dc_rest_request_t request;
+        dc_rest_response_t response;
+        TEST_ASSERT_EQ(DC_OK, dc_rest_request_init(&request), "init route request");
+        TEST_ASSERT_EQ(DC_OK, dc_rest_response_init(&response), "init route response");
+
+        TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_method(&request, cases[i].method),
+                       "set documented route method");
+        TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_path(&request, cases[i].path),
+                       "set documented route path");
+        if (cases[i].json_body) {
+            TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_json_body(&request, cases[i].json_body),
+                           "set documented route json body");
+        }
+
+        TEST_ASSERT_EQ(DC_OK, dc_rest_execute(client, &request, &response),
+                       "execute documented route");
+        TEST_ASSERT_EQ((int)(i + 1), mock_ctx.call_count, "mock call count increments");
+        TEST_ASSERT_EQ(cases[i].method, mock_ctx.last_request.method, "http method matches");
+        TEST_ASSERT_NEQ(NULL, strstr(dc_string_cstr(&mock_ctx.last_request.url), cases[i].path[0] == '/' ? cases[i].path : "/voice/regions"),
+                        "request URL contains documented path");
+
+        dc_rest_response_free(&response);
+        dc_rest_request_free(&request);
+    }
+
+    dc_http_request_free(&mock_ctx.last_request);
+    dc_http_response_free(&mock_response);
+    dc_rest_client_free(client);
+}
+
+void test_rest_execute_rejects_non_https_full_url(void) {
+    mock_transport_ctx_t mock_ctx = {0};
+    dc_http_response_t mock_response;
+    dc_http_response_init(&mock_response);
+    mock_response.status_code = 200;
+    dc_string_set_cstr(&mock_response.body, "{}");
+    mock_ctx.mock_response = &mock_response;
+    dc_http_request_init(&mock_ctx.last_request);
+
+    dc_rest_client_config_t config = {
+        .token = "test_token",
+        .auth_type = DC_HTTP_AUTH_BOT,
+        .transport = mock_transport,
+        .transport_userdata = &mock_ctx
+    };
+
+    dc_rest_client_t* client = NULL;
+    TEST_ASSERT_EQ(DC_OK, dc_rest_client_create(&config, &client),
+                   "create client for non-https validation");
+
+    dc_rest_request_t request;
+    dc_rest_response_t response;
+    TEST_ASSERT_EQ(DC_OK, dc_rest_request_init(&request), "init non-https request");
+    TEST_ASSERT_EQ(DC_OK, dc_rest_response_init(&response), "init non-https response");
+    TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_method(&request, DC_HTTP_GET), "set non-https method");
+    TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_path(&request, "http://discord.com/api/v10/users/@me"),
+                   "set non-https path");
+
+    TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_rest_execute(client, &request, &response),
+                   "reject non-https full url");
+    TEST_ASSERT_EQ(0, mock_ctx.call_count, "transport not called for invalid full url");
+
+    dc_rest_response_free(&response);
+    dc_rest_request_free(&request);
+    dc_http_request_free(&mock_ctx.last_request);
+    dc_http_response_free(&mock_response);
+    dc_rest_client_free(client);
+}
+
+void test_rest_execute_rejects_non_discord_https_full_url(void) {
+    mock_transport_ctx_t mock_ctx = {0};
+    dc_http_response_t mock_response;
+    dc_http_response_init(&mock_response);
+    mock_response.status_code = 200;
+    dc_string_set_cstr(&mock_response.body, "{}");
+    mock_ctx.mock_response = &mock_response;
+    dc_http_request_init(&mock_ctx.last_request);
+
+    dc_rest_client_config_t config = {
+        .token = "test_token",
+        .auth_type = DC_HTTP_AUTH_BOT,
+        .transport = mock_transport,
+        .transport_userdata = &mock_ctx
+    };
+
+    dc_rest_client_t* client = NULL;
+    TEST_ASSERT_EQ(DC_OK, dc_rest_client_create(&config, &client),
+                   "create client for full-url host/version validation");
+
+    const char* invalid_urls[] = {
+        "https://example.com/api/v10/users/@me",
+        "https://discordapp.com/api/v10/users/@me",
+        "https://discord.com/api/v9/users/@me"
+    };
+
+    for (size_t i = 0; i < (sizeof(invalid_urls) / sizeof(invalid_urls[0])); ++i) {
+        dc_rest_request_t request;
+        dc_rest_response_t response;
+        TEST_ASSERT_EQ(DC_OK, dc_rest_request_init(&request), "init invalid-host request");
+        TEST_ASSERT_EQ(DC_OK, dc_rest_response_init(&response), "init invalid-host response");
+        TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_method(&request, DC_HTTP_GET), "set invalid-host method");
+        TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_path(&request, invalid_urls[i]), "set invalid-host path");
+
+        TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_rest_execute(client, &request, &response),
+                       "reject non-discord or non-v10 full url");
+        TEST_ASSERT_EQ(0, mock_ctx.call_count, "transport not called for invalid full url");
+
+        dc_rest_response_free(&response);
+        dc_rest_request_free(&request);
+    }
+
+    dc_http_request_free(&mock_ctx.last_request);
+    dc_http_response_free(&mock_response);
+    dc_rest_client_free(client);
+}
+
+void test_rest_execute_requires_content_type_for_raw_body(void) {
+    mock_transport_ctx_t mock_ctx = {0};
+    dc_http_response_t mock_response;
+    dc_http_response_init(&mock_response);
+    mock_response.status_code = 200;
+    dc_string_set_cstr(&mock_response.body, "{}");
+    mock_ctx.mock_response = &mock_response;
+    dc_http_request_init(&mock_ctx.last_request);
+
+    dc_rest_client_config_t config = {
+        .token = "test_token",
+        .auth_type = DC_HTTP_AUTH_BOT,
+        .transport = mock_transport,
+        .transport_userdata = &mock_ctx
+    };
+
+    dc_rest_client_t* client = NULL;
+    TEST_ASSERT_EQ(DC_OK, dc_rest_client_create(&config, &client),
+                   "create client for raw body content-type checks");
+
+    dc_rest_request_t request;
+    dc_rest_response_t response;
+    TEST_ASSERT_EQ(DC_OK, dc_rest_request_init(&request), "init raw-body request");
+    TEST_ASSERT_EQ(DC_OK, dc_rest_response_init(&response), "init raw-body response");
+    TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_method(&request, DC_HTTP_POST), "set raw-body method");
+    TEST_ASSERT_EQ(DC_OK, dc_rest_request_set_path(&request, "/channels/123/messages"), "set raw-body path");
+    TEST_ASSERT_EQ(DC_OK, dc_string_set_cstr(&request.body, "payload=1"), "set raw-body payload");
+
+    TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_rest_execute(client, &request, &response),
+                   "raw body without content-type rejected");
+    TEST_ASSERT_EQ(0, mock_ctx.call_count, "transport not called without content-type");
+
+    TEST_ASSERT_EQ(DC_OK,
+                   dc_rest_request_add_header(&request, "Content-Type",
+                                              "application/x-www-form-urlencoded"),
+                   "set form content-type");
+    TEST_ASSERT_EQ(DC_OK, dc_rest_execute(client, &request, &response),
+                   "raw body with content-type succeeds");
+    TEST_ASSERT_EQ(1, mock_ctx.call_count, "transport called once after valid content-type");
+    TEST_ASSERT_STR_EQ("payload=1", dc_string_cstr(&mock_ctx.last_request.body),
+                       "raw body forwarded");
+
+    dc_rest_response_free(&response);
+    dc_rest_request_free(&request);
+    dc_http_request_free(&mock_ctx.last_request);
+    dc_http_response_free(&mock_response);
+    dc_rest_client_free(client);
+}
+
+void test_rest_request_headers_case_insensitive_reserved(void) {
+    dc_rest_request_t request;
+    TEST_ASSERT_EQ(DC_OK, dc_rest_request_init(&request), "init case-insensitive header request");
+
+    TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM,
+                   dc_rest_request_add_header(&request, "authorization", "Bot token"),
+                   "lowercase authorization is reserved");
+    TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM,
+                   dc_rest_request_add_header(&request, "user-agent", "bad"),
+                   "lowercase user-agent is reserved");
+
+    dc_rest_request_free(&request);
+}

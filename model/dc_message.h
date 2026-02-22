@@ -208,6 +208,8 @@ struct dc_message {
     dc_optional_snowflake_t webhook_id;
     dc_optional_snowflake_t application_id;
     dc_vec_t mention_roles; /* dc_snowflake_t */
+    int has_application;
+    dc_string_t application_json; /* partial application object (raw JSON) */
     int has_thread;
     dc_channel_t thread;
     dc_vec_t components; /* dc_component_t */
@@ -221,6 +223,10 @@ struct dc_message {
 
     /* referenced_message (nullable, heap-allocated to avoid recursive struct) */
     dc_message_t* referenced_message;
+    int has_message_snapshots;
+    dc_string_t message_snapshots_json; /* array of message snapshot objects (raw JSON) */
+    int has_interaction_metadata;
+    dc_string_t interaction_metadata_json; /* message interaction metadata object (raw JSON) */
 
     /* nonce */
     dc_optional_string_t nonce;
@@ -240,6 +246,10 @@ struct dc_message {
     /* role_subscription_data */
     int has_role_subscription_data;
     dc_role_subscription_data_t role_subscription_data;
+    int has_resolved;
+    dc_string_t resolved_json; /* interaction-style resolved data (raw JSON) */
+    int has_poll;
+    dc_string_t poll_json; /* poll object (raw JSON) */
 
     /* call */
     int has_call;

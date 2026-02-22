@@ -17,6 +17,7 @@
 #include "model/dc_guild.h"
 #include "model/dc_guild_member.h"
 #include "model/dc_message.h"
+#include "model/dc_interaction.h"
 #include "model/dc_voice_state.h"
 #include "model/dc_presence.h"
 
@@ -34,7 +35,8 @@ typedef enum {
     DC_GATEWAY_EVENT_THREAD_MEMBERS_UPDATE,
     DC_GATEWAY_EVENT_READY,
     DC_GATEWAY_EVENT_GUILD_CREATE,
-    DC_GATEWAY_EVENT_MESSAGE_CREATE
+    DC_GATEWAY_EVENT_MESSAGE_CREATE,
+    DC_GATEWAY_EVENT_INTERACTION_CREATE
 } dc_gateway_event_kind_t;
 
 dc_gateway_event_kind_t dc_gateway_event_kind_from_name(const char* name);
@@ -115,6 +117,15 @@ dc_status_t dc_gateway_event_parse_message_create_full(const char* event_data,
  * @deprecated Use dc_gateway_event_parse_message_create_full for guild_id and member
  */
 dc_status_t dc_gateway_event_parse_message_create(const char* event_data, dc_message_t* message);
+
+/**
+ * @brief Parse INTERACTION_CREATE event payload
+ * @param event_data JSON payload (event "d" object)
+ * @param interaction Output interaction model to populate
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_gateway_event_parse_interaction_create(const char* event_data,
+                                                      dc_interaction_t* interaction);
 
 /**
  * @brief Parse THREAD_CREATE/THREAD_UPDATE/THREAD_DELETE payload into a channel model.

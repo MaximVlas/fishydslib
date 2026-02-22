@@ -16,6 +16,11 @@ void test_rest_execute_429_retry(void);
 void test_rest_execute_error_parsing(void);
 void test_rest_interaction_endpoint_exemption(void);
 void test_rest_auth_header_injection(void);
+void test_rest_execute_documented_routes(void);
+void test_rest_execute_rejects_non_https_full_url(void);
+void test_rest_execute_rejects_non_discord_https_full_url(void);
+void test_rest_execute_requires_content_type_for_raw_body(void);
+void test_rest_request_headers_case_insensitive_reserved(void);
 
 #include <stdio.h>
 #include "test_utils.h"
@@ -35,6 +40,11 @@ int main(void) {
     test_rest_execute_error_parsing();
     test_rest_interaction_endpoint_exemption();
     test_rest_auth_header_injection();
+    test_rest_execute_documented_routes();
+    test_rest_execute_rejects_non_https_full_url();
+    test_rest_execute_rejects_non_discord_https_full_url();
+    test_rest_execute_requires_content_type_for_raw_body();
+    test_rest_request_headers_case_insensitive_reserved();
     
     printf("\n=== REST Client Test Summary ===\n");
     printf("Total tests: %d\n", test_count);

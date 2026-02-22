@@ -146,6 +146,16 @@ dc_status_t dc_message_init(dc_message_t* message) {
     if (st != DC_OK) return st;
     st = dc_message_activity_init(&message->activity);
     if (st != DC_OK) return st;
+    st = dc_string_init(&message->application_json);
+    if (st != DC_OK) return st;
+    st = dc_string_init(&message->message_snapshots_json);
+    if (st != DC_OK) return st;
+    st = dc_string_init(&message->interaction_metadata_json);
+    if (st != DC_OK) return st;
+    st = dc_string_init(&message->resolved_json);
+    if (st != DC_OK) return st;
+    st = dc_string_init(&message->poll_json);
+    if (st != DC_OK) return st;
     return DC_OK;
 }
 
@@ -214,6 +224,11 @@ void dc_message_free(dc_message_t* message) {
     dc_role_subscription_data_free(&message->role_subscription_data);
     dc_message_call_free(&message->call);
     dc_message_activity_free(&message->activity);
+    dc_string_free(&message->application_json);
+    dc_string_free(&message->message_snapshots_json);
+    dc_string_free(&message->interaction_metadata_json);
+    dc_string_free(&message->resolved_json);
+    dc_string_free(&message->poll_json);
     
     memset(message, 0, sizeof(*message));
 }

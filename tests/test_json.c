@@ -532,6 +532,50 @@ int test_json_main(void) {
     dc_string_free(&serialized_message);
     dc_message_free(&message);
 
+    const char* message_with_extended_fields =
+        "{\"id\":\"3001\",\"channel_id\":\"3002\",\"author\":{\"id\":\"123\",\"username\":\"alice\"},"
+        "\"content\":\"with extra\",\"timestamp\":\"2024-01-01T00:00:00.000Z\",\"tts\":false,"
+        "\"mention_everyone\":false,\"pinned\":false,\"type\":0,"
+        "\"application\":{\"id\":\"777\",\"name\":\"Test App\"},"
+        "\"message_snapshots\":[{\"message\":{\"type\":0,\"content\":\"forwarded\","
+        "\"embeds\":[],\"attachments\":[],\"timestamp\":\"2024-01-01T00:00:00.000Z\","
+        "\"edited_timestamp\":null,\"flags\":0,\"mentions\":[],\"mention_roles\":[],"
+        "\"sticker_items\":[],\"components\":[]}}],"
+        "\"interaction_metadata\":{\"id\":\"333\",\"type\":2,\"user\":{\"id\":\"123\",\"username\":\"alice\"},"
+        "\"authorizing_integration_owners\":{\"0\":\"123\"}},"
+        "\"resolved\":{\"users\":{\"123\":{\"id\":\"123\",\"username\":\"alice\"}}},"
+        "\"poll\":{\"question\":{\"text\":\"Q?\"},\"answers\":[{\"answer_id\":1,\"poll_media\":{\"text\":\"A\"}}],"
+        "\"expiry\":\"2025-01-01T00:00:00.000Z\",\"allow_multiselect\":false,\"layout_type\":1}}";
+    TEST_ASSERT_EQ(DC_OK, dc_message_init(&message), "init message with extended fields");
+    TEST_ASSERT_EQ(DC_OK, dc_message_from_json(message_with_extended_fields, &message),
+                   "parse message with extended fields");
+    TEST_ASSERT_EQ(1, message.has_application, "message application set");
+    TEST_ASSERT_EQ(1, message.has_message_snapshots, "message snapshots set");
+    TEST_ASSERT_EQ(1, message.has_interaction_metadata, "message interaction metadata set");
+    TEST_ASSERT_EQ(1, message.has_resolved, "message resolved set");
+    TEST_ASSERT_EQ(1, message.has_poll, "message poll set");
+    TEST_ASSERT_NEQ(0u, dc_string_length(&message.application_json), "application json captured");
+    TEST_ASSERT_NEQ(0u, dc_string_length(&message.poll_json), "poll json captured");
+
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&serialized_message), "init extended serialized message");
+    TEST_ASSERT_EQ(DC_OK, dc_message_to_json(&message, &serialized_message),
+                   "serialize message with extended fields");
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
+                   "parse serialized extended message");
+    TEST_ASSERT_EQ(1, yyjson_is_obj(yyjson_obj_get(doc.root, "application")),
+                   "serialized application object");
+    TEST_ASSERT_EQ(1, yyjson_is_arr(yyjson_obj_get(doc.root, "message_snapshots")),
+                   "serialized message_snapshots array");
+    TEST_ASSERT_EQ(1, yyjson_is_obj(yyjson_obj_get(doc.root, "interaction_metadata")),
+                   "serialized interaction_metadata object");
+    TEST_ASSERT_EQ(1, yyjson_is_obj(yyjson_obj_get(doc.root, "resolved")),
+                   "serialized resolved object");
+    TEST_ASSERT_EQ(1, yyjson_is_obj(yyjson_obj_get(doc.root, "poll")),
+                   "serialized poll object");
+    dc_json_doc_free(&doc);
+    dc_string_free(&serialized_message);
+    dc_message_free(&message);
+
     const char* message_missing_id =
         "{\"channel_id\":\"1000\",\"author\":{\"id\":\"123\",\"username\":\"alice\"},"
         "\"content\":\"hi\",\"timestamp\":\"2024-01-01T00:00:00.000Z\",\"tts\":false,"

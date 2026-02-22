@@ -1034,7 +1034,7 @@ dc_status_t dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* r
         st = dc_status_from_http(response->http.status_code);
         goto cleanup_iteration;
 
-cleanup_iteration:
+        cleanup_iteration:
         if (parsed_body_rl_inited) {
             dc_http_rate_limit_response_free(&parsed_body_rl);
         }

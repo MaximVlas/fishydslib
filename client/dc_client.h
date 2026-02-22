@@ -197,6 +197,119 @@ dc_status_t dc_client_get_current_user(dc_client_t* client, dc_user_t* user);
 dc_status_t dc_client_get_user(dc_client_t* client, dc_snowflake_t user_id, dc_user_t* user);
 
 /**
+ * @brief Modify current user using JSON patch body
+ * @param client Discord client
+ * @param json_body JSON payload for PATCH /users/@me
+ * @param user Output updated user (optional, overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_modify_current_user_json(dc_client_t* client,
+                                               const char* json_body,
+                                               dc_user_t* user);
+
+/**
+ * @brief List current user guilds as JSON array
+ * @param client Discord client
+ * @param limit Max guilds (1-200, 0 uses default 200)
+ * @param before Guild ID cursor (0 to omit)
+ * @param after Guild ID cursor (0 to omit)
+ * @param with_counts Include approximate member/presence counts
+ * @param guilds_json Output guild list JSON (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_get_current_user_guilds_json(dc_client_t* client,
+                                                   uint32_t limit,
+                                                   dc_snowflake_t before,
+                                                   dc_snowflake_t after,
+                                                   int with_counts,
+                                                   dc_string_t* guilds_json);
+
+/**
+ * @brief Get current user's member object for a guild as JSON
+ * @param client Discord client
+ * @param guild_id Guild ID
+ * @param member_json Output member JSON (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_get_current_user_guild_member_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         dc_string_t* member_json);
+
+/**
+ * @brief Get current user's member object for a guild as typed model
+ * @param client Discord client
+ * @param guild_id Guild ID
+ * @param member Output guild member (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_get_current_user_guild_member(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_guild_member_t* member);
+
+/**
+ * @brief Leave a guild
+ * @param client Discord client
+ * @param guild_id Guild ID
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_leave_guild(dc_client_t* client, dc_snowflake_t guild_id);
+
+/**
+ * @brief Create DM or group DM channel using JSON body
+ * @param client Discord client
+ * @param json_body JSON payload for POST /users/@me/channels
+ * @param channel Output channel (optional, overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_create_dm_channel_json(dc_client_t* client,
+                                             const char* json_body,
+                                             dc_channel_t* channel);
+
+/**
+ * @brief Create a direct message channel with a recipient user ID
+ * @param client Discord client
+ * @param recipient_id Recipient user ID
+ * @param channel Output channel (optional, overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_create_dm_channel(dc_client_t* client,
+                                        dc_snowflake_t recipient_id,
+                                        dc_channel_t* channel);
+
+/**
+ * @brief Get current user's connected accounts as JSON
+ * @param client Discord client
+ * @param connections_json Output connections JSON array (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_get_current_user_connections_json(dc_client_t* client,
+                                                        dc_string_t* connections_json);
+
+/**
+ * @brief Get current user's application role connection as JSON
+ * @param client Discord client
+ * @param application_id Application ID
+ * @param role_connection_json Output role connection JSON (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_get_current_user_application_role_connection_json(dc_client_t* client,
+                                                                        dc_snowflake_t application_id,
+                                                                        dc_string_t* role_connection_json);
+
+/**
+ * @brief Update current user's application role connection using JSON body
+ * @param client Discord client
+ * @param application_id Application ID
+ * @param json_body JSON payload for PUT /users/@me/applications/{application.id}/role-connection
+ * @param role_connection_json Output updated role connection JSON (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_update_current_user_application_role_connection_json(dc_client_t* client,
+                                                                           dc_snowflake_t application_id,
+                                                                           const char* json_body,
+                                                                           dc_string_t* role_connection_json);
+
+/**
  * @brief Create message in channel
  * @param client Discord client
  * @param channel_id Channel ID
@@ -1067,6 +1180,125 @@ dc_status_t dc_client_get_guild_integrations_json(dc_client_t* client,
 dc_status_t dc_client_delete_guild_integration(dc_client_t* client,
                                                dc_snowflake_t guild_id,
                                                dc_snowflake_t integration_id);
+dc_status_t dc_client_get_guild_audit_log_json(dc_client_t* client,
+                                               dc_snowflake_t guild_id,
+                                               dc_snowflake_t user_id,
+                                               uint32_t action_type,
+                                               dc_snowflake_t before,
+                                               dc_snowflake_t after,
+                                               uint32_t limit,
+                                               dc_string_t* audit_log_json);
+dc_status_t dc_client_get_guild_widget_settings_json(dc_client_t* client,
+                                                     dc_snowflake_t guild_id,
+                                                     dc_string_t* widget_json);
+dc_status_t dc_client_modify_guild_widget_json(dc_client_t* client,
+                                               dc_snowflake_t guild_id,
+                                               const char* json_body,
+                                               dc_string_t* widget_json);
+dc_status_t dc_client_get_guild_widget_json(dc_client_t* client,
+                                            dc_snowflake_t guild_id,
+                                            dc_string_t* widget_json);
+dc_status_t dc_client_get_guild_vanity_url_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                dc_string_t* vanity_json);
+dc_status_t dc_client_get_guild_welcome_screen_json(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_string_t* welcome_screen_json);
+dc_status_t dc_client_modify_guild_welcome_screen_json(dc_client_t* client,
+                                                       dc_snowflake_t guild_id,
+                                                       const char* json_body,
+                                                       dc_string_t* welcome_screen_json);
+dc_status_t dc_client_get_guild_onboarding_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                dc_string_t* onboarding_json);
+dc_status_t dc_client_modify_guild_onboarding_json(dc_client_t* client,
+                                                   dc_snowflake_t guild_id,
+                                                   const char* json_body,
+                                                   dc_string_t* onboarding_json);
+dc_status_t dc_client_modify_guild_incident_actions_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         const char* json_body,
+                                                         dc_string_t* incidents_json);
+dc_status_t dc_client_list_auto_moderation_rules_json(dc_client_t* client,
+                                                      dc_snowflake_t guild_id,
+                                                      dc_string_t* rules_json);
+dc_status_t dc_client_get_auto_moderation_rule_json(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_snowflake_t rule_id,
+                                                    dc_string_t* rule_json);
+dc_status_t dc_client_create_auto_moderation_rule_json(dc_client_t* client,
+                                                       dc_snowflake_t guild_id,
+                                                       const char* json_body,
+                                                       dc_string_t* rule_json);
+dc_status_t dc_client_modify_auto_moderation_rule_json(dc_client_t* client,
+                                                       dc_snowflake_t guild_id,
+                                                       dc_snowflake_t rule_id,
+                                                       const char* json_body,
+                                                       dc_string_t* rule_json);
+dc_status_t dc_client_delete_auto_moderation_rule(dc_client_t* client,
+                                                  dc_snowflake_t guild_id,
+                                                  dc_snowflake_t rule_id);
+dc_status_t dc_client_create_stage_instance_json(dc_client_t* client,
+                                                 const char* json_body,
+                                                 dc_string_t* stage_instance_json);
+dc_status_t dc_client_get_stage_instance_json(dc_client_t* client,
+                                              dc_snowflake_t channel_id,
+                                              dc_string_t* stage_instance_json);
+dc_status_t dc_client_modify_stage_instance_json(dc_client_t* client,
+                                                 dc_snowflake_t channel_id,
+                                                 const char* json_body,
+                                                 dc_string_t* stage_instance_json);
+dc_status_t dc_client_delete_stage_instance(dc_client_t* client, dc_snowflake_t channel_id);
+dc_status_t dc_client_get_poll_answer_voters_json(dc_client_t* client,
+                                                  dc_snowflake_t channel_id,
+                                                  dc_snowflake_t message_id,
+                                                  uint32_t answer_id,
+                                                  dc_snowflake_t after,
+                                                  uint32_t limit,
+                                                  dc_string_t* voters_json);
+dc_status_t dc_client_end_poll_json(dc_client_t* client,
+                                    dc_snowflake_t channel_id,
+                                    dc_snowflake_t message_id,
+                                    dc_string_t* message_json);
+dc_status_t dc_client_send_soundboard_sound_json(dc_client_t* client,
+                                                 dc_snowflake_t channel_id,
+                                                 const char* json_body);
+dc_status_t dc_client_list_default_soundboard_sounds_json(dc_client_t* client,
+                                                          dc_string_t* sounds_json);
+dc_status_t dc_client_list_guild_soundboard_sounds_json(dc_client_t* client,
+                                                        dc_snowflake_t guild_id,
+                                                        dc_string_t* sounds_json);
+dc_status_t dc_client_get_guild_soundboard_sound_json(dc_client_t* client,
+                                                      dc_snowflake_t guild_id,
+                                                      dc_snowflake_t sound_id,
+                                                      dc_string_t* sound_json);
+dc_status_t dc_client_create_guild_soundboard_sound_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         const char* json_body,
+                                                         dc_string_t* sound_json);
+dc_status_t dc_client_modify_guild_soundboard_sound_json(dc_client_t* client,
+                                                         dc_snowflake_t guild_id,
+                                                         dc_snowflake_t sound_id,
+                                                         const char* json_body,
+                                                         dc_string_t* sound_json);
+dc_status_t dc_client_delete_guild_soundboard_sound(dc_client_t* client,
+                                                    dc_snowflake_t guild_id,
+                                                    dc_snowflake_t sound_id);
+dc_status_t dc_client_list_voice_regions_json(dc_client_t* client, dc_string_t* regions_json);
+dc_status_t dc_client_get_current_user_voice_state_json(dc_client_t* client,
+                                                        dc_snowflake_t guild_id,
+                                                        dc_string_t* voice_state_json);
+dc_status_t dc_client_get_user_voice_state_json(dc_client_t* client,
+                                                dc_snowflake_t guild_id,
+                                                dc_snowflake_t user_id,
+                                                dc_string_t* voice_state_json);
+dc_status_t dc_client_modify_current_user_voice_state_json(dc_client_t* client,
+                                                           dc_snowflake_t guild_id,
+                                                           const char* json_body);
+dc_status_t dc_client_modify_user_voice_state_json(dc_client_t* client,
+                                                   dc_snowflake_t guild_id,
+                                                   dc_snowflake_t user_id,
+                                                   const char* json_body);
 dc_status_t dc_client_list_guild_scheduled_events_json(dc_client_t* client,
                                                        dc_snowflake_t guild_id,
                                                        int with_user_count,

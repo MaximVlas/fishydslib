@@ -10,6 +10,7 @@
 #include "model/dc_guild.h"
 #include "model/dc_message.h"
 #include <string.h>
+#include <stdlib.h>
 #include <yyjson.h>
 
 dc_gateway_event_kind_t dc_gateway_event_kind_from_name(const char* name) {
@@ -23,6 +24,7 @@ dc_gateway_event_kind_t dc_gateway_event_kind_from_name(const char* name) {
     if (strcmp(name, "READY") == 0) return DC_GATEWAY_EVENT_READY;
     if (strcmp(name, "GUILD_CREATE") == 0) return DC_GATEWAY_EVENT_GUILD_CREATE;
     if (strcmp(name, "MESSAGE_CREATE") == 0) return DC_GATEWAY_EVENT_MESSAGE_CREATE;
+    if (strcmp(name, "INTERACTION_CREATE") == 0) return DC_GATEWAY_EVENT_INTERACTION_CREATE;
     return DC_GATEWAY_EVENT_UNKNOWN;
 }
 
@@ -65,6 +67,100 @@ static dc_status_t dc_gateway_parse_optional_snowflake(yyjson_val* obj,
     if (st != DC_OK) return st;
     out->is_set = 1;
     out->value = sf;
+    return DC_OK;
+}
+
+static dc_status_t dc_gateway_copy_raw_json(yyjson_val* val, dc_string_t* out) {
+    if (!val || !out) return DC_ERROR_NULL_POINTER;
+    char* json = yyjson_val_write(val, YYJSON_WRITE_NOFLAG, NULL);
+    if (!json) return DC_ERROR_OUT_OF_MEMORY;
+    dc_status_t st = dc_string_set_cstr(out, json);
+    free(json);
+    return st;
+}
+
+static dc_status_t dc_gateway_parse_interaction_data(yyjson_val* data_val,
+                                                     dc_interaction_data_t* data) {
+    if (!data_val || !data) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_obj(data_val)) return DC_ERROR_INVALID_FORMAT;
+
+    dc_status_t st = DC_OK;
+    dc_optional_u64_t sf_opt = {0};
+    dc_optional_cstr_t str_opt = {0};
+    dc_optional_i64_t i64_opt = {0};
+
+    st = dc_json_get_snowflake_optional(data_val, "id", &sf_opt);
+    if (st != DC_OK) return st;
+    if (sf_opt.is_set) {
+        data->id.is_set = 1;
+        data->id.value = (dc_snowflake_t)sf_opt.value;
+    }
+
+    st = dc_json_get_string_optional(data_val, "name", &str_opt);
+    if (st != DC_OK) return st;
+    if (str_opt.is_set) {
+        st = dc_string_set_cstr(&data->name, str_opt.value);
+        if (st != DC_OK) return st;
+        data->has_name = 1;
+    }
+
+    st = dc_json_get_int64_optional(data_val, "type", &i64_opt);
+    if (st != DC_OK) return st;
+    if (i64_opt.is_set) {
+        data->type = (int)i64_opt.value;
+        data->has_type = 1;
+    }
+
+    st = dc_json_get_snowflake_optional(data_val, "target_id", &sf_opt);
+    if (st != DC_OK) return st;
+    if (sf_opt.is_set) {
+        data->target_id.is_set = 1;
+        data->target_id.value = (dc_snowflake_t)sf_opt.value;
+    }
+
+    st = dc_json_get_snowflake_optional(data_val, "guild_id", &sf_opt);
+    if (st != DC_OK) return st;
+    if (sf_opt.is_set) {
+        data->guild_id.is_set = 1;
+        data->guild_id.value = (dc_snowflake_t)sf_opt.value;
+    }
+
+    st = dc_json_get_string_optional(data_val, "custom_id", &str_opt);
+    if (st != DC_OK) return st;
+    if (str_opt.is_set) {
+        st = dc_string_set_cstr(&data->custom_id, str_opt.value);
+        if (st != DC_OK) return st;
+        data->has_custom_id = 1;
+    }
+
+    st = dc_json_get_int64_optional(data_val, "component_type", &i64_opt);
+    if (st != DC_OK) return st;
+    if (i64_opt.is_set) {
+        data->component_type = (int)i64_opt.value;
+        data->has_component_type = 1;
+    }
+
+    yyjson_val* resolved = yyjson_obj_get(data_val, "resolved");
+    if (resolved && !yyjson_is_null(resolved)) {
+        st = dc_gateway_copy_raw_json(resolved, &data->resolved_json);
+        if (st != DC_OK) return st;
+        data->has_resolved = 1;
+    }
+
+    yyjson_val* options = yyjson_obj_get(data_val, "options");
+    if (options && !yyjson_is_null(options)) {
+        st = dc_gateway_copy_raw_json(options, &data->options_json);
+        if (st != DC_OK) return st;
+        data->has_options = 1;
+    }
+
+    yyjson_val* values = yyjson_obj_get(data_val, "values");
+    if (values && !yyjson_is_null(values)) {
+        st = dc_gateway_copy_raw_json(values, &data->values_json);
+        if (st != DC_OK) return st;
+        data->has_values = 1;
+    }
+
     return DC_OK;
 }
 
@@ -807,5 +903,156 @@ dc_status_t dc_gateway_event_parse_message_create_full(const char* event_data,
 fail:
     dc_json_doc_free(&doc);
     dc_gateway_message_create_free(&tmp);
+    return st;
+}
+
+dc_status_t dc_gateway_event_parse_interaction_create(const char* event_data,
+                                                      dc_interaction_t* interaction) {
+    if (!event_data || !interaction) return DC_ERROR_NULL_POINTER;
+
+    dc_json_doc_t doc;
+    dc_status_t st = dc_json_parse(event_data, &doc);
+    if (st != DC_OK) return st;
+
+    dc_interaction_t tmp;
+    st = dc_interaction_init(&tmp);
+    if (st != DC_OK) {
+        dc_json_doc_free(&doc);
+        return st;
+    }
+
+    uint64_t sf = 0;
+    st = dc_json_get_snowflake(doc.root, "id", &sf);
+    if (st != DC_OK) goto fail;
+    tmp.id = (dc_snowflake_t)sf;
+
+    st = dc_json_get_snowflake(doc.root, "application_id", &sf);
+    if (st != DC_OK) goto fail;
+    tmp.application_id = (dc_snowflake_t)sf;
+
+    int64_t i64 = 0;
+    st = dc_json_get_int64(doc.root, "type", &i64);
+    if (st != DC_OK) goto fail;
+    tmp.type = (dc_interaction_type_t)i64;
+
+    const char* token = NULL;
+    st = dc_json_get_string(doc.root, "token", &token);
+    if (st != DC_OK) goto fail;
+    st = dc_string_set_cstr(&tmp.token, token);
+    if (st != DC_OK) goto fail;
+
+    st = dc_json_get_int64(doc.root, "version", &i64);
+    if (st != DC_OK) goto fail;
+    tmp.version = (int)i64;
+
+    dc_optional_u64_t sf_opt = {0};
+    st = dc_json_get_snowflake_optional(doc.root, "guild_id", &sf_opt);
+    if (st != DC_OK) goto fail;
+    if (sf_opt.is_set) {
+        tmp.guild_id.is_set = 1;
+        tmp.guild_id.value = (dc_snowflake_t)sf_opt.value;
+    }
+
+    st = dc_json_get_snowflake_optional(doc.root, "channel_id", &sf_opt);
+    if (st != DC_OK) goto fail;
+    if (sf_opt.is_set) {
+        tmp.channel_id.is_set = 1;
+        tmp.channel_id.value = (dc_snowflake_t)sf_opt.value;
+    }
+
+    yyjson_val* member_val = yyjson_obj_get(doc.root, "member");
+    if (member_val && !yyjson_is_null(member_val)) {
+        if (!yyjson_is_obj(member_val)) {
+            st = DC_ERROR_INVALID_FORMAT;
+            goto fail;
+        }
+        st = dc_json_model_guild_member_from_val(member_val, &tmp.member);
+        if (st != DC_OK) goto fail;
+        tmp.has_member = 1;
+    }
+
+    yyjson_val* user_val = yyjson_obj_get(doc.root, "user");
+    if (user_val && !yyjson_is_null(user_val)) {
+        if (!yyjson_is_obj(user_val)) {
+            st = DC_ERROR_INVALID_FORMAT;
+            goto fail;
+        }
+        st = dc_json_model_user_from_val(user_val, &tmp.user);
+        if (st != DC_OK) goto fail;
+        tmp.has_user = 1;
+    }
+
+    yyjson_val* message_val = yyjson_obj_get(doc.root, "message");
+    if (message_val && !yyjson_is_null(message_val)) {
+        if (!yyjson_is_obj(message_val)) {
+            st = DC_ERROR_INVALID_FORMAT;
+            goto fail;
+        }
+        st = dc_json_model_message_from_val(message_val, &tmp.message);
+        if (st != DC_OK) goto fail;
+        tmp.has_message = 1;
+    }
+
+    dc_optional_cstr_t str_opt = {0};
+    st = dc_json_get_string_optional(doc.root, "app_permissions", &str_opt);
+    if (st != DC_OK) goto fail;
+    if (str_opt.is_set) {
+        tmp.app_permissions.is_set = 1;
+        st = dc_string_set_cstr(&tmp.app_permissions.value, str_opt.value);
+        if (st != DC_OK) goto fail;
+    }
+
+    st = dc_json_get_string_optional(doc.root, "locale", &str_opt);
+    if (st != DC_OK) goto fail;
+    if (str_opt.is_set) {
+        tmp.locale.is_set = 1;
+        st = dc_string_set_cstr(&tmp.locale.value, str_opt.value);
+        if (st != DC_OK) goto fail;
+    }
+
+    st = dc_json_get_string_optional(doc.root, "guild_locale", &str_opt);
+    if (st != DC_OK) goto fail;
+    if (str_opt.is_set) {
+        tmp.guild_locale.is_set = 1;
+        st = dc_string_set_cstr(&tmp.guild_locale.value, str_opt.value);
+        if (st != DC_OK) goto fail;
+    }
+
+    dc_optional_i64_t i64_opt = {0};
+    st = dc_json_get_int64_optional(doc.root, "context", &i64_opt);
+    if (st != DC_OK) goto fail;
+    if (i64_opt.is_set) {
+        tmp.context = (dc_interaction_context_type_t)i64_opt.value;
+        tmp.has_context = 1;
+    }
+
+    yyjson_val* data_val = yyjson_obj_get(doc.root, "data");
+    if (data_val && !yyjson_is_null(data_val)) {
+        st = dc_gateway_parse_interaction_data(data_val, &tmp.data);
+        if (st != DC_OK) goto fail;
+        tmp.has_data = 1;
+    }
+
+    yyjson_val* entitlements_val = yyjson_obj_get(doc.root, "entitlements");
+    if (entitlements_val && !yyjson_is_null(entitlements_val)) {
+        st = dc_gateway_copy_raw_json(entitlements_val, &tmp.entitlements_json);
+        if (st != DC_OK) goto fail;
+        tmp.has_entitlements = 1;
+    }
+
+    yyjson_val* aio_val = yyjson_obj_get(doc.root, "authorizing_integration_owners");
+    if (aio_val && !yyjson_is_null(aio_val)) {
+        st = dc_gateway_copy_raw_json(aio_val, &tmp.authorizing_integration_owners_json);
+        if (st != DC_OK) goto fail;
+        tmp.has_authorizing_integration_owners = 1;
+    }
+
+    dc_json_doc_free(&doc);
+    *interaction = tmp;
+    return DC_OK;
+
+fail:
+    dc_json_doc_free(&doc);
+    dc_interaction_free(&tmp);
     return st;
 }
