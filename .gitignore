@@ -18,12 +18,11 @@ cmake-build*/
 # The example folder is local-only,
 examples/
 
-# Github copilot instructions
-*.github/
+# Ignore repository GitHub metadata/workflows
+.github/
 
 # Keep only one markdown document for publishing, the rest are notes/outdated
 **/*.md
 **/*.mdx
 !FishyDsLib-API-Reference.mdx
 !README.md
-!.github/copilot-instructions.md
