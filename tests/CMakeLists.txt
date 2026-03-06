@@ -67,6 +67,13 @@ add_executable(test_events_expansion
 target_link_libraries(test_events_expansion discordc test_utils)
 target_compile_options(test_events_expansion PRIVATE ${FISHYDS_COMPILE_FLAGS})
 
+# Client API tests
+add_executable(test_client_api
+    test_client_api.c
+)
+target_link_libraries(test_client_api discordc test_utils)
+target_compile_options(test_client_api PRIVATE ${FISHYDS_COMPILE_FLAGS})
+
 # Apply sanitizers to tests if enabled
 if(FISHYDS_ENABLE_SANITIZERS AND FISHYDS_LINK_FLAGS)
     target_link_options(test_utils PRIVATE ${FISHYDS_LINK_FLAGS})
@@ -76,6 +83,7 @@ if(FISHYDS_ENABLE_SANITIZERS AND FISHYDS_LINK_FLAGS)
     target_link_options(test_rest PRIVATE ${FISHYDS_LINK_FLAGS})
     target_link_options(test_gateway PRIVATE ${FISHYDS_LINK_FLAGS})
     target_link_options(test_events_expansion PRIVATE ${FISHYDS_LINK_FLAGS})
+    target_link_options(test_client_api PRIVATE ${FISHYDS_LINK_FLAGS})
 endif()
 
 # Add tests to CTest
@@ -86,8 +94,9 @@ add_test(NAME http_tests COMMAND test_http)
 add_test(NAME rest_tests COMMAND test_rest)
 add_test(NAME gateway_tests COMMAND test_gateway)
 add_test(NAME events_expansion_tests COMMAND test_events_expansion)
+add_test(NAME client_api_tests COMMAND test_client_api)
 
 # Install tests
-install(TARGETS test_core test_json test_http test_rest test_gateway test_events_expansion
+install(TARGETS test_core test_json test_http test_rest test_gateway test_events_expansion test_client_api
     RUNTIME DESTINATION bin/tests
 )
