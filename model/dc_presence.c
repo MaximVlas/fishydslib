@@ -6,6 +6,17 @@ dc_status_t dc_presence_init(dc_presence_t* presence) {
     memset(presence, 0, sizeof(*presence));
     dc_status_t st = dc_string_init(&presence->status_str);
     if (st != DC_OK) return st;
+    st = dc_string_init(&presence->activities_json);
+    if (st != DC_OK) {
+        dc_string_free(&presence->status_str);
+        return st;
+    }
+    st = dc_string_init(&presence->client_status_json);
+    if (st != DC_OK) {
+        dc_string_free(&presence->activities_json);
+        dc_string_free(&presence->status_str);
+        return st;
+    }
     presence->status = DC_PRESENCE_STATUS_OFFLINE;
     return DC_OK;
 }
@@ -13,6 +24,8 @@ dc_status_t dc_presence_init(dc_presence_t* presence) {
 void dc_presence_free(dc_presence_t* presence) {
     if (!presence) return;
     dc_string_free(&presence->status_str);
+    dc_string_free(&presence->activities_json);
+    dc_string_free(&presence->client_status_json);
     memset(presence, 0, sizeof(*presence));
 }
 

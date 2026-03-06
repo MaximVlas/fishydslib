@@ -35,6 +35,10 @@ typedef struct {
     dc_snowflake_t user_id;             /**< User ID (from user.id) */
     dc_presence_status_t status;         /**< Status enum */
     dc_string_t status_str;              /**< Raw status string */
+    int has_activities;                  /**< Whether activities payload is present */
+    dc_string_t activities_json;         /**< Raw activities array JSON */
+    int has_client_status;               /**< Whether client_status payload is present */
+    dc_string_t client_status_json;      /**< Raw client_status object JSON */
 } dc_presence_t;
 
 /**

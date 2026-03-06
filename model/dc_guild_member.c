@@ -18,6 +18,8 @@ dc_status_t dc_guild_member_init(dc_guild_member_t* member) {
     if (st != DC_OK) goto fail;
     st = dc_nullable_string_init(&member->avatar);
     if (st != DC_OK) goto fail;
+    st = dc_nullable_string_init(&member->banner);
+    if (st != DC_OK) goto fail;
     st = dc_vec_init(&member->roles, sizeof(dc_snowflake_t));
     if (st != DC_OK) goto fail;
     st = dc_string_init(&member->joined_at);
@@ -39,6 +41,7 @@ void dc_guild_member_free(dc_guild_member_t* member) {
     dc_user_free(&member->user);
     dc_nullable_string_free(&member->nick);
     dc_nullable_string_free(&member->avatar);
+    dc_nullable_string_free(&member->banner);
     dc_vec_free(&member->roles);
     dc_string_free(&member->joined_at);
     dc_nullable_string_free(&member->premium_since);

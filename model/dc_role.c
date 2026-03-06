@@ -18,6 +18,8 @@ dc_status_t dc_role_init(dc_role_t* role) {
     if (st != DC_OK) goto fail;
     st = dc_nullable_string_init(&role->unicode_emoji);
     if (st != DC_OK) goto fail;
+    st = dc_nullable_string_init(&role->description);
+    if (st != DC_OK) goto fail;
 
     return DC_OK;
 
@@ -31,6 +33,7 @@ void dc_role_free(dc_role_t* role) {
     dc_string_free(&role->name);
     dc_nullable_string_free(&role->icon);
     dc_nullable_string_free(&role->unicode_emoji);
+    dc_nullable_string_free(&role->description);
     memset(role, 0, sizeof(*role));
 }
 

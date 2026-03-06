@@ -641,6 +641,8 @@ dc_status_t dc_json_model_guild_member_from_val(yyjson_val* val, dc_guild_member
     if (st != DC_OK) return st;
     st = dc_json_get_nullable_string_field(val, "avatar", &member->avatar, 1);
     if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "banner", &member->banner, 1);
+    if (st != DC_OK) return st;
     st = dc_json_get_nullable_string_field(val, "premium_since", &member->premium_since, 1);
     if (st != DC_OK) return st;
     st = dc_json_get_nullable_string_field(val, "communication_disabled_until",
@@ -767,6 +769,8 @@ dc_status_t dc_json_model_role_from_val(yyjson_val* val, dc_role_t* role) {
     st = dc_json_get_nullable_string_field(val, "icon", &role->icon, 1);
     if (st != DC_OK) return st;
     st = dc_json_get_nullable_string_field(val, "unicode_emoji", &role->unicode_emoji, 1);
+    if (st != DC_OK) return st;
+    st = dc_json_get_nullable_string_field(val, "description", &role->description, 1);
     if (st != DC_OK) return st;
 
     yyjson_val* tags_val = yyjson_obj_get(val, "tags");
@@ -1888,6 +1892,8 @@ dc_status_t dc_json_model_guild_member_to_mut(dc_json_mut_doc_t* doc, yyjson_mut
     if (st != DC_OK) return st;
     st = dc_json_mut_add_nullable_string(doc, obj, "avatar", &member->avatar);
     if (st != DC_OK) return st;
+    st = dc_json_mut_add_nullable_string(doc, obj, "banner", &member->banner);
+    if (st != DC_OK) return st;
     st = dc_json_mut_add_snowflake_array(doc, obj, "roles", &member->roles);
     if (st != DC_OK) return st;
 
@@ -1939,6 +1945,8 @@ dc_status_t dc_json_model_role_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* ob
     st = dc_json_mut_add_nullable_string(doc, obj, "icon", &role->icon);
     if (st != DC_OK) return st;
     st = dc_json_mut_add_nullable_string(doc, obj, "unicode_emoji", &role->unicode_emoji);
+    if (st != DC_OK) return st;
+    st = dc_json_mut_add_nullable_string(doc, obj, "description", &role->description);
     if (st != DC_OK) return st;
     st = dc_json_mut_set_int64(doc, obj, "position", role->position);
     if (st != DC_OK) return st;
@@ -2374,6 +2382,22 @@ dc_status_t dc_json_model_presence_from_val(yyjson_val* val, dc_presence_t* pres
     st = dc_json_copy_cstr(&presence->status_str, status);
     if (st != DC_OK) return st;
     presence->status = dc_presence_status_from_string(status);
+
+    yyjson_val* activities_val = yyjson_obj_get(val, "activities");
+    if (activities_val && !yyjson_is_null(activities_val)) {
+        if (!yyjson_is_arr(activities_val)) return DC_ERROR_INVALID_FORMAT;
+        st = dc_json_copy_val_raw_json(activities_val, &presence->activities_json);
+        if (st != DC_OK) return st;
+        presence->has_activities = 1;
+    }
+
+    yyjson_val* client_status_val = yyjson_obj_get(val, "client_status");
+    if (client_status_val && !yyjson_is_null(client_status_val)) {
+        if (!yyjson_is_obj(client_status_val)) return DC_ERROR_INVALID_FORMAT;
+        st = dc_json_copy_val_raw_json(client_status_val, &presence->client_status_json);
+        if (st != DC_OK) return st;
+        presence->has_client_status = 1;
+    }
 
     return DC_OK;
 }

@@ -288,7 +288,16 @@ int test_json_main(void) {
     const char* guild_json =
         "{\"id\":\"42\",\"name\":\"Guild Test\",\"owner_id\":\"7\",\"permissions\":\"8\","
         "\"preferred_locale\":\"en-US\",\"premium_tier\":2,\"premium_progress_bar_enabled\":true,"
-        "\"icon\":null,\"description\":\"Testing guild model\",\"approximate_member_count\":123}";
+        "\"icon\":null,\"description\":\"Testing guild model\",\"approximate_member_count\":123,"
+        "\"features\":[\"COMMUNITY\",\"NEWS\"],\"roles\":[{\"id\":\"9\",\"name\":\"Admin\"}],"
+        "\"emojis\":[{\"id\":\"77\",\"name\":\"party\",\"roles\":[\"9\"],\"animated\":true,\"available\":true}],"
+        "\"welcome_screen\":{\"description\":\"Welcome!\",\"welcome_channels\":[{\"channel_id\":\"1234\","
+        "\"description\":\"Read rules\",\"emoji_id\":null,\"emoji_name\":\"wave\"}]},"
+        "\"stickers\":[{\"id\":\"888\",\"name\":\"Wobble\",\"description\":\"Hi\",\"tags\":\"wave\","
+        "\"type\":2,\"format_type\":1,\"available\":true,\"guild_id\":\"42\"}],"
+        "\"incidents_data\":{\"invites_disabled_until\":\"2024-01-02T00:00:00.000Z\","
+        "\"dms_disabled_until\":null,\"dm_spam_detected_at\":null,"
+        "\"raid_detected_at\":\"2024-01-01T10:00:00.000Z\"}}";
     dc_guild_t guild;
     TEST_ASSERT_EQ(DC_OK, dc_guild_init(&guild), "init guild");
     TEST_ASSERT_EQ(DC_OK, dc_guild_from_json(guild_json, &guild), "parse guild json");
@@ -304,6 +313,81 @@ int test_json_main(void) {
                        "guild description value");
     TEST_ASSERT_EQ(1, guild.approximate_member_count.is_set, "guild approximate member count set");
     TEST_ASSERT_EQ(123, guild.approximate_member_count.value, "guild approximate member count value");
+    TEST_ASSERT_EQ(1, guild.has_features, "guild features set");
+    TEST_ASSERT_EQ(2u, dc_vec_length(&guild.features), "guild features count");
+    {
+        const dc_string_t* feature0 = (const dc_string_t*)dc_vec_at(&guild.features, (size_t)0);
+        TEST_ASSERT_NEQ(NULL, feature0, "guild feature[0] present");
+        TEST_ASSERT_STR_EQ("COMMUNITY", dc_string_cstr(feature0), "guild feature[0] value");
+    }
+    TEST_ASSERT_EQ(1, guild.has_roles, "guild roles raw set");
+    TEST_ASSERT_EQ(1u, dc_vec_length(&guild.roles.items), "guild roles typed count");
+    {
+        const dc_role_t* guild_role = (const dc_role_t*)dc_vec_at(&guild.roles.items, (size_t)0);
+        TEST_ASSERT_NEQ(NULL, guild_role, "guild role[0] present");
+        TEST_ASSERT_EQ(9ULL, guild_role->id, "guild role[0] id");
+        TEST_ASSERT_STR_EQ("Admin", dc_string_cstr(&guild_role->name), "guild role[0] name");
+    }
+    TEST_ASSERT_EQ(1, guild.has_emojis, "guild emojis set");
+    TEST_ASSERT_EQ(1u, dc_vec_length(&guild.emojis.items), "guild emojis typed count");
+    {
+        const dc_guild_emoji_t* emoji = (const dc_guild_emoji_t*)dc_vec_at(&guild.emojis.items, (size_t)0);
+        TEST_ASSERT_NEQ(NULL, emoji, "guild emoji[0] present");
+        TEST_ASSERT_EQ(1, emoji->id.is_set, "guild emoji id set");
+        TEST_ASSERT_EQ(77ULL, emoji->id.value, "guild emoji id value");
+        TEST_ASSERT_EQ(0, emoji->name.is_null, "guild emoji name present");
+        TEST_ASSERT_STR_EQ("party", dc_string_cstr(&emoji->name.value), "guild emoji name value");
+        TEST_ASSERT_EQ(1u, dc_vec_length(&emoji->roles), "guild emoji role count");
+        TEST_ASSERT_EQ(9ULL, *(dc_snowflake_t*)dc_vec_at(&emoji->roles, (size_t)0),
+                       "guild emoji role id");
+        TEST_ASSERT_EQ(1, emoji->animated.is_set, "guild emoji animated set");
+        TEST_ASSERT_EQ(1, emoji->animated.value, "guild emoji animated value");
+    }
+    TEST_ASSERT_EQ(1, guild.has_welcome_screen, "guild welcome_screen set");
+    TEST_ASSERT_EQ(0, guild.welcome_screen.description.is_null, "welcome_screen description present");
+    TEST_ASSERT_STR_EQ("Welcome!", dc_string_cstr(&guild.welcome_screen.description.value),
+                       "welcome_screen description value");
+    TEST_ASSERT_EQ(1u, dc_vec_length(&guild.welcome_screen.welcome_channels),
+                   "welcome_screen channels count");
+    {
+        const dc_guild_welcome_channel_t* ws_channel =
+            (const dc_guild_welcome_channel_t*)dc_vec_at(&guild.welcome_screen.welcome_channels, (size_t)0);
+        TEST_ASSERT_NEQ(NULL, ws_channel, "welcome_screen channel[0] present");
+        TEST_ASSERT_EQ(1234ULL, ws_channel->channel_id, "welcome_screen channel id");
+        TEST_ASSERT_STR_EQ("Read rules", dc_string_cstr(&ws_channel->description),
+                           "welcome_screen channel description");
+        TEST_ASSERT_EQ(1, ws_channel->emoji_id.is_null, "welcome_screen channel emoji id null");
+        TEST_ASSERT_EQ(0, ws_channel->emoji_name.is_null, "welcome_screen channel emoji name present");
+        TEST_ASSERT_STR_EQ("wave", dc_string_cstr(&ws_channel->emoji_name.value),
+                           "welcome_screen channel emoji name");
+    }
+    TEST_ASSERT_EQ(1, guild.has_stickers, "guild stickers set");
+    TEST_ASSERT_EQ(1u, dc_vec_length(&guild.stickers.items), "guild stickers typed count");
+    {
+        const dc_guild_sticker_t* sticker =
+            (const dc_guild_sticker_t*)dc_vec_at(&guild.stickers.items, (size_t)0);
+        TEST_ASSERT_NEQ(NULL, sticker, "guild sticker[0] present");
+        TEST_ASSERT_EQ(888ULL, sticker->id, "guild sticker id");
+        TEST_ASSERT_STR_EQ("Wobble", dc_string_cstr(&sticker->name), "guild sticker name");
+        TEST_ASSERT_EQ(0, sticker->description.is_null, "guild sticker description present");
+        TEST_ASSERT_STR_EQ("Hi", dc_string_cstr(&sticker->description.value),
+                           "guild sticker description");
+        TEST_ASSERT_STR_EQ("wave", dc_string_cstr(&sticker->tags), "guild sticker tags");
+        TEST_ASSERT_EQ(2, sticker->type, "guild sticker type");
+        TEST_ASSERT_EQ(1, sticker->format_type, "guild sticker format type");
+        TEST_ASSERT_EQ(1, sticker->available.is_set, "guild sticker available set");
+        TEST_ASSERT_EQ(1, sticker->available.value, "guild sticker available value");
+        TEST_ASSERT_EQ(1, sticker->guild_id.is_set, "guild sticker guild_id set");
+        TEST_ASSERT_EQ(42ULL, sticker->guild_id.value, "guild sticker guild_id value");
+    }
+    TEST_ASSERT_EQ(1, guild.has_incidents_data, "guild incidents_data set");
+    TEST_ASSERT_EQ(0, guild.incidents_data.invites_disabled_until.is_null,
+                   "guild incidents invites_disabled_until present");
+    TEST_ASSERT_STR_EQ("2024-01-02T00:00:00.000Z",
+                       dc_string_cstr(&guild.incidents_data.invites_disabled_until.value),
+                       "guild incidents invites_disabled_until value");
+    TEST_ASSERT_EQ(1, guild.incidents_data.dms_disabled_until.is_null,
+                   "guild incidents dms_disabled_until null");
 
     TEST_ASSERT_EQ(DC_OK, dc_string_init(&result), "init guild to_json result");
     TEST_ASSERT_EQ(DC_OK, dc_guild_to_json(&guild, &result), "guild to json");
@@ -313,6 +397,26 @@ int test_json_main(void) {
         TEST_ASSERT_EQ(DC_OK, dc_json_get_snowflake(doc.root, "id", &guild_id),
                        "serialized guild id");
         TEST_ASSERT_EQ(42ULL, guild_id, "serialized guild id value");
+        yyjson_val* features = yyjson_obj_get(doc.root, "features");
+        TEST_ASSERT_NEQ(NULL, features, "serialized guild features");
+        TEST_ASSERT_EQ(2u, yyjson_arr_size(features), "serialized guild features size");
+        TEST_ASSERT_NEQ(NULL, yyjson_obj_get(doc.root, "roles"), "serialized guild roles");
+        yyjson_val* emojis = yyjson_obj_get(doc.root, "emojis");
+        TEST_ASSERT_NEQ(NULL, emojis, "serialized guild emojis");
+        TEST_ASSERT_EQ(1u, yyjson_arr_size(emojis), "serialized guild emojis size");
+        yyjson_val* welcome_screen = yyjson_obj_get(doc.root, "welcome_screen");
+        TEST_ASSERT_NEQ(NULL, welcome_screen, "serialized guild welcome_screen");
+        yyjson_val* welcome_channels = yyjson_obj_get(welcome_screen, "welcome_channels");
+        TEST_ASSERT_NEQ(NULL, welcome_channels, "serialized guild welcome channels");
+        TEST_ASSERT_EQ(1u, yyjson_arr_size(welcome_channels), "serialized guild welcome channels size");
+        yyjson_val* stickers = yyjson_obj_get(doc.root, "stickers");
+        TEST_ASSERT_NEQ(NULL, stickers, "serialized guild stickers");
+        TEST_ASSERT_EQ(1u, yyjson_arr_size(stickers), "serialized guild stickers size");
+        yyjson_val* incidents = yyjson_obj_get(doc.root, "incidents_data");
+        TEST_ASSERT_NEQ(NULL, incidents, "serialized guild incidents_data");
+        TEST_ASSERT_STR_EQ("2024-01-02T00:00:00.000Z",
+                           yyjson_get_str(yyjson_obj_get(incidents, "invites_disabled_until")),
+                           "serialized guild incidents invites_disabled_until");
     }
     dc_json_doc_free(&doc);
     dc_string_free(&result);
@@ -327,7 +431,8 @@ int test_json_main(void) {
     /* Model parsing: Role */
     const char* role_json =
         "{\"id\":\"11\",\"name\":\"Mod\",\"color\":3447003,\"hoist\":true,\"icon\":null,"
-        "\"unicode_emoji\":null,\"position\":2,\"permissions\":\"12345\",\"managed\":false,"
+        "\"unicode_emoji\":null,\"description\":\"Moderation role\","
+        "\"position\":2,\"permissions\":\"12345\",\"managed\":false,"
         "\"mentionable\":true,\"flags\":1,\"tags\":{\"bot_id\":\"222\",\"premium_subscriber\":null}}";
     dc_role_t role;
     TEST_ASSERT_EQ(DC_OK, dc_role_init(&role), "init role");
@@ -337,6 +442,9 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(3447003u, role.color, "role color parsed");
     TEST_ASSERT_EQ(1, role.hoist, "role hoist parsed");
     TEST_ASSERT_EQ(1, role.icon.is_null, "role icon null parsed");
+    TEST_ASSERT_EQ(0, role.description.is_null, "role description present");
+    TEST_ASSERT_STR_EQ("Moderation role", dc_string_cstr(&role.description.value),
+                       "role description parsed");
     TEST_ASSERT_EQ(1, role.tags.bot_id.is_set, "role tags bot_id set");
     TEST_ASSERT_EQ(222ULL, role.tags.bot_id.value, "role tags bot_id value");
     TEST_ASSERT_EQ(1, role.tags.premium_subscriber.is_set, "role tags premium_subscriber set");
@@ -357,7 +465,7 @@ int test_json_main(void) {
 
     /* Model parsing: Guild member */
     const char* guild_member_json =
-        "{\"user\":{\"id\":\"123\",\"username\":\"alice\"},\"nick\":\"Ali\",\"avatar\":null,"
+        "{\"user\":{\"id\":\"123\",\"username\":\"alice\"},\"nick\":\"Ali\",\"avatar\":null,\"banner\":\"banner_hash\","
         "\"roles\":[\"11\",\"22\"],\"joined_at\":\"2024-01-01T00:00:00.000Z\","
         "\"premium_since\":null,\"deaf\":false,\"mute\":true,\"pending\":false,"
         "\"permissions\":\"8\",\"communication_disabled_until\":null,\"flags\":2}";
@@ -370,6 +478,8 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(0, member.nick.is_null, "guild member nick present");
     TEST_ASSERT_STR_EQ("Ali", dc_string_cstr(&member.nick.value), "guild member nick value");
     TEST_ASSERT_EQ(1, member.avatar.is_null, "guild member avatar null");
+    TEST_ASSERT_EQ(0, member.banner.is_null, "guild member banner present");
+    TEST_ASSERT_STR_EQ("banner_hash", dc_string_cstr(&member.banner.value), "guild member banner value");
     TEST_ASSERT_EQ(2u, dc_vec_length(&member.roles), "guild member roles count");
     TEST_ASSERT_EQ(22ULL, *(dc_snowflake_t*)dc_vec_at(&member.roles, 1),
                    "guild member roles second value");

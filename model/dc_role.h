@@ -33,6 +33,7 @@ typedef struct {
     int hoist;
     dc_nullable_string_t icon;
     dc_nullable_string_t unicode_emoji;
+    dc_nullable_string_t description;
     int position;
     uint64_t permissions;
     int managed;

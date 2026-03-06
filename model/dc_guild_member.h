@@ -23,6 +23,7 @@ typedef struct {
     dc_user_t user;
     dc_nullable_string_t nick;
     dc_nullable_string_t avatar;
+    dc_nullable_string_t banner;
     dc_vec_t roles; /* dc_snowflake_t */
     dc_string_t joined_at;
     dc_nullable_string_t premium_since;

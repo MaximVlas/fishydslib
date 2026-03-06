@@ -47,7 +47,9 @@ void test_parse_guild_create(void) {
             "{\"guild_id\": \"1001\", \"channel_id\": \"2001\", \"user_id\": \"12345\", \"session_id\": \"sess1\", \"deaf\": false, \"mute\": true, \"self_deaf\": false, \"self_mute\": true}"
         "],"
         "\"presences\": ["
-            "{\"user\": {\"id\": \"12345\"}, \"status\": \"dnd\"}"
+            "{\"user\": {\"id\": \"12345\"}, \"status\": \"dnd\","
+             "\"activities\":[{\"name\":\"Coding\",\"type\":0}],"
+             "\"client_status\":{\"desktop\":\"dnd\"}}"
         "]"
     "}";
     
@@ -71,6 +73,12 @@ void test_parse_guild_create(void) {
     TEST_ASSERT_EQ(12345, p->user_id, "presence user id");
     TEST_ASSERT_EQ(DC_PRESENCE_STATUS_DND, p->status, "presence status enum");
     TEST_ASSERT_STR_EQ("dnd", dc_string_cstr(&p->status_str), "presence status string");
+    TEST_ASSERT_EQ(1, p->has_activities, "presence activities captured");
+    TEST_ASSERT_EQ(1, p->has_client_status, "presence client_status captured");
+    TEST_ASSERT_NEQ(NULL, strstr(dc_string_cstr(&p->activities_json), "\"Coding\""),
+                    "presence activities json content");
+    TEST_ASSERT_NEQ(NULL, strstr(dc_string_cstr(&p->client_status_json), "\"desktop\":\"dnd\""),
+                    "presence client_status json content");
 
     dc_gateway_guild_create_free(&guild);
 }
