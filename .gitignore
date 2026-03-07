@@ -1,4 +1,5 @@
 # Local/dev artifacts
+.cache/
 build/
 cmake-build*/
 *.o
