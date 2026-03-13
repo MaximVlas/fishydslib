@@ -123,6 +123,24 @@ void dc_json_mut_doc_free(dc_json_mut_doc_t* doc);
  */
 dc_status_t dc_json_mut_doc_serialize(const dc_json_mut_doc_t* doc, dc_string_t* result);
 
+/**
+ * @brief Serialize a yyjson value into a dc_string_t using fishydslib allocators.
+ * @param val Root value to serialize
+ * @param flags yyjson write flags bitmask
+ * @param result String to store result
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_json_write_value_to_string(const yyjson_val* val, uint32_t flags, dc_string_t* result);
+
+/**
+ * @brief Serialize a yyjson mutable document into a dc_string_t using fishydslib allocators.
+ * @param doc Mutable document to serialize
+ * @param flags yyjson write flags bitmask
+ * @param result String to store result
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_json_write_mut_doc_to_string(const yyjson_mut_doc* doc, uint32_t flags, dc_string_t* result);
+
 /* Value access helpers */
 dc_status_t dc_json_get_string(yyjson_val* val, const char* key, const char** result);
 dc_status_t dc_json_get_int64(yyjson_val* val, const char* key, int64_t* result);

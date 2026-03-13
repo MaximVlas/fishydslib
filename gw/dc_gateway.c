@@ -5,6 +5,7 @@
 
 #include "dc_gateway.h"
 #include "core/dc_alloc.h"
+#include "core/dc_platform.h"
 #include "core/dc_vec.h"
 #include "http/dc_http_compliance.h"
 #include "json/dc_json.h"
@@ -102,11 +103,9 @@ struct dc_gateway_client {
 static void dc_gateway_outbox_clear(dc_gateway_client_t* client);
 
 static uint64_t dc_gateway_now_ms(void) {
-    struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-        return 0;
-    }
-    return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)ts.tv_nsec / 1000000ULL;
+    uint64_t now_ms = 0;
+    if (!dc_platform_now_monotonic_ms(&now_ms)) return 0;
+    return now_ms;
 }
 
 static void dc_gateway_set_state(dc_gateway_client_t* client, dc_gateway_state_t state) {
@@ -291,13 +290,7 @@ static const char* dc_gateway_os_string(void) {
 }
 
 static dc_status_t dc_gateway_json_serialize(yyjson_mut_doc* doc, dc_string_t* out) {
-    if (!doc || !out) return DC_ERROR_NULL_POINTER;
-    size_t json_len = 0;
-    char* json = yyjson_mut_write(doc, 0, &json_len);
-    if (!json) return DC_ERROR_JSON;
-    dc_status_t st = dc_string_set_buffer(out, json, json_len);
-    free(json);
-    return st;
+    return dc_json_write_mut_doc_to_string(doc, 0u, out);
 }
 
 static dc_status_t dc_gateway_build_heartbeat_payload(dc_gateway_client_t* client, dc_string_t* out) {
@@ -689,11 +682,7 @@ static dc_status_t dc_gateway_emit_event(dc_gateway_client_t* client, const char
     if (!client || !name || !client->event_callback) return DC_OK;
     if (!d) return DC_OK;
 
-    size_t json_len = 0;
-    char* json = yyjson_val_write(d, 0, &json_len);
-    if (!json) return DC_ERROR_JSON;
-    dc_status_t st = dc_string_set_buffer(&client->event_buf, json, json_len);
-    free(json);
+    dc_status_t st = dc_json_write_value_to_string(d, 0u, &client->event_buf);
     if (st != DC_OK) return st;
     client->event_callback(name, dc_string_cstr(&client->event_buf), client->user_data);
     return DC_OK;

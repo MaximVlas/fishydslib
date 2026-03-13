@@ -1,7 +1,10 @@
 # Local/dev artifacts
+Testing/
 .cache/
 build/
+build-*/
 cmake-build*/
+vcpkg_installed/
 *.o
 *.obj
 *.a

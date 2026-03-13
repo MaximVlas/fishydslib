@@ -246,8 +246,8 @@ dc_status_t dc_iso8601_from_unix_ms(uint64_t unix_timestamp_ms, dc_iso8601_t* ti
  * @brief Capture the current wall-clock time as a UTC dc_iso8601_t with
  *        millisecond precision.
  *
- * Uses POSIX clock_gettime(CLOCK_REALTIME) internally. CLOCK_REALTIME is
- * guaranteed to be available on all POSIX.1-2008 conforming systems.
+ * Uses the platform wall clock internally and returns a UTC timestamp with
+ * millisecond precision.
  *
  * Note: CLOCK_REALTIME can jump backwards if the system clock is adjusted
  * (e.g. by NTP slew). If you only need a monotonically increasing interval
@@ -257,7 +257,7 @@ dc_status_t dc_iso8601_from_unix_ms(uint64_t unix_timestamp_ms, dc_iso8601_t* ti
  * @param timestamp  Output: current UTC time. Must not be NULL.
  * @return DC_OK on success.
  * @return DC_ERROR_NULL_POINTER if timestamp is NULL.
- * @return DC_ERROR_UNKNOWN if clock_gettime() fails.
+ * @return DC_ERROR_UNKNOWN if the platform clock query fails.
  */
 dc_status_t dc_iso8601_now_utc(dc_iso8601_t* timestamp);
 
@@ -265,8 +265,9 @@ dc_status_t dc_iso8601_now_utc(dc_iso8601_t* timestamp);
  * @brief Capture the current wall-clock time as a dc_iso8601_t in the
  *        system's local timezone, with second precision.
  *
- * Uses time(NULL), localtime_r(), and gmtime_r() to determine the local
- * time and compute the UTC offset (including DST adjustments).
+ * Uses time(NULL) plus platform-safe local/UTC conversion helpers to
+ * determine the local time and compute the UTC offset (including DST
+ * adjustments).
  *
  * The resulting timestamp has:
  *   - is_utc == 0
@@ -279,7 +280,7 @@ dc_status_t dc_iso8601_now_utc(dc_iso8601_t* timestamp);
  * @param timestamp  Output: current local time. Must not be NULL.
  * @return DC_OK on success.
  * @return DC_ERROR_NULL_POINTER if timestamp is NULL.
- * @return DC_ERROR_UNKNOWN if localtime_r() or gmtime_r() fails.
+ * @return DC_ERROR_UNKNOWN if local or UTC time conversion fails.
  */
 dc_status_t dc_iso8601_now_local(dc_iso8601_t* timestamp);
 

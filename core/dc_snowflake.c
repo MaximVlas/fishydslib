@@ -4,6 +4,7 @@
  */
 
 #include "dc_snowflake.h"
+#include "core/dc_platform.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -99,11 +100,10 @@ dc_status_t dc_snowflake_generate(uint8_t worker_id, uint8_t process_id, uint16_
     if (!snowflake) return DC_ERROR_NULL_POINTER;
     if (worker_id > 31 || process_id > 31 || increment > 4095) return DC_ERROR_INVALID_PARAM;
 
-    struct timespec ts;
-    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
+    uint64_t now_ms = 0;
+    if (!dc_platform_now_epoch_ms(&now_ms)) {
         return DC_ERROR_UNKNOWN;
     }
-    uint64_t now_ms = (uint64_t)ts.tv_sec * 1000ULL + ((uint64_t)ts.tv_nsec / 1000000ULL);
     if (now_ms < DC_DISCORD_EPOCH) return DC_ERROR_INVALID_PARAM;
 
     uint64_t timestamp_part = (now_ms - DC_DISCORD_EPOCH) << 22;

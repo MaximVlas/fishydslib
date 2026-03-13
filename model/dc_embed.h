@@ -58,7 +58,7 @@ typedef struct {
 typedef struct {
     dc_string_t name;
     dc_string_t value;
-    int _inline; /* 'inline' is keyword in C */
+    int is_inline;
 } dc_embed_field_t;
 
 typedef struct {

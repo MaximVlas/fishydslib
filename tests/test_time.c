@@ -45,5 +45,15 @@ int test_time_main(void) {
     dc_iso8601_t invalid = { .year = 2023, .month = 13, .day = 1, .hour = 0, .minute = 0, .second = 0, .millisecond = 0, .utc_offset_minutes = 0, .is_utc = 1 };
     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_iso8601_validate(&invalid), "invalid month");
 
+    dc_iso8601_t now_utc;
+    TEST_ASSERT_EQ(DC_OK, dc_iso8601_now_utc(&now_utc), "now utc");
+    TEST_ASSERT_EQ(DC_OK, dc_iso8601_validate(&now_utc), "now utc valid");
+    TEST_ASSERT_EQ(1, now_utc.is_utc, "now utc flag");
+    TEST_ASSERT_EQ(0, now_utc.utc_offset_minutes, "now utc offset");
+
+    dc_iso8601_t now_local;
+    TEST_ASSERT_EQ(DC_OK, dc_iso8601_now_local(&now_local), "now local");
+    TEST_ASSERT_EQ(DC_OK, dc_iso8601_validate(&now_local), "now local valid");
+
     TEST_SUITE_END("Time Tests");
 }

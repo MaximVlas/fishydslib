@@ -71,12 +71,7 @@ static dc_status_t dc_gateway_parse_optional_snowflake(yyjson_val* obj,
 }
 
 static dc_status_t dc_gateway_copy_raw_json(yyjson_val* val, dc_string_t* out) {
-    if (!val || !out) return DC_ERROR_NULL_POINTER;
-    char* json = yyjson_val_write(val, YYJSON_WRITE_NOFLAG, NULL);
-    if (!json) return DC_ERROR_OUT_OF_MEMORY;
-    dc_status_t st = dc_string_set_cstr(out, json);
-    free(json);
-    return st;
+    return dc_json_write_value_to_string(val, YYJSON_WRITE_NOFLAG, out);
 }
 
 static dc_status_t dc_gateway_parse_interaction_data(yyjson_val* data_val,

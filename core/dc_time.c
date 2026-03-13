@@ -4,6 +4,7 @@
  */
 
 #include "dc_time.h"
+#include "core/dc_platform.h"
 #include <string.h>
 #include <limits.h>
 
@@ -274,9 +275,8 @@ dc_status_t dc_iso8601_from_unix_ms(uint64_t unix_timestamp_ms, dc_iso8601_t* ti
 
 dc_status_t dc_iso8601_now_utc(dc_iso8601_t* timestamp) {
     if (!timestamp) return DC_ERROR_NULL_POINTER;
-    struct timespec ts;
-    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) return DC_ERROR_UNKNOWN;
-    uint64_t ms = (uint64_t)ts.tv_sec * 1000ULL + ((uint64_t)ts.tv_nsec / 1000000ULL);
+    uint64_t ms = 0;
+    if (!dc_platform_now_epoch_ms(&ms)) return DC_ERROR_UNKNOWN;
     return dc_iso8601_from_unix_ms(ms, timestamp);
 }
 
@@ -285,8 +285,8 @@ dc_status_t dc_iso8601_now_local(dc_iso8601_t* timestamp) {
     time_t now = time(NULL);
     struct tm local_tm;
     struct tm gmt_tm;
-    if (!localtime_r(&now, &local_tm)) return DC_ERROR_UNKNOWN;
-    if (!gmtime_r(&now, &gmt_tm)) return DC_ERROR_UNKNOWN;
+    if (!dc_platform_localtime_safe(&now, &local_tm)) return DC_ERROR_UNKNOWN;
+    if (!dc_platform_gmtime_safe(&now, &gmt_tm)) return DC_ERROR_UNKNOWN;
 
     time_t local_epoch = mktime(&local_tm);
     time_t gmt_epoch = dc_timegm_utc(&gmt_tm);

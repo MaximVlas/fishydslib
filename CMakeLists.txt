@@ -1,6 +1,98 @@
 cmake_minimum_required(VERSION 3.16)
+
+set(FISHYDS_C_COMPILER "auto" CACHE STRING
+    "Preferred C compiler alias or executable path (auto, clang, gcc, cc, zig-cc, clang-cl, cl)")
+set_property(CACHE FISHYDS_C_COMPILER PROPERTY STRINGS auto clang gcc cc zig-cc clang-cl cl)
+
+find_program(FISHYDS_CLANG_C_COMPILER NAMES clang)
+find_program(FISHYDS_GCC_C_COMPILER NAMES gcc)
+find_program(FISHYDS_CC_C_COMPILER NAMES cc)
+find_program(FISHYDS_ZIG_EXECUTABLE NAMES zig)
+find_program(FISHYDS_CLANG_CL_C_COMPILER NAMES clang-cl)
+find_program(FISHYDS_CL_C_COMPILER NAMES cl)
+
+set(FISHYDS_DISCOVERED_C_COMPILERS "")
+if(FISHYDS_CLANG_C_COMPILER)
+    list(APPEND FISHYDS_DISCOVERED_C_COMPILERS clang)
+endif()
+if(FISHYDS_GCC_C_COMPILER)
+    list(APPEND FISHYDS_DISCOVERED_C_COMPILERS gcc)
+endif()
+if(FISHYDS_CC_C_COMPILER)
+    list(APPEND FISHYDS_DISCOVERED_C_COMPILERS cc)
+endif()
+if(FISHYDS_ZIG_EXECUTABLE)
+    list(APPEND FISHYDS_DISCOVERED_C_COMPILERS zig-cc)
+endif()
+if(FISHYDS_CLANG_CL_C_COMPILER)
+    list(APPEND FISHYDS_DISCOVERED_C_COMPILERS clang-cl)
+endif()
+if(FISHYDS_CL_C_COMPILER)
+    list(APPEND FISHYDS_DISCOVERED_C_COMPILERS cl)
+endif()
+
+if(NOT DEFINED CMAKE_C_COMPILER AND "$ENV{CC}" STREQUAL "" AND NOT FISHYDS_C_COMPILER STREQUAL "auto")
+    if(EXISTS "${FISHYDS_C_COMPILER}")
+        set(CMAKE_C_COMPILER "${FISHYDS_C_COMPILER}" CACHE FILEPATH "C compiler selected by fishydslib" FORCE)
+        get_filename_component(_fishyds_compiler_name "${FISHYDS_C_COMPILER}" NAME)
+        if(_fishyds_compiler_name STREQUAL "zig" OR _fishyds_compiler_name STREQUAL "zig.exe")
+            set(CMAKE_C_COMPILER_ARG1 "cc" CACHE STRING "Compiler argument selected by fishydslib" FORCE)
+        else()
+            unset(CMAKE_C_COMPILER_ARG1 CACHE)
+        endif()
+    elseif(FISHYDS_C_COMPILER STREQUAL "clang" AND FISHYDS_CLANG_C_COMPILER)
+        set(CMAKE_C_COMPILER "${FISHYDS_CLANG_C_COMPILER}" CACHE FILEPATH "C compiler selected by fishydslib" FORCE)
+    elseif(FISHYDS_C_COMPILER STREQUAL "gcc" AND FISHYDS_GCC_C_COMPILER)
+        set(CMAKE_C_COMPILER "${FISHYDS_GCC_C_COMPILER}" CACHE FILEPATH "C compiler selected by fishydslib" FORCE)
+    elseif(FISHYDS_C_COMPILER STREQUAL "cc" AND FISHYDS_CC_C_COMPILER)
+        set(CMAKE_C_COMPILER "${FISHYDS_CC_C_COMPILER}" CACHE FILEPATH "C compiler selected by fishydslib" FORCE)
+    elseif(FISHYDS_C_COMPILER STREQUAL "zig-cc" AND FISHYDS_ZIG_EXECUTABLE)
+        set(CMAKE_C_COMPILER "${FISHYDS_ZIG_EXECUTABLE}" CACHE FILEPATH "C compiler selected by fishydslib" FORCE)
+        set(CMAKE_C_COMPILER_ARG1 "cc" CACHE STRING "Compiler argument selected by fishydslib" FORCE)
+    elseif(FISHYDS_C_COMPILER STREQUAL "clang-cl" AND FISHYDS_CLANG_CL_C_COMPILER)
+        set(CMAKE_C_COMPILER "${FISHYDS_CLANG_CL_C_COMPILER}" CACHE FILEPATH "C compiler selected by fishydslib" FORCE)
+        unset(CMAKE_C_COMPILER_ARG1 CACHE)
+    elseif(FISHYDS_C_COMPILER STREQUAL "cl" AND FISHYDS_CL_C_COMPILER)
+        set(CMAKE_C_COMPILER "${FISHYDS_CL_C_COMPILER}" CACHE FILEPATH "C compiler selected by fishydslib" FORCE)
+        unset(CMAKE_C_COMPILER_ARG1 CACHE)
+    else()
+        message(FATAL_ERROR
+            "Requested FISHYDS_C_COMPILER='${FISHYDS_C_COMPILER}', but it was not found. "
+            "Discovered compiler aliases: ${FISHYDS_DISCOVERED_C_COMPILERS}")
+    endif()
+endif()
+
+if(WIN32
+   AND FISHYDS_C_COMPILER STREQUAL "zig-cc"
+   AND CMAKE_GENERATOR MATCHES "Visual Studio")
+    message(FATAL_ERROR
+        "FISHYDS_C_COMPILER=zig-cc is not supported with the Visual Studio generator on Windows. "
+        "Reconfigure with -G Ninja (recommended) or another single-config generator so zig cc "
+        "drives both compile and link steps.")
+endif()
+
 project(fishydslib VERSION 0.1.0 LANGUAGES C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+get_filename_component(_fishyds_selected_c_compiler_name "${CMAKE_C_COMPILER}" NAME)
+set(FISHYDS_USING_ZIG_CC OFF)
+if(_fishyds_selected_c_compiler_name STREQUAL "zig" OR _fishyds_selected_c_compiler_name STREQUAL "zig.exe")
+    set(FISHYDS_USING_ZIG_CC ON)
+endif()
+
+if(FISHYDS_USING_ZIG_CC)
+    set(CMAKE_AR "${CMAKE_C_COMPILER}" CACHE FILEPATH
+        "Archiver used by fishydslib when zig cc is selected" FORCE)
+    set(CMAKE_RANLIB "${CMAKE_C_COMPILER}" CACHE FILEPATH
+        "Ranlib used by fishydslib when zig cc is selected" FORCE)
+    set(CMAKE_C_COMPILER_AR "${CMAKE_C_COMPILER}" CACHE FILEPATH
+        "Compiler archiver used by fishydslib when zig cc is selected" FORCE)
+    set(CMAKE_C_COMPILER_RANLIB "${CMAKE_C_COMPILER}" CACHE FILEPATH
+        "Compiler ranlib used by fishydslib when zig cc is selected" FORCE)
+    set(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> ar qc <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_APPEND "<CMAKE_AR> ar q <TARGET> <LINK_FLAGS> <OBJECTS>")
+    set(CMAKE_C_ARCHIVE_FINISH "<CMAKE_RANLIB> ranlib <TARGET>")
+endif()
 
 # Set C17 standard
 set(CMAKE_C_STANDARD 17)
@@ -10,13 +102,49 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Build options
 option(FISHYDS_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(FISHYDS_ENABLE_TESTS "Build tests" ON)
-option(FISHYDS_ENABLE_EXAMPLES "Build examples" ON)
+option(FISHYDS_ENABLE_EXAMPLES "Build examples" OFF)
 option(FISHYDS_ENABLE_BENCHMARKS "Build benchmarks" OFF)
-option(FISHYDS_USE_GLIB_ALLOC "Use GLib allocators for dc_alloc" ON)
+option(FISHYDS_USE_GLIB_ALLOC "Use GLib allocators for dc_alloc" OFF)
+
+include(CheckCCompilerFlag)
+
+set(FISHYDS_C_COMPILER_FRONTEND "")
+if(DEFINED CMAKE_C_COMPILER_FRONTEND_VARIANT)
+    set(FISHYDS_C_COMPILER_FRONTEND "${CMAKE_C_COMPILER_FRONTEND_VARIANT}")
+endif()
+
+if(FISHYDS_DISCOVERED_C_COMPILERS)
+    string(REPLACE ";" ", " _fishyds_discovered_c_compilers "${FISHYDS_DISCOVERED_C_COMPILERS}")
+    message(STATUS "fishydslib detected C compiler candidates: ${_fishyds_discovered_c_compilers}")
+endif()
+
+message(STATUS
+    "fishydslib selected C compiler: ${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ARG1} "
+    "(${CMAKE_C_COMPILER_ID}, frontend: ${FISHYDS_C_COMPILER_FRONTEND})")
+
+function(fishyds_append_supported_c_flags out_var)
+    set(_fishyds_supported_flags "${${out_var}}")
+
+    foreach(_flag IN LISTS ARGN)
+        string(MAKE_C_IDENTIFIER "fishyds_has_${_flag}" _flag_cache_var)
+        set(CMAKE_REQUIRED_QUIET TRUE)
+        check_c_compiler_flag("${_flag}" "${_flag_cache_var}")
+        if(${_flag_cache_var})
+            list(APPEND _fishyds_supported_flags "${_flag}")
+        endif()
+    endforeach()
+
+    list(REMOVE_DUPLICATES _fishyds_supported_flags)
+    set(${out_var} "${_fishyds_supported_flags}" PARENT_SCOPE)
+endfunction()
 
 # Compiler flags for hardening and warnings
-if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-    set(FISHYDS_COMPILE_FLAGS
+set(FISHYDS_COMPILE_FLAGS "")
+set(FISHYDS_LINK_FLAGS "")
+
+if(FISHYDS_C_COMPILER_FRONTEND STREQUAL "GNU"
+   OR CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang|IntelLLVM")
+    fishyds_append_supported_c_flags(FISHYDS_COMPILE_FLAGS
         -Wall
         -Wextra
         -Wpedantic
@@ -45,55 +173,40 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -fstack-protector-strong
         -fPIC
     )
-    
+
     if(FISHYDS_ENABLE_SANITIZERS)
-        list(APPEND FISHYDS_COMPILE_FLAGS
+        fishyds_append_supported_c_flags(FISHYDS_COMPILE_FLAGS
             -fsanitize=address
             -fsanitize=undefined
             -fno-sanitize-recover=all
             -fsanitize-address-use-after-scope
         )
-        set(FISHYDS_LINK_FLAGS
+
+        fishyds_append_supported_c_flags(FISHYDS_LINK_FLAGS
             -fsanitize=address
             -fsanitize=undefined
         )
     endif()
+elseif(FISHYDS_C_COMPILER_FRONTEND STREQUAL "MSVC" OR MSVC)
+    fishyds_append_supported_c_flags(FISHYDS_COMPILE_FLAGS
+        /W4
+        /sdl
+    )
+
+    if(FISHYDS_ENABLE_SANITIZERS)
+        fishyds_append_supported_c_flags(FISHYDS_COMPILE_FLAGS /fsanitize=address)
+        fishyds_append_supported_c_flags(FISHYDS_LINK_FLAGS /fsanitize=address)
+    endif()
 endif()
 
 # Find dependencies
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig QUIET)
 
-# libcurl
-find_package(CURL REQUIRED)
-if(NOT CURL_FOUND)
-    message(FATAL_ERROR "libcurl not found")
-endif()
+set(FISHYDS_DEP_LINK_LIBS "")
+set(FISHYDS_DEP_INCLUDE_DIRS "")
+set(FISHYDS_DEP_COMPILE_DEFINITIONS "")
 
-# libwebsockets
-pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
-if(NOT LIBWEBSOCKETS_FOUND)
-    message(FATAL_ERROR "libwebsockets not found")
-endif()
-
-# yyjson
-pkg_check_modules(YYJSON REQUIRED yyjson)
-if(NOT YYJSON_FOUND)
-    message(FATAL_ERROR "yyjson not found")
-endif()
-
-# zlib
-find_package(ZLIB REQUIRED)
-if(NOT ZLIB_FOUND)
-    message(FATAL_ERROR "zlib not found")
-endif()
-
-# glib (optional)
-if(FISHYDS_USE_GLIB_ALLOC)
-    pkg_check_modules(GLIB REQUIRED glib-2.0)
-    if(NOT GLIB_FOUND)
-        message(FATAL_ERROR "glib-2.0 not found")
-    endif()
-endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/fishyds_dependencies.cmake")
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/core)
@@ -109,6 +222,7 @@ set(FISHYDS_SOURCES
     core/dc_status.c
     core/dc_alloc.c
     core/dc_log.c
+    core/dc_platform.c
     core/dc_allowed_mentions.c
     core/dc_attachments.c
     core/dc_cdn.c
@@ -119,23 +233,23 @@ set(FISHYDS_SOURCES
     core/dc_snowflake.c
     core/dc_time.c
     core/dc_format.c
-    
+
     # JSON layer
     json/dc_json.c
     json/dc_json_model.c
     json/dc_json_component.c
-    
+
     # HTTP client
     http/dc_http.c
     http/dc_rest.c
     http/dc_http_compliance.c
     http/dc_multipart.c
-    
+
     # Gateway client
     gw/dc_gateway.c
     gw/dc_events.c
     gw/dc_gateway_codes.c
-    
+
     # Models
     model/dc_user.c
     model/dc_role.c
@@ -150,7 +264,7 @@ set(FISHYDS_SOURCES
     model/dc_voice_state.c
     model/dc_presence.c
     model/dc_permissions.c
-    
+
     # Client
     client/dc_client.c
     client/dc_commands.c
@@ -174,21 +288,13 @@ endif()
 # Link dependencies
 target_link_libraries(discordc
     PRIVATE
-    ${CURL_LIBRARIES}
-    ${LIBWEBSOCKETS_LIBRARIES}
-    ${YYJSON_LIBRARIES}
-    ${ZLIB_LIBRARIES}
-    ${GLIB_LIBRARIES}
+    ${FISHYDS_DEP_LINK_LIBS}
 )
 
 # Include directories for dependencies
 target_include_directories(discordc
     PRIVATE
-    ${CURL_INCLUDE_DIRS}
-    ${LIBWEBSOCKETS_INCLUDE_DIRS}
-    ${YYJSON_INCLUDE_DIRS}
-    ${ZLIB_INCLUDE_DIRS}
-    ${GLIB_INCLUDE_DIRS}
+    ${FISHYDS_DEP_INCLUDE_DIRS}
 )
 
 # Export includes

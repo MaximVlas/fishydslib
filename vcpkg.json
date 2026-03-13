@@ -1,0 +1,25 @@
+{
+  "name": "fishydslib",
+  "version-string": "0.1.0",
+  "builtin-baseline": "a44707152fabbedcf1c17fe80d7bfb7d9370d8d5",
+  "dependencies": [
+    "curl",
+    "libwebsockets",
+    "yyjson",
+    "zlib"
+  ],
+  "features": {
+    "glib-alloc": {
+      "description": "Install GLib for FISHYDS_USE_GLIB_ALLOC builds",
+      "dependencies": [
+        "glib"
+      ]
+    },
+    "benchmarks": {
+      "description": "Install Google Benchmark for FISHYDS_ENABLE_BENCHMARKS builds",
+      "dependencies": [
+        "benchmark"
+      ]
+    }
+  }
+}

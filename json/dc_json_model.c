@@ -19,13 +19,7 @@ static dc_status_t dc_json_copy_cstr(dc_string_t* dst, const char* src) {
 }
 
 static dc_status_t dc_json_copy_val_raw_json(yyjson_val* val, dc_string_t* out) {
-    if (!val || !out) return DC_ERROR_NULL_POINTER;
-    size_t len = 0;
-    char* json = yyjson_val_write(val, 0, &len);
-    if (!json) return DC_ERROR_OUT_OF_MEMORY;
-    dc_status_t st = dc_string_set_cstr(out, json);
-    free(json);
-    return st;
+    return dc_json_write_value_to_string(val, 0u, out);
 }
 
 static dc_status_t dc_json_mut_add_raw_json_if_set(dc_json_mut_doc_t* doc,
@@ -2585,7 +2579,7 @@ static dc_status_t dc_json_model_embed_field_from_val(yyjson_val* val, dc_embed_
     st = dc_json_copy_cstr(&field->value, value);
     if (st != DC_OK) return st;
     
-    st = dc_json_get_bool_opt(val, "inline", &field->_inline, 0);
+    st = dc_json_get_bool_opt(val, "inline", &field->is_inline, 0);
     if (st != DC_OK) return st;
     return DC_OK;
 }

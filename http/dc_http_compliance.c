@@ -5,6 +5,7 @@
 
 #include "dc_http_compliance.h"
 #include "core/dc_alloc.h"
+#include "json/dc_json.h"
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
@@ -265,18 +266,7 @@ dc_status_t dc_http_error_parse(const char* body, size_t body_len, dc_http_error
 
     yyjson_val* errors_val = yyjson_obj_get(root, "errors");
     if (errors_val) {
-        size_t json_len = 0;
-        yyjson_write_err werr = {0};
-        char* json = yyjson_val_write_opts(errors_val, 0, NULL, &json_len, &werr);
-        if (!json) {
-            yyjson_doc_free(doc);
-            dc_free(mutable_body);
-            return DC_ERROR_JSON;
-        }
-        dc_status_t st = dc_string_set_buffer(&err->errors, json, json_len);
-        /* yyjson_val_write_opts with NULL allocator uses standard malloc;
-           free() is correct here, not dc_free() */
-        free(json);
+        dc_status_t st = dc_json_write_value_to_string(errors_val, 0u, &err->errors);
         if (st != DC_OK) {
             yyjson_doc_free(doc);
             dc_free(mutable_body);

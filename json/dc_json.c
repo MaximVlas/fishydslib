@@ -11,6 +11,32 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+static void* dc_yyjson_malloc(void* ctx, size_t size) {
+    (void)ctx;
+    return dc_alloc(size);
+}
+
+static void* dc_yyjson_realloc(void* ctx, void* ptr, size_t old_size, size_t size) {
+    (void)ctx;
+    (void)old_size;
+    return dc_realloc(ptr, size);
+}
+
+static void dc_yyjson_free(void* ctx, void* ptr) {
+    (void)ctx;
+    dc_free(ptr);
+}
+
+static const yyjson_alc* dc_yyjson_dc_allocator(void) {
+    static const yyjson_alc alc = {
+        .malloc = dc_yyjson_malloc,
+        .realloc = dc_yyjson_realloc,
+        .free = dc_yyjson_free,
+        .ctx = NULL
+    };
+    return &alc;
+}
+
 static dc_status_t dc_parse_u64_strict(const char* str, uint64_t* out) {
     if (!str || !out) return DC_ERROR_NULL_POINTER;
     if (*str == '\0') return DC_ERROR_PARSE_ERROR;
@@ -110,30 +136,38 @@ void dc_json_mut_doc_free(dc_json_mut_doc_t* doc) {
     doc->root = NULL;
 }
 
+dc_status_t dc_json_write_mut_doc_to_string(const yyjson_mut_doc* doc, uint32_t flags, dc_string_t* result) {
+    if (!doc || !result) return DC_ERROR_NULL_POINTER;
+
+    size_t json_len = 0;
+    yyjson_write_err err;
+    char* json = yyjson_mut_write_opts(doc, (yyjson_write_flag)flags,
+                                       dc_yyjson_dc_allocator(), &json_len, &err);
+    if (!json) return DC_ERROR_JSON;
+
+    dc_status_t st = dc_string_set_buffer(result, json, json_len);
+    dc_free(json);
+    return st;
+}
+
+dc_status_t dc_json_write_value_to_string(const yyjson_val* val, uint32_t flags, dc_string_t* result) {
+    if (!val || !result) return DC_ERROR_NULL_POINTER;
+
+    size_t json_len = 0;
+    yyjson_write_err err;
+    char* json = yyjson_val_write_opts(val, (yyjson_write_flag)flags,
+                                       dc_yyjson_dc_allocator(), &json_len, &err);
+    if (!json) return DC_ERROR_JSON;
+
+    dc_status_t st = dc_string_set_buffer(result, json, json_len);
+    dc_free(json);
+    return st;
+}
+
 dc_status_t dc_json_mut_doc_serialize(const dc_json_mut_doc_t* doc, dc_string_t* result) {
     if (!doc || !result) return DC_ERROR_NULL_POINTER;
     if (!doc->doc || !doc->root) return DC_ERROR_INVALID_PARAM;
-    
-    size_t json_len = 0;
-    yyjson_write_err err;
-    char* json = yyjson_mut_write_opts(doc->doc, YYJSON_WRITE_PRETTY, NULL, &json_len, &err);
-    if (!json) return DC_ERROR_JSON;
-    
-    dc_string_t tmp;
-    dc_status_t st = dc_string_init_with_capacity(&tmp, json_len + 1);
-    if (st != DC_OK) {
-        free(json);
-        return st;
-    }
-    st = dc_string_set_buffer(&tmp, json, json_len);
-    free(json);
-    if (st != DC_OK) {
-        dc_string_free(&tmp);
-        return st;
-    }
-    dc_string_free(result);
-    *result = tmp;
-    return st;
+    return dc_json_write_mut_doc_to_string(doc->doc, YYJSON_WRITE_PRETTY, result);
 }
 
 /* Value access helpers */

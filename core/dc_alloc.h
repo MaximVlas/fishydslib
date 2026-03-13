@@ -315,7 +315,13 @@ char* dc_strndup(const char* str, size_t max_len);
  * Returns NULL immediately if a custom or GLib backend is active — there is no
  * portable way to guarantee alignment with an arbitrary allocator.
  *
- * Two underlying mechanisms are tried in order, depending on the build:
+ * On Windows, this currently returns NULL even with the standard libc backend.
+ * That platform's aligned-allocation APIs do not match the existing `dc_free()`
+ * contract closely enough to use them here without adding backend-specific free
+ * handling.
+ *
+ * On non-Windows platforms, two underlying mechanisms are tried in order,
+ * depending on the build:
  *
  *   1. C11 aligned_alloc (ISO/IEC 9899:2011 §7.22.3.1):
  *      Available when _ISOC11_SOURCE or __STDC_VERSION__ >= 201112L.

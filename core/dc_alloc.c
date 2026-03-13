@@ -227,6 +227,12 @@ void* dc_alloc_aligned(size_t size, size_t alignment) {
     if (DC_UNLIKELY((alignment & (alignment - 1)) != 0)) {
         return NULL;
     }
+#if defined(_WIN32)
+    if (DC_UNLIKELY(!dc_is_standard_libc())) {
+        return NULL;
+    }
+    return NULL;
+#else
 #if defined(_ISOC11_SOURCE) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
     if (g_hooks.alloc == malloc && g_hooks.realloc == realloc && g_hooks.free == free) {
         if (size % alignment != 0) {
@@ -249,5 +255,6 @@ void* dc_alloc_aligned(size_t size, size_t alignment) {
     return NULL;
 #else
     return NULL;
+#endif
 #endif
 }

@@ -96,6 +96,32 @@ add_test(NAME gateway_tests COMMAND test_gateway)
 add_test(NAME events_expansion_tests COMMAND test_events_expansion)
 add_test(NAME client_api_tests COMMAND test_client_api)
 
+if(WIN32)
+    set(_fishyds_test_path "$ENV{PATH}")
+    if(DEFINED VCPKG_TARGET_TRIPLET)
+        set(_fishyds_vcpkg_bin_dir "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/bin")
+        set(_fishyds_vcpkg_debug_bin_dir "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/bin")
+        if(EXISTS "${_fishyds_vcpkg_bin_dir}")
+            set(_fishyds_test_path "${_fishyds_vcpkg_bin_dir};${_fishyds_test_path}")
+        endif()
+        if(EXISTS "${_fishyds_vcpkg_debug_bin_dir}")
+            set(_fishyds_test_path "${_fishyds_vcpkg_debug_bin_dir};${_fishyds_test_path}")
+        endif()
+    endif()
+    string(REPLACE ";" "\\;" _fishyds_test_path_escaped "${_fishyds_test_path}")
+    set_tests_properties(
+        core_tests
+        json_tests
+        http_tests
+        rest_tests
+        gateway_tests
+        events_expansion_tests
+        client_api_tests
+        PROPERTIES
+        ENVIRONMENT "PATH=${_fishyds_test_path_escaped}"
+    )
+endif()
+
 # Install tests
 install(TARGETS test_core test_json test_http test_rest test_gateway test_events_expansion test_client_api
     RUNTIME DESTINATION bin/tests

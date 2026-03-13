@@ -6,11 +6,9 @@
 #include "dc_rest.h"
 #include "http/dc_http_compliance.h"
 #include "core/dc_alloc.h"
+#include "core/dc_platform.h"
 #include "core/dc_status.h"
 #include <string.h>
-#include <time.h>
-#include <errno.h>
-#include <pthread.h>
 
 typedef struct {
     dc_string_t route_key;
@@ -46,33 +44,24 @@ struct dc_rest_client {
     dc_vec_t bucket_keys;  /* dc_rest_bucket_key_t */
     dc_rest_transport_fn transport;
     void* transport_userdata;
-    pthread_mutex_t lock;
+    dc_platform_mutex_t lock;
     int lock_inited;
 };
 
 static uint64_t dc_rest_now_ms(void) {
-    struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-        return 0;
-    }
-    return (uint64_t)ts.tv_sec * 1000u + (uint64_t)(ts.tv_nsec / 1000000u);
+    uint64_t now_ms = 0;
+    if (!dc_platform_now_monotonic_ms(&now_ms)) return 0;
+    return now_ms;
 }
 
 static uint64_t dc_rest_epoch_ms(void) {
-    struct timespec ts;
-    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
-        return 0;
-    }
-    return (uint64_t)ts.tv_sec * 1000u + (uint64_t)(ts.tv_nsec / 1000000u);
+    uint64_t now_ms = 0;
+    if (!dc_platform_now_epoch_ms(&now_ms)) return 0;
+    return now_ms;
 }
 
 static void dc_rest_sleep_ms(uint64_t ms) {
-    if (ms == 0) return;
-    struct timespec req;
-    req.tv_sec = (time_t)(ms / 1000u);
-    req.tv_nsec = (long)((ms % 1000u) * 1000000u);
-    while (nanosleep(&req, &req) != 0 && errno == EINTR) {
-    }
+    dc_platform_sleep_ms(ms);
 }
 
 static int dc_rest_ascii_tolower_int(int c) {
@@ -529,7 +518,7 @@ dc_status_t dc_rest_client_create(const dc_rest_client_config_t* config, dc_rest
         }
     }
 
-    if (pthread_mutex_init(&client->lock, NULL) != 0) {
+    if (!dc_platform_mutex_init(&client->lock)) {
         if (client->http) {
             dc_http_client_free(client->http);
             client->http = NULL;
@@ -564,7 +553,7 @@ void dc_rest_client_free(dc_rest_client_t* client) {
         dc_http_client_free(client->http);
     }
     if (client->lock_inited) {
-        pthread_mutex_destroy(&client->lock);
+        dc_platform_mutex_destroy(&client->lock);
         client->lock_inited = 0;
     }
     for (size_t i = 0; i < client->buckets.length; i++) {
@@ -799,14 +788,14 @@ dc_status_t dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* r
             const char* mapped_bucket_id = NULL;
             dc_rest_bucket_t* bucket = NULL;
 
-            if (client->lock_inited && pthread_mutex_lock(&client->lock) != 0) {
+            if (client->lock_inited && !dc_platform_mutex_lock(&client->lock)) {
                 st = DC_ERROR_INVALID_STATE;
                 goto cleanup_iteration;
             }
 
             now_ms = dc_rest_now_ms();
             if (client->invalid_block_until_ms > now_ms) {
-                if (client->lock_inited) pthread_mutex_unlock(&client->lock);
+                if (client->lock_inited) dc_platform_mutex_unlock(&client->lock);
                 st = DC_ERROR_INVALID_STATE;
                 goto cleanup_iteration;
             }
@@ -839,13 +828,13 @@ dc_status_t dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* r
                                              dc_string_cstr(&major),
                                              mapped_bucket_id ? mapped_bucket_id : "");
                     if (st != DC_OK) {
-                        if (client->lock_inited) pthread_mutex_unlock(&client->lock);
+                        if (client->lock_inited) dc_platform_mutex_unlock(&client->lock);
                         goto cleanup_iteration;
                     }
                     st = dc_vec_push(&client->buckets, &new_bucket);
                     if (st != DC_OK) {
                         dc_rest_bucket_free(&new_bucket);
-                        if (client->lock_inited) pthread_mutex_unlock(&client->lock);
+                        if (client->lock_inited) dc_platform_mutex_unlock(&client->lock);
                         goto cleanup_iteration;
                     }
                     bucket = (dc_rest_bucket_t*)dc_vec_at(&client->buckets, client->buckets.length - 1);
@@ -856,7 +845,7 @@ dc_status_t dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* r
                 }
             }
 
-            if (client->lock_inited) pthread_mutex_unlock(&client->lock);
+            if (client->lock_inited) dc_platform_mutex_unlock(&client->lock);
 
             if (sleep_ms == 0) break;
             dc_rest_sleep_ms(sleep_ms);
@@ -960,7 +949,7 @@ dc_status_t dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* r
                                 &response->error);
         }
 
-        if (client->lock_inited && pthread_mutex_lock(&client->lock) != 0) {
+        if (client->lock_inited && !dc_platform_mutex_lock(&client->lock)) {
             st = DC_ERROR_INVALID_STATE;
             goto cleanup_iteration;
         }
@@ -988,13 +977,13 @@ dc_status_t dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* r
                                      dc_string_cstr(&major),
                                      mapped_bucket_id ? mapped_bucket_id : "");
             if (st != DC_OK) {
-                if (client->lock_inited) pthread_mutex_unlock(&client->lock);
+                if (client->lock_inited) dc_platform_mutex_unlock(&client->lock);
                 goto cleanup_iteration;
             }
             st = dc_vec_push(&client->buckets, &new_bucket);
             if (st != DC_OK) {
                 dc_rest_bucket_free(&new_bucket);
-                if (client->lock_inited) pthread_mutex_unlock(&client->lock);
+                if (client->lock_inited) dc_platform_mutex_unlock(&client->lock);
                 goto cleanup_iteration;
             }
             bucket = (dc_rest_bucket_t*)dc_vec_at(&client->buckets, client->buckets.length - 1);
@@ -1019,7 +1008,7 @@ dc_status_t dc_rest_execute(dc_rest_client_t* client, const dc_rest_request_t* r
             dc_rest_update_global_limit(client, &parsed_rl, &parsed_body_rl, now_ms);
         }
 
-        if (client->lock_inited) pthread_mutex_unlock(&client->lock);
+        if (client->lock_inited) dc_platform_mutex_unlock(&client->lock);
 
         if (response->http.status_code == 429) {
             double retry_after = parsed_rl.retry_after > 0.0 ? parsed_rl.retry_after : parsed_body_rl.retry_after;
