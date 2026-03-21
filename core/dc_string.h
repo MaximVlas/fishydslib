@@ -108,7 +108,7 @@ dc_status_t dc_string_append_buffer(dc_string_t* str, const char* data, size_t l
  * @param c Character to append
  * @return DC_OK on success, error code on failure
  */
-dc_status_t dc_string_append_char(dc_string_t* str, char c);
+dc_status_t dc_string_append_char(dc_string_t* str, int c);
 
 /**
  * @brief Append another string to string

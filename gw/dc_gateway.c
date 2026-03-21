@@ -26,10 +26,10 @@
 #define DC_GATEWAY_INVALID_SESSION_BACKOFF_MIN_MS 1000u
 #define DC_GATEWAY_INVALID_SESSION_BACKOFF_MAX_MS 5000u
 #define DC_GATEWAY_ZLIB_SUFFIX_LEN 4u
-#define DC_GATEWAY_RX_INITIAL_CAP 8192u
-#define DC_GATEWAY_COMPRESSED_INITIAL_CAP 8192u
-#define DC_GATEWAY_EVENT_INITIAL_CAP 4096u
-#define DC_GATEWAY_TX_INITIAL_CAP 4096u
+#define DC_GATEWAY_RX_INITIAL_CAP ((size_t)8192u)
+#define DC_GATEWAY_COMPRESSED_INITIAL_CAP ((size_t)8192u)
+#define DC_GATEWAY_EVENT_INITIAL_CAP ((size_t)4096u)
+#define DC_GATEWAY_TX_INITIAL_CAP ((size_t)4096u)
 #define DC_GATEWAY_RECONNECT_MIN_MS 1000u
 #define DC_GATEWAY_RECONNECT_MAX_MS 30000u
 
@@ -152,7 +152,7 @@ static void dc_gateway_schedule_reconnect(dc_gateway_client_t* client) {
         client->reconnect_backoff_ms = next;
     }
     uint32_t jitter = client->reconnect_backoff_ms / 5u;
-    uint32_t jitter_add = jitter > 0 ? (uint32_t)(rand() % (jitter + 1u)) : 0u;
+    uint32_t jitter_add = jitter > 0 ? (uint32_t)((unsigned int)rand() % (jitter + 1u)) : 0u;
     uint64_t total = (uint64_t)client->reconnect_backoff_ms + jitter_add;
     if (total > DC_GATEWAY_RECONNECT_MAX_MS) {
         total = DC_GATEWAY_RECONNECT_MAX_MS;
@@ -537,8 +537,8 @@ static dc_status_t dc_gateway_build_voice_state_payload(dc_snowflake_t guild_id,
         yyjson_mut_obj_add_null(doc.doc, d, "channel_id");
     }
 
-    yyjson_mut_obj_add_bool(doc.doc, d, "self_mute", (bool)(self_mute != 0));
-    yyjson_mut_obj_add_bool(doc.doc, d, "self_deaf", (bool)(self_deaf != 0));
+    yyjson_mut_obj_add_bool(doc.doc, d, "self_mute", self_mute != 0);
+    yyjson_mut_obj_add_bool(doc.doc, d, "self_deaf", self_deaf != 0);
 
     st = dc_gateway_json_serialize(doc.doc, out);
     dc_json_mut_doc_free(&doc);

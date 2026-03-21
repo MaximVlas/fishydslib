@@ -107,7 +107,7 @@ static dc_status_t dc_cmd_message_from_json(const char* json, dc_message_t* out)
     }
 
     dc_snowflake_t id = 0;
-    if (dc_json_get_snowflake_opt(doc.root, "id", &id, 0) == DC_OK) {
+    if (dc_json_get_snowflake_opt(doc.root, "id", &id, 0ULL) == DC_OK) {
         tmp.id = id;
     }
 

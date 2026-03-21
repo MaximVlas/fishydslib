@@ -105,7 +105,7 @@ static dc_status_t dc_cdn_append_path(dc_string_t* out, const char* base, const 
         return dc_string_append_cstr(out, path + 1);
     }
     if (!base_has_slash && !path_has_slash) {
-        st = dc_string_append_char(out, '/');
+        st = dc_string_append_char(out, (char)'/');
         if (st != DC_OK) return st;
     }
     return dc_string_append_cstr(out, path);
@@ -143,7 +143,7 @@ dc_status_t dc_cdn_build_url(const char* base_url,
     if (st != DC_OK) return st;
     st = dc_cdn_append_path(&tmp, base, path_without_ext);
     if (st != DC_OK) goto fail;
-    st = dc_string_append_char(&tmp, '.');
+    st = dc_string_append_char(&tmp, (char)'.');
     if (st != DC_OK) goto fail;
     st = dc_string_append_cstr(&tmp, ext);
     if (st != DC_OK) goto fail;

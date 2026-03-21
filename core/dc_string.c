@@ -226,8 +226,9 @@ dc_status_t dc_string_append_buffer(dc_string_t* str, const char* data, size_t l
     return DC_OK;
 }
 
-dc_status_t dc_string_append_char(dc_string_t* str, char c) {
-    return dc_string_append_buffer(str, &c, (size_t)1);
+dc_status_t dc_string_append_char(dc_string_t* str, int c) {
+    char ch = (char)c;
+    return dc_string_append_buffer(str, &ch, (size_t)1);
 }
 
 dc_status_t dc_string_append_string(dc_string_t* str, const dc_string_t* other) {

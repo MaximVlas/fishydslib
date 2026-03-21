@@ -24,7 +24,7 @@ extern "C" {
  * @param style Style character ('t','T','d','D','f','F','R') or '\0' for default
  * @return 1 if valid, 0 otherwise
  */
-int dc_format_timestamp_style_is_valid(char style);
+int dc_format_timestamp_style_is_valid(int style);
 
 /**
  * @brief Build a user mention (<@id>)
@@ -67,14 +67,14 @@ dc_status_t dc_format_mention_emoji(const char* name, dc_snowflake_t emoji_id, i
  * @param unix_seconds Unix timestamp in seconds (UTC)
  * @param style Style character or '\0' for default
  */
-dc_status_t dc_format_timestamp(int64_t unix_seconds, char style, dc_string_t* out);
+dc_status_t dc_format_timestamp(int64_t unix_seconds, int style, dc_string_t* out);
 
 /**
  * @brief Build a timestamp mention from milliseconds
  * @param unix_ms Unix timestamp in milliseconds (UTC)
  * @param style Style character or '\0' for default
  */
-dc_status_t dc_format_timestamp_ms(int64_t unix_ms, char style, dc_string_t* out);
+dc_status_t dc_format_timestamp_ms(int64_t unix_ms, int style, dc_string_t* out);
 
 /**
  * @brief Escape markdown control and mention prefix characters

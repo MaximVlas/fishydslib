@@ -18,7 +18,7 @@ static int g_curl_refcount = 0;
 
 static dc_status_t dc_curl_global_acquire(void) {
     if (g_curl_refcount == 0) {
-        if (curl_global_init(CURL_GLOBAL_DEFAULT) != 0) {
+        if (curl_global_init((long)CURL_GLOBAL_DEFAULT) != 0) {
             return DC_ERROR_NETWORK;
         }
     }
@@ -100,7 +100,7 @@ static dc_http_header_t* dc_http_headers_find(dc_vec_t* headers, const char* nam
 static const char* dc_http_headers_get_value(const dc_vec_t* headers, const char* name) {
     if (!headers || !name) return NULL;
     for (size_t i = 0; i < headers->length; i++) {
-        dc_http_header_t* h = (dc_http_header_t*)dc_vec_at((dc_vec_t*)headers, i);
+        dc_http_header_t* h = (dc_http_header_t*)dc_vec_at(headers, i);
         if (h && dc_ascii_strcaseeq(dc_string_cstr(&h->name), name)) {
             return dc_string_cstr(&h->value);
         }
@@ -271,7 +271,7 @@ dc_status_t dc_http_request_set_body_buffer(dc_http_request_t* request, const vo
 
 dc_status_t dc_http_request_set_json_body(dc_http_request_t* request, const char* json_body) {
     if (!request || !json_body) return DC_ERROR_NULL_POINTER;
-    dc_status_t st = dc_http_validate_json_body(json_body, 0);
+    dc_status_t st = dc_http_validate_json_body(json_body, (size_t)0);
     if (st != DC_OK) return st;
     st = dc_http_request_add_header(request, "Content-Type", "application/json");
     if (st != DC_OK) return st;
@@ -302,7 +302,8 @@ static size_t dc_http_header_cb(char* buffer, size_t size, size_t nitems, void* 
     if (total < 2) return total;
 
     /* Ignore status line and empty lines */
-    if ((total >= 5) && (memcmp(buffer, "HTTP/", 5) == 0)) return total;
+    if ((total >= sizeof("HTTP/") - 1u) &&
+        (memcmp(buffer, "HTTP/", sizeof("HTTP/") - 1u) == 0)) return total;
     if (buffer[0] == '\r' || buffer[0] == '\n') return total;
 
     char* colon = memchr(buffer, ':', total);
@@ -422,7 +423,7 @@ dc_status_t dc_http_client_execute(dc_http_client_t* client,
 
     struct curl_slist* header_list = NULL;
     for (size_t i = 0; i < request->headers.length; i++) {
-        dc_http_header_t* h = (dc_http_header_t*)dc_vec_at((dc_vec_t*)&request->headers, i);
+        const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at(&request->headers, i);
         if (!h) continue;
         dc_string_t line;
         if (dc_string_init(&line) != DC_OK) {
@@ -482,7 +483,7 @@ dc_status_t dc_http_response_get_header(const dc_http_response_t* response,
     if (!response || !name || !value) return DC_ERROR_NULL_POINTER;
     *value = NULL;
     for (size_t i = 0; i < response->headers.length; i++) {
-        dc_http_header_t* h = (dc_http_header_t*)dc_vec_at((dc_vec_t*)&response->headers, i);
+        const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at(&response->headers, i);
         if (h && dc_ascii_strcaseeq(dc_string_cstr(&h->name), name)) {
             *value = dc_string_cstr(&h->value);
             return DC_OK;
@@ -491,12 +492,14 @@ dc_status_t dc_http_response_get_header(const dc_http_response_t* response,
     return DC_ERROR_NOT_FOUND;
 }
 
-static dc_status_t dc_http_response_get_header_cb(void* userdata, const char* name, const char** value) {
+static dc_status_t dc_http_response_get_header_cb(const void* userdata,
+                                                  const char* name,
+                                                  const char** value) {
     return dc_http_response_get_header((const dc_http_response_t*)userdata, name, value);
 }
 
 dc_status_t dc_http_response_parse_rate_limit(const dc_http_response_t* response,
                                                dc_http_rate_limit_t* rl) {
     if (!response || !rl) return DC_ERROR_NULL_POINTER;
-    return dc_http_rate_limit_parse(dc_http_response_get_header_cb, (void*)response, rl);
+    return dc_http_rate_limit_parse(dc_http_response_get_header_cb, response, rl);
 }

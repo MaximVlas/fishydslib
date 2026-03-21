@@ -26,10 +26,10 @@ static dc_status_t dc_multipart_append_escaped(dc_string_t* out, const char* val
     if (!out || !value) return DC_ERROR_NULL_POINTER;
     for (const char* p = value; *p; p++) {
         if (*p == '"' || *p == '\\') {
-            dc_status_t st = dc_string_append_char(out, '\\');
+            dc_status_t st = dc_string_append_char(out, (char)'\\');
             if (st != DC_OK) return st;
         }
-        dc_status_t st = dc_string_append_char(out, *p);
+        dc_status_t st = dc_string_append_char(out, (char)*p);
         if (st != DC_OK) return st;
     }
     return DC_OK;

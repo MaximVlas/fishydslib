@@ -130,7 +130,7 @@ static dc_http_header_t* dc_rest_headers_find(dc_vec_t* headers, const char* nam
 static int dc_rest_headers_has(const dc_vec_t* headers, const char* name) {
     if (!headers || !name) return 0;
     for (size_t i = 0; i < headers->length; i++) {
-        const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at((dc_vec_t*)headers, i);
+        const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at(headers, i);
         if (h && dc_rest_ascii_strcaseeq(dc_string_cstr(&h->name), name)) {
             return 1;
         }
@@ -174,8 +174,8 @@ static int dc_rest_is_digits(const char* s, size_t len) {
 
 static dc_status_t dc_rest_extract_path(const char* input, dc_string_t* out_path) {
     if (!input || !out_path) return DC_ERROR_NULL_POINTER;
-    if (strncmp(input, "http://", 7) == 0) return DC_ERROR_INVALID_PARAM;
-    if (strncmp(input, "https://", 8) == 0) {
+    if (strncmp(input, "http://", sizeof("http://") - 1u) == 0) return DC_ERROR_INVALID_PARAM;
+    if (strncmp(input, "https://", sizeof("https://") - 1u) == 0) {
         if (!dc_http_is_discord_api_url(input)) return DC_ERROR_INVALID_PARAM;
         size_t base_len = strlen(DC_DISCORD_API_BASE_URL);
         size_t in_len = strlen(input);
@@ -204,7 +204,7 @@ static dc_status_t dc_rest_extract_path(const char* input, dc_string_t* out_path
 
 static int dc_rest_is_interaction_path(const char* path) {
     if (!path) return 0;
-    return (strncmp(path, "/interactions/", 14) == 0);
+    return (strncmp(path, "/interactions/", sizeof("/interactions/") - 1u) == 0);
 }
 
 static dc_status_t dc_rest_build_route_key(dc_http_method_t method, const char* path,
@@ -243,10 +243,18 @@ static dc_status_t dc_rest_build_route_key(dc_http_method_t method, const char* 
         while (*p && *p != '/') p++;
         size_t seg_len = (size_t)(p - seg_start);
         int is_id = dc_rest_is_digits(seg_start, seg_len);
-        const int prev_is_channels = (prev_seg && prev_len == 8 && strncmp(prev_seg, "channels", 8) == 0);
-        const int prev_is_guilds = (prev_seg && prev_len == 6 && strncmp(prev_seg, "guilds", 6) == 0);
-        const int prev_is_webhooks = (prev_seg && prev_len == 8 && strncmp(prev_seg, "webhooks", 8) == 0);
-        const int prev_is_interactions = (prev_seg && prev_len == 12 && strncmp(prev_seg, "interactions", 12) == 0);
+        const int prev_is_channels =
+            (prev_seg && prev_len == sizeof("channels") - 1u &&
+             strncmp(prev_seg, "channels", sizeof("channels") - 1u) == 0);
+        const int prev_is_guilds =
+            (prev_seg && prev_len == sizeof("guilds") - 1u &&
+             strncmp(prev_seg, "guilds", sizeof("guilds") - 1u) == 0);
+        const int prev_is_webhooks =
+            (prev_seg && prev_len == sizeof("webhooks") - 1u &&
+             strncmp(prev_seg, "webhooks", sizeof("webhooks") - 1u) == 0);
+        const int prev_is_interactions =
+            (prev_seg && prev_len == sizeof("interactions") - 1u &&
+             strncmp(prev_seg, "interactions", sizeof("interactions") - 1u) == 0);
 
         st = dc_string_append_cstr(route_key, "/");
         if (st != DC_OK) return st;
@@ -435,7 +443,7 @@ static dc_status_t dc_rest_request_copy_headers(dc_http_request_t* http_req,
                                                 const dc_rest_request_t* req) {
     if (!http_req || !req) return DC_ERROR_NULL_POINTER;
     for (size_t i = 0; i < req->headers.length; i++) {
-        const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at((dc_vec_t*)&req->headers, i);
+        const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at(&req->headers, i);
         if (!h) continue;
         dc_status_t st = dc_http_request_add_header(http_req, dc_string_cstr(&h->name), dc_string_cstr(&h->value));
         if (st != DC_OK) return st;
@@ -648,7 +656,7 @@ dc_status_t dc_rest_request_set_body_buffer(dc_rest_request_t* request, const vo
 
 dc_status_t dc_rest_request_set_json_body(dc_rest_request_t* request, const char* json_body) {
     if (!request || !json_body) return DC_ERROR_NULL_POINTER;
-    dc_status_t st = dc_http_validate_json_body(json_body, 0);
+    dc_status_t st = dc_http_validate_json_body(json_body, (size_t)0);
     if (st != DC_OK) return st;
     st = dc_string_set_cstr(&request->body, json_body);
     if (st != DC_OK) return st;

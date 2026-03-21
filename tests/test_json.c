@@ -112,8 +112,8 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_init(&mentions), "allowed mentions init");
     dc_allowed_mentions_set_parse(&mentions, 1, 0, 1);
     dc_allowed_mentions_set_replied_user(&mentions, 1);
-    TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_user(&mentions, 123), "allowed mentions add user");
-    TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_role(&mentions, 456), "allowed mentions add role");
+    TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_user(&mentions, 123ULL), "allowed mentions add user");
+    TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_role(&mentions, 456ULL), "allowed mentions add role");
 
     TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for allowed mentions");
     TEST_ASSERT_EQ(DC_OK,
@@ -128,14 +128,14 @@ int test_json_main(void) {
     yyjson_val* parse = yyjson_obj_get(am, "parse");
     TEST_ASSERT_NEQ(NULL, parse, "allowed mentions parse");
     TEST_ASSERT_EQ(2u, yyjson_arr_size(parse), "allowed mentions parse size");
-    TEST_ASSERT_STR_EQ("users", yyjson_get_str(yyjson_arr_get(parse, 0)), "allowed mentions parse users");
-    TEST_ASSERT_STR_EQ("everyone", yyjson_get_str(yyjson_arr_get(parse, 1)), "allowed mentions parse everyone");
+    TEST_ASSERT_STR_EQ("users", yyjson_get_str(yyjson_arr_get(parse, (size_t)0)), "allowed mentions parse users");
+    TEST_ASSERT_STR_EQ("everyone", yyjson_get_str(yyjson_arr_get(parse, (size_t)1)), "allowed mentions parse everyone");
     yyjson_val* users = yyjson_obj_get(am, "users");
     TEST_ASSERT_NEQ(NULL, users, "allowed mentions users");
-    TEST_ASSERT_STR_EQ("123", yyjson_get_str(yyjson_arr_get(users, 0)), "allowed mentions users value");
+    TEST_ASSERT_STR_EQ("123", yyjson_get_str(yyjson_arr_get(users, (size_t)0)), "allowed mentions users value");
     yyjson_val* roles = yyjson_obj_get(am, "roles");
     TEST_ASSERT_NEQ(NULL, roles, "allowed mentions roles");
-    TEST_ASSERT_STR_EQ("456", yyjson_get_str(yyjson_arr_get(roles, 0)), "allowed mentions roles value");
+    TEST_ASSERT_STR_EQ("456", yyjson_get_str(yyjson_arr_get(roles, (size_t)0)), "allowed mentions roles value");
     yyjson_val* replied = yyjson_obj_get(am, "replied_user");
     TEST_ASSERT_NEQ(NULL, replied, "allowed mentions replied user");
     TEST_ASSERT_EQ(1, yyjson_get_bool(replied), "allowed mentions replied user value");
@@ -156,7 +156,7 @@ int test_json_main(void) {
 
     TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for attachments");
     TEST_ASSERT_EQ(DC_OK,
-                   dc_json_mut_add_attachments(&mut_doc, mut_doc.root, "attachments", attachments, 2),
+                   dc_json_mut_add_attachments(&mut_doc, mut_doc.root, "attachments", attachments, (size_t)2),
                    "set attachments");
     TEST_ASSERT_EQ(DC_OK, dc_string_init(&result), "init result for attachments");
     TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_serialize(&mut_doc, &result), "serialize attachments");
@@ -164,8 +164,8 @@ int test_json_main(void) {
     yyjson_val* att_arr = yyjson_obj_get(doc.root, "attachments");
     TEST_ASSERT_NEQ(NULL, att_arr, "attachments array present");
     TEST_ASSERT_EQ(2u, yyjson_arr_size(att_arr), "attachments array size");
-    yyjson_val* att0 = yyjson_arr_get(att_arr, 0);
-    yyjson_val* att1 = yyjson_arr_get(att_arr, 1);
+    yyjson_val* att0 = yyjson_arr_get(att_arr, (size_t)0);
+    yyjson_val* att1 = yyjson_arr_get(att_arr, (size_t)1);
     TEST_ASSERT_STR_EQ("file.png", yyjson_get_str(yyjson_obj_get(att0, "filename")),
                        "attachments filename");
     TEST_ASSERT_STR_EQ("desc", yyjson_get_str(yyjson_obj_get(att0, "description")),
@@ -482,7 +482,7 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(0, member.banner.is_null, "guild member banner present");
     TEST_ASSERT_STR_EQ("banner_hash", dc_string_cstr(&member.banner.value), "guild member banner value");
     TEST_ASSERT_EQ(2u, dc_vec_length(&member.roles), "guild member roles count");
-    TEST_ASSERT_EQ(22ULL, *(dc_snowflake_t*)dc_vec_at(&member.roles, 1),
+    TEST_ASSERT_EQ(22ULL, *(dc_snowflake_t*)dc_vec_at(&member.roles, (size_t)1),
                    "guild member roles second value");
     TEST_ASSERT_EQ(0, member.deaf, "guild member deaf parsed");
     TEST_ASSERT_EQ(1, member.mute, "guild member mute parsed");
@@ -582,10 +582,10 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(DC_OK, dc_message_from_json(message_components_legacy, &message),
                    "parse message with legacy components");
     TEST_ASSERT_EQ(1u, dc_vec_length(&message.components), "legacy top-level component count");
-    const dc_component_t* legacy_row = dc_vec_at(&message.components, 0);
+    const dc_component_t* legacy_row = dc_vec_at(&message.components, (size_t)0);
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_ACTION_ROW, legacy_row->type, "legacy action row type");
     TEST_ASSERT_EQ(1u, dc_vec_length(&legacy_row->components), "legacy action row child count");
-    const dc_component_t* legacy_button = dc_vec_at(&legacy_row->components, 0);
+    const dc_component_t* legacy_button = dc_vec_at(&legacy_row->components, (size_t)0);
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_BUTTON, legacy_button->type, "legacy button type");
     TEST_ASSERT_EQ(1, legacy_button->custom_id.is_set, "legacy button custom_id set");
     TEST_ASSERT_STR_EQ("click_me", dc_string_cstr(&legacy_button->custom_id.value),
@@ -606,20 +606,20 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(DC_OK, dc_message_from_json(message_components_v2, &message),
                    "parse message with v2 components");
     TEST_ASSERT_EQ(3u, dc_vec_length(&message.components), "v2 top-level component count");
-    const dc_component_t* text_display = dc_vec_at(&message.components, 0);
+    const dc_component_t* text_display = dc_vec_at(&message.components, (size_t)0);
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_TEXT_DISPLAY, text_display->type, "v2 text display type");
     TEST_ASSERT_EQ(1, text_display->content.is_set, "v2 text display content set");
     TEST_ASSERT_STR_EQ("# Header", dc_string_cstr(&text_display->content.value),
                        "v2 text display content");
-    const dc_component_t* container_component = dc_vec_at(&message.components, 1);
+    const dc_component_t* container_component = dc_vec_at(&message.components, (size_t)1);
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_CONTAINER, container_component->type, "v2 container type");
     TEST_ASSERT_EQ(1, container_component->accent_color.is_set, "v2 container accent color set");
     TEST_ASSERT_EQ(703487, container_component->accent_color.value, "v2 container accent color");
     TEST_ASSERT_EQ(1u, dc_vec_length(&container_component->components), "v2 container child count");
-    const dc_component_t* gallery_component = dc_vec_at(&message.components, 2);
+    const dc_component_t* gallery_component = dc_vec_at(&message.components, (size_t)2);
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_MEDIA_GALLERY, gallery_component->type, "v2 gallery type");
     TEST_ASSERT_EQ(1u, dc_vec_length(&gallery_component->items), "v2 gallery item count");
-    const dc_media_gallery_item_t* gallery_item = dc_vec_at(&gallery_component->items, 0);
+    const dc_media_gallery_item_t* gallery_item = dc_vec_at(&gallery_component->items, (size_t)0);
     TEST_ASSERT_STR_EQ("https://example.com/a.png", dc_string_cstr(&gallery_item->media.url),
                        "v2 gallery media url");
 
@@ -632,7 +632,7 @@ int test_json_main(void) {
     yyjson_val* serialized_components = yyjson_obj_get(doc.root, "components");
     TEST_ASSERT_NEQ(NULL, serialized_components, "serialized components field exists");
     TEST_ASSERT_EQ(3u, yyjson_arr_size(serialized_components), "serialized component count");
-    yyjson_val* serialized_first = yyjson_arr_get(serialized_components, 0);
+    yyjson_val* serialized_first = yyjson_arr_get(serialized_components, (size_t)0);
     int64_t serialized_first_type = 0;
     TEST_ASSERT_EQ(DC_OK, dc_json_get_int64(serialized_first, "type", &serialized_first_type),
                    "serialized first type parse");
@@ -658,7 +658,7 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(1, component.required.value, "radio group required value");
     TEST_ASSERT_EQ(2u, dc_vec_length(&component.options), "radio group option count");
     {
-        const dc_select_option_t* option = dc_vec_at(&component.options, 0);
+        const dc_select_option_t* option = dc_vec_at(&component.options, (size_t)0);
         TEST_ASSERT_NEQ(NULL, option, "radio group first option exists");
         TEST_ASSERT_STR_EQ("warrior", dc_string_cstr(&option->value), "radio group first option value");
         TEST_ASSERT_EQ(1, option->default_val.is_set, "radio group first option default set");
@@ -691,7 +691,7 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(1, component.has_values, "checkbox group has values");
     TEST_ASSERT_EQ(3u, dc_vec_length(&component.values), "checkbox group selected values count");
     {
-        const dc_string_t* selected = dc_vec_at(&component.values, 1);
+        const dc_string_t* selected = dc_vec_at(&component.values, (size_t)1);
         TEST_ASSERT_NEQ(NULL, selected, "checkbox group selected value exists");
         TEST_ASSERT_STR_EQ("march-10", dc_string_cstr(selected), "checkbox group selected value");
     }
@@ -752,7 +752,7 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(0, component.has_snowflake_values, "string select response has no snowflake values");
     TEST_ASSERT_EQ(2u, dc_vec_length(&component.values), "string select response values count");
     {
-        const dc_string_t* selected = dc_vec_at(&component.values, 0);
+        const dc_string_t* selected = dc_vec_at(&component.values, (size_t)0);
         TEST_ASSERT_NEQ(NULL, selected, "string select response first value exists");
         TEST_ASSERT_STR_EQ("vanilla", dc_string_cstr(selected), "string select response first value");
     }
@@ -770,7 +770,7 @@ int test_json_main(void) {
     TEST_ASSERT_NULL(yyjson_obj_get(doc.root, "type"), "serialized string select response omits type");
     TEST_ASSERT_EQ(2u, yyjson_arr_size(yyjson_obj_get(doc.root, "values")),
                    "serialized string select response values count");
-    TEST_ASSERT_STR_EQ("strawberry", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 1)),
+    TEST_ASSERT_STR_EQ("strawberry", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), (size_t)1)),
                        "serialized string select response second value");
     dc_json_doc_free(&doc);
     dc_string_free(&serialized_message);
@@ -790,7 +790,7 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(2u, dc_vec_length(&component.snowflake_values),
                    "user select response snowflake values count");
     {
-        const dc_snowflake_t* selected = dc_vec_at(&component.snowflake_values, 1);
+        const dc_snowflake_t* selected = dc_vec_at(&component.snowflake_values, (size_t)1);
         TEST_ASSERT_NEQ(NULL, selected, "user select response second snowflake exists");
         TEST_ASSERT_EQ(234567890123456789ULL, *selected, "user select response second snowflake value");
     }
@@ -808,7 +808,7 @@ int test_json_main(void) {
     TEST_ASSERT_NULL(yyjson_obj_get(doc.root, "type"), "serialized user select response omits type");
     TEST_ASSERT_EQ(2u, yyjson_arr_size(yyjson_obj_get(doc.root, "values")),
                    "serialized user select response values count");
-    TEST_ASSERT_STR_EQ("123456789012345678", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
+    TEST_ASSERT_STR_EQ("123456789012345678", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), (size_t)0)),
                        "serialized user select response first value");
     dc_json_doc_free(&doc);
     dc_string_free(&serialized_message);
@@ -827,7 +827,7 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(1u, dc_vec_length(&component.snowflake_values),
                    "file upload response snowflake values count");
     {
-        const dc_snowflake_t* uploaded = dc_vec_at(&component.snowflake_values, 0);
+        const dc_snowflake_t* uploaded = dc_vec_at(&component.snowflake_values, (size_t)0);
         TEST_ASSERT_NEQ(NULL, uploaded, "file upload response snowflake exists");
         TEST_ASSERT_EQ(345678901234567890ULL, *uploaded, "file upload response snowflake value");
     }
@@ -845,7 +845,7 @@ int test_json_main(void) {
     TEST_ASSERT_NULL(yyjson_obj_get(doc.root, "component_type"),
                      "serialized file upload response omits component_type");
     TEST_ASSERT_STR_EQ("345678901234567890",
-                       yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
+                       yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), (size_t)0)),
                        "serialized file upload response value");
     dc_json_doc_free(&doc);
     dc_string_free(&serialized_message);

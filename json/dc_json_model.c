@@ -458,7 +458,7 @@ dc_status_t dc_json_model_user_from_val(yyjson_val* val, dc_user_t* user) {
     if (st != DC_OK) return st;
 
     int64_t accent_color_i64 = 0;
-    st = dc_json_get_int64_opt(val, "accent_color", &accent_color_i64, 0);
+    st = dc_json_get_int64_opt(val, "accent_color", &accent_color_i64, 0LL);
     if (st != DC_OK) return st;
     uint32_t accent_color = 0;
     st = dc_int64_to_u32_checked(accent_color_i64, &accent_color);
@@ -473,21 +473,21 @@ dc_status_t dc_json_model_user_from_val(yyjson_val* val, dc_user_t* user) {
     if (st != DC_OK) return st;
 
     int64_t flags_i64 = 0;
-    st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0);
+    st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0LL);
     if (st != DC_OK) return st;
     uint32_t flags = 0;
     st = dc_int64_to_u32_checked(flags_i64, &flags);
     if (st != DC_OK) return st;
 
     int64_t premium_i64 = 0;
-    st = dc_json_get_int64_opt(val, "premium_type", &premium_i64, 0);
+    st = dc_json_get_int64_opt(val, "premium_type", &premium_i64, 0LL);
     if (st != DC_OK) return st;
     int premium_int = 0;
     st = dc_int64_to_int_checked(premium_i64, &premium_int);
     if (st != DC_OK) return st;
 
     int64_t public_flags_i64 = 0;
-    st = dc_json_get_int64_opt(val, "public_flags", &public_flags_i64, 0);
+    st = dc_json_get_int64_opt(val, "public_flags", &public_flags_i64, 0LL);
     if (st != DC_OK) return st;
     uint32_t public_flags = 0;
     st = dc_int64_to_u32_checked(public_flags_i64, &public_flags);
@@ -731,7 +731,7 @@ dc_status_t dc_json_model_role_from_val(yyjson_val* val, dc_role_t* role) {
     if (st != DC_OK) return st;
 
     uint64_t permissions = 0;
-    st = dc_json_get_permission_opt(val, "permissions", &permissions, 0);
+    st = dc_json_get_permission_opt(val, "permissions", &permissions, 0ULL);
     if (st != DC_OK) return st;
 
     int managed = 0;
@@ -832,7 +832,7 @@ dc_status_t dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channe
     if (st != DC_OK) return st;
 
     int64_t position_i64 = 0;
-    st = dc_json_get_int64_opt(val, "position", &position_i64, 0);
+    st = dc_json_get_int64_opt(val, "position", &position_i64, 0LL);
     if (st != DC_OK) return st;
     int position = 0;
     st = dc_int64_to_int_checked(position_i64, &position);
@@ -843,28 +843,28 @@ dc_status_t dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channe
     if (st != DC_OK) return st;
 
     int64_t bitrate_i64 = 0;
-    st = dc_json_get_int64_opt(val, "bitrate", &bitrate_i64, 0);
+    st = dc_json_get_int64_opt(val, "bitrate", &bitrate_i64, 0LL);
     if (st != DC_OK) return st;
     int bitrate = 0;
     st = dc_int64_to_int_checked(bitrate_i64, &bitrate);
     if (st != DC_OK) return st;
 
     int64_t user_limit_i64 = 0;
-    st = dc_json_get_int64_opt(val, "user_limit", &user_limit_i64, 0);
+    st = dc_json_get_int64_opt(val, "user_limit", &user_limit_i64, 0LL);
     if (st != DC_OK) return st;
     int user_limit = 0;
     st = dc_int64_to_int_checked(user_limit_i64, &user_limit);
     if (st != DC_OK) return st;
 
     int64_t rate_limit_i64 = 0;
-    st = dc_json_get_int64_opt(val, "rate_limit_per_user", &rate_limit_i64, 0);
+    st = dc_json_get_int64_opt(val, "rate_limit_per_user", &rate_limit_i64, 0LL);
     if (st != DC_OK) return st;
     int rate_limit = 0;
     st = dc_int64_to_int_checked(rate_limit_i64, &rate_limit);
     if (st != DC_OK) return st;
 
     int64_t default_auto_archive_i64 = 0;
-    st = dc_json_get_int64_opt(val, "default_auto_archive_duration", &default_auto_archive_i64, 0);
+    st = dc_json_get_int64_opt(val, "default_auto_archive_duration", &default_auto_archive_i64, 0LL);
     if (st != DC_OK) return st;
     int default_auto_archive = 0;
     st = dc_int64_to_int_checked(default_auto_archive_i64, &default_auto_archive);
@@ -879,35 +879,35 @@ dc_status_t dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channe
     if (st != DC_OK) return st;
 
     int64_t video_quality_i64 = 0;
-    st = dc_json_get_int64_opt(val, "video_quality_mode", &video_quality_i64, 0);
+    st = dc_json_get_int64_opt(val, "video_quality_mode", &video_quality_i64, 0LL);
     if (st != DC_OK) return st;
     int video_quality = 0;
     st = dc_int64_to_int_checked(video_quality_i64, &video_quality);
     if (st != DC_OK) return st;
 
     int64_t message_count_i64 = 0;
-    st = dc_json_get_int64_opt(val, "message_count", &message_count_i64, 0);
+    st = dc_json_get_int64_opt(val, "message_count", &message_count_i64, 0LL);
     if (st != DC_OK) return st;
     int message_count = 0;
     st = dc_int64_to_int_checked(message_count_i64, &message_count);
     if (st != DC_OK) return st;
 
     int64_t member_count_i64 = 0;
-    st = dc_json_get_int64_opt(val, "member_count", &member_count_i64, 0);
+    st = dc_json_get_int64_opt(val, "member_count", &member_count_i64, 0LL);
     if (st != DC_OK) return st;
     int member_count = 0;
     st = dc_int64_to_int_checked(member_count_i64, &member_count);
     if (st != DC_OK) return st;
 
     int64_t flags_i64 = 0;
-    st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0);
+    st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0LL);
     if (st != DC_OK) return st;
     uint32_t flags_u32 = 0;
     st = dc_int64_to_u32_checked(flags_i64, &flags_u32);
     if (st != DC_OK) return st;
 
     int64_t total_sent_i64 = 0;
-    st = dc_json_get_int64_opt(val, "total_message_sent", &total_sent_i64, 0);
+    st = dc_json_get_int64_opt(val, "total_message_sent", &total_sent_i64, 0LL);
     if (st != DC_OK) return st;
     int total_sent = 0;
     st = dc_int64_to_int_checked(total_sent_i64, &total_sent);
@@ -993,7 +993,7 @@ dc_status_t dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channe
     }
 
     int64_t default_sort_i64 = 0;
-    st = dc_json_get_int64_opt(val, "default_sort_order", &default_sort_i64, 0);
+    st = dc_json_get_int64_opt(val, "default_sort_order", &default_sort_i64, 0LL);
     if (st != DC_OK) return st;
     int default_sort = 0;
     st = dc_int64_to_int_checked(default_sort_i64, &default_sort);
@@ -1001,7 +1001,7 @@ dc_status_t dc_json_model_channel_from_val(yyjson_val* val, dc_channel_t* channe
     channel->default_sort_order = default_sort;
 
     int64_t default_layout_i64 = 0;
-    st = dc_json_get_int64_opt(val, "default_forum_layout", &default_layout_i64, 0);
+    st = dc_json_get_int64_opt(val, "default_forum_layout", &default_layout_i64, 0LL);
     if (st != DC_OK) return st;
     int default_layout = 0;
     st = dc_int64_to_int_checked(default_layout_i64, &default_layout);
@@ -1016,7 +1016,7 @@ static dc_status_t dc_json_model_message_reference_from_val(yyjson_val* val, dc_
     if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
 
     int64_t type_i64 = 0;
-    dc_status_t st = dc_json_get_int64_opt(val, "type", &type_i64, 0);
+    dc_status_t st = dc_json_get_int64_opt(val, "type", &type_i64, 0LL);
     if (st != DC_OK) return st;
     int type_int = 0;
     st = dc_int64_to_int_checked(type_i64, &type_int);
@@ -1041,7 +1041,7 @@ static dc_status_t dc_json_model_reaction_from_val(yyjson_val* val, dc_reaction_
     if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
 
     int64_t count_i64 = 0;
-    dc_status_t st = dc_json_get_int64_opt(val, "count", &count_i64, 0);
+    dc_status_t st = dc_json_get_int64_opt(val, "count", &count_i64, 0LL);
     if (st != DC_OK) return st;
     int count_int = 0;
     st = dc_int64_to_int_checked(count_i64, &count_int);
@@ -1056,9 +1056,9 @@ static dc_status_t dc_json_model_reaction_from_val(yyjson_val* val, dc_reaction_
     yyjson_val* count_details_val = yyjson_obj_get(val, "count_details");
     if (count_details_val && yyjson_is_obj(count_details_val)) {
         int64_t burst_i64 = 0, normal_i64 = 0;
-        st = dc_json_get_int64_opt(count_details_val, "burst", &burst_i64, 0);
+        st = dc_json_get_int64_opt(count_details_val, "burst", &burst_i64, 0LL);
         if (st != DC_OK) return st;
-        st = dc_json_get_int64_opt(count_details_val, "normal", &normal_i64, 0);
+        st = dc_json_get_int64_opt(count_details_val, "normal", &normal_i64, 0LL);
         if (st != DC_OK) return st;
         int burst_int = 0, normal_int = 0;
         st = dc_int64_to_int_checked(burst_i64, &burst_int);
@@ -1299,14 +1299,14 @@ dc_status_t dc_json_model_message_from_val(yyjson_val* val, dc_message_t* messag
     if (st != DC_OK) return st;
 
     int64_t type_i64 = 0;
-    st = dc_json_get_int64_opt(val, "type", &type_i64, 0);
+    st = dc_json_get_int64_opt(val, "type", &type_i64, 0LL);
     if (st != DC_OK) return st;
     int type_int = 0;
     st = dc_int64_to_int_checked(type_i64, &type_int);
     if (st != DC_OK) return st;
 
     int64_t flags_i64 = 0;
-    st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0);
+    st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0LL);
     if (st != DC_OK) return st;
     uint32_t flags_u32 = 0;
     st = dc_int64_to_u32_checked(flags_i64, &flags_u32);
@@ -1643,7 +1643,7 @@ static dc_status_t dc_json_mut_add_forum_tags(dc_json_mut_doc_t* doc, yyjson_mut
     yyjson_mut_val* arr = yyjson_mut_obj_add_arr(doc->doc, obj, key);
     if (!arr) return DC_ERROR_OUT_OF_MEMORY;
     for (size_t i = 0; i < dc_vec_length(tags); i++) {
-        const dc_channel_forum_tag_t* tag = (const dc_channel_forum_tag_t*)dc_vec_at((dc_vec_t*)tags, i);
+        const dc_channel_forum_tag_t* tag = (const dc_channel_forum_tag_t*)dc_vec_at(tags, i);
         yyjson_mut_val* tag_obj = yyjson_mut_arr_add_obj(doc->doc, arr);
         if (!tag_obj) return DC_ERROR_OUT_OF_MEMORY;
         dc_status_t st = dc_json_mut_set_snowflake(doc, tag_obj, "id", tag->id);
@@ -1670,7 +1670,7 @@ static dc_status_t dc_json_mut_add_snowflake_array(dc_json_mut_doc_t* doc, yyjso
     yyjson_mut_val* arr = yyjson_mut_obj_add_arr(doc->doc, obj, key);
     if (!arr) return DC_ERROR_OUT_OF_MEMORY;
     for (size_t i = 0; i < dc_vec_length(arr_values); i++) {
-        const dc_snowflake_t* sf = (const dc_snowflake_t*)dc_vec_at((dc_vec_t*)arr_values, i);
+        const dc_snowflake_t* sf = (const dc_snowflake_t*)dc_vec_at(arr_values, i);
         char buf[32];
         dc_status_t st = dc_snowflake_to_cstr(*sf, buf, sizeof(buf));
         if (st != DC_OK) return st;
@@ -1713,7 +1713,7 @@ static dc_status_t dc_json_mut_add_thread_metadata(dc_json_mut_doc_t* doc, yyjso
     if (!meta_obj) return DC_ERROR_OUT_OF_MEMORY;
     dc_status_t st = dc_json_mut_set_bool(doc, meta_obj, "archived", meta->archived);
     if (st != DC_OK) return st;
-    st = dc_json_mut_set_int64(doc, meta_obj, "auto_archive_duration", meta->auto_archive_duration);
+    st = dc_json_mut_set_int64(doc, meta_obj, "auto_archive_duration", (int64_t)meta->auto_archive_duration);
     if (st != DC_OK) return st;
     st = dc_json_mut_set_string(doc, meta_obj, "archive_timestamp", dc_string_cstr(&meta->archive_timestamp));
     if (st != DC_OK) return st;
@@ -1942,7 +1942,7 @@ dc_status_t dc_json_model_role_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val* ob
     if (st != DC_OK) return st;
     st = dc_json_mut_add_nullable_string(doc, obj, "description", &role->description);
     if (st != DC_OK) return st;
-    st = dc_json_mut_set_int64(doc, obj, "position", role->position);
+    st = dc_json_mut_set_int64(doc, obj, "position", (int64_t)role->position);
     if (st != DC_OK) return st;
     st = dc_json_mut_set_permission(doc, obj, "permissions", role->permissions);
     if (st != DC_OK) return st;
@@ -2017,7 +2017,7 @@ dc_status_t dc_json_model_channel_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
     if (st != DC_OK) return st;
 
     if (channel->position != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "position", channel->position);
+        st = dc_json_mut_set_int64(doc, obj, "position", (int64_t)channel->position);
         if (st != DC_OK) return st;
     }
     if (channel->nsfw) {
@@ -2025,36 +2025,36 @@ dc_status_t dc_json_model_channel_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
         if (st != DC_OK) return st;
     }
     if (channel->bitrate != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "bitrate", channel->bitrate);
+        st = dc_json_mut_set_int64(doc, obj, "bitrate", (int64_t)channel->bitrate);
         if (st != DC_OK) return st;
     }
     if (channel->user_limit != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "user_limit", channel->user_limit);
+        st = dc_json_mut_set_int64(doc, obj, "user_limit", (int64_t)channel->user_limit);
         if (st != DC_OK) return st;
     }
     if (channel->rate_limit_per_user != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "rate_limit_per_user", channel->rate_limit_per_user);
+        st = dc_json_mut_set_int64(doc, obj, "rate_limit_per_user", (int64_t)channel->rate_limit_per_user);
         if (st != DC_OK) return st;
     }
     if (channel->default_auto_archive_duration != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "default_auto_archive_duration", channel->default_auto_archive_duration);
+        st = dc_json_mut_set_int64(doc, obj, "default_auto_archive_duration", (int64_t)channel->default_auto_archive_duration);
         if (st != DC_OK) return st;
     }
     if (channel->default_thread_rate_limit_per_user != 0) {
         st = dc_json_mut_set_int64(doc, obj, "default_thread_rate_limit_per_user",
-                                   channel->default_thread_rate_limit_per_user);
+                                   (int64_t)channel->default_thread_rate_limit_per_user);
         if (st != DC_OK) return st;
     }
     if (channel->video_quality_mode != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "video_quality_mode", channel->video_quality_mode);
+        st = dc_json_mut_set_int64(doc, obj, "video_quality_mode", (int64_t)channel->video_quality_mode);
         if (st != DC_OK) return st;
     }
     if (channel->message_count != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "message_count", channel->message_count);
+        st = dc_json_mut_set_int64(doc, obj, "message_count", (int64_t)channel->message_count);
         if (st != DC_OK) return st;
     }
     if (channel->member_count != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "member_count", channel->member_count);
+        st = dc_json_mut_set_int64(doc, obj, "member_count", (int64_t)channel->member_count);
         if (st != DC_OK) return st;
     }
     if (channel->flags != 0) {
@@ -2062,7 +2062,7 @@ dc_status_t dc_json_model_channel_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
         if (st != DC_OK) return st;
     }
     if (channel->total_message_sent != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "total_message_sent", channel->total_message_sent);
+        st = dc_json_mut_set_int64(doc, obj, "total_message_sent", (int64_t)channel->total_message_sent);
         if (st != DC_OK) return st;
     }
 
@@ -2086,11 +2086,11 @@ dc_status_t dc_json_model_channel_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_val*
         if (st != DC_OK) return st;
     }
     if (channel->default_sort_order != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "default_sort_order", channel->default_sort_order);
+        st = dc_json_mut_set_int64(doc, obj, "default_sort_order", (int64_t)channel->default_sort_order);
         if (st != DC_OK) return st;
     }
     if (channel->default_forum_layout != 0) {
-        st = dc_json_mut_set_int64(doc, obj, "default_forum_layout", channel->default_forum_layout);
+        st = dc_json_mut_set_int64(doc, obj, "default_forum_layout", (int64_t)channel->default_forum_layout);
         if (st != DC_OK) return st;
     }
     return DC_OK;
@@ -2498,8 +2498,8 @@ static dc_status_t dc_json_model_embed_image_from_val(yyjson_val* val, dc_embed_
     if (st != DC_OK) return st;
     
     int64_t h=0, w=0;
-    dc_json_get_int64_opt(val, "height", &h, 0);
-    dc_json_get_int64_opt(val, "width", &w, 0);
+    dc_json_get_int64_opt(val, "height", &h, 0LL);
+    dc_json_get_int64_opt(val, "width", &w, 0LL);
     img->height = (int)h;
     img->width = (int)w;
     return DC_OK;
@@ -2517,8 +2517,8 @@ static dc_status_t dc_json_model_embed_thumbnail_from_val(yyjson_val* val, dc_em
     if (st != DC_OK) return st;
 
     int64_t h=0, w=0;
-    dc_json_get_int64_opt(val, "height", &h, 0);
-    dc_json_get_int64_opt(val, "width", &w, 0);
+    dc_json_get_int64_opt(val, "height", &h, 0LL);
+    dc_json_get_int64_opt(val, "width", &w, 0LL);
     thumb->height = (int)h;
     thumb->width = (int)w;
     return DC_OK;
@@ -2532,8 +2532,8 @@ static dc_status_t dc_json_model_embed_video_from_val(yyjson_val* val, dc_embed_
     if (st != DC_OK) return st;
     
     int64_t h=0, w=0;
-    dc_json_get_int64_opt(val, "height", &h, 0);
-    dc_json_get_int64_opt(val, "width", &w, 0);
+    dc_json_get_int64_opt(val, "height", &h, 0LL);
+    dc_json_get_int64_opt(val, "width", &w, 0LL);
     video->height = (int)h;
     video->width = (int)w;
     return DC_OK;
@@ -2600,7 +2600,7 @@ dc_status_t dc_json_model_embed_from_val(yyjson_val* val, dc_embed_t* embed) {
     if (st != DC_OK) return st;
     
     int64_t color = 0;
-    st = dc_json_get_int64_opt(val, "color", &color, 0);
+    st = dc_json_get_int64_opt(val, "color", &color, 0LL);
     if (st != DC_OK) return st;
     embed->color = (int)color;
 

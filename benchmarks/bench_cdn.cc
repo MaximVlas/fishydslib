@@ -93,15 +93,15 @@ static void BM_CDN_ImageSizeValid(benchmark::State& state) {
 BENCHMARK(BM_CDN_ImageSizeValid);
 
 static void BM_CDN_ImageFormatValid(benchmark::State& state) {
-    dc_cdn_image_format_t formats[] = {
+    const int formats[] = {
         DC_CDN_IMAGE_PNG, DC_CDN_IMAGE_JPG, DC_CDN_IMAGE_WEBP,
         DC_CDN_IMAGE_GIF, DC_CDN_IMAGE_AVIF,
-        (dc_cdn_image_format_t)99
+        99
     };
     size_t count = sizeof(formats) / sizeof(formats[0]);
     for (auto _ : state) {
         for (size_t i = 0; i < count; i++) {
-            int ok = dc_cdn_image_format_is_valid(formats[i]);
+            int ok = dc_cdn_image_format_is_valid((dc_cdn_image_format_t)formats[i]);
             benchmark::DoNotOptimize(ok);
         }
     }

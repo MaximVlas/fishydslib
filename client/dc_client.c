@@ -53,13 +53,6 @@ static void dc_client_log(const dc_client_t* client, dc_log_level_t level, const
     dc_free(heap_buf);
 }
 
-static dc_status_t dc_client_i64_to_u32(int64_t val, uint32_t* out) {
-    if (!out) return DC_ERROR_NULL_POINTER;
-    if (val < 0 || val > (int64_t)UINT32_MAX) return DC_ERROR_INVALID_FORMAT;
-    *out = (uint32_t)val;
-    return DC_OK;
-}
-
 static dc_status_t dc_client_double_ms_to_u32(double val, uint32_t* out) {
     if (!out) return DC_ERROR_NULL_POINTER;
     if (val < 0.0 || val > (double)UINT32_MAX) return DC_ERROR_INVALID_FORMAT;
@@ -522,7 +515,7 @@ static dc_status_t dc_client_execute_json_request_out(dc_client_t* client,
 
 static dc_status_t dc_client_snowflake_to_buf(dc_snowflake_t id, char out[32]) {
     if (!dc_snowflake_is_valid(id)) return DC_ERROR_INVALID_PARAM;
-    return dc_snowflake_to_cstr(id, out, 32);
+    return dc_snowflake_to_cstr(id, out, (size_t)32);
 }
 
 static dc_status_t dc_client_append_query_separator(dc_string_t* path) {
@@ -5965,14 +5958,14 @@ dc_status_t dc_client_create_command_simple(dc_client_t* client,
     yyjson_mut_val* root = doc.root;
     yyjson_mut_obj_add_strcpy(doc.doc, root, "name", name);
     yyjson_mut_obj_add_strcpy(doc.doc, root, "description", description);
-    yyjson_mut_obj_add_int(doc.doc, root, "type", 1);
+    yyjson_mut_obj_add_int(doc.doc, root, "type", (int64_t)1);
 
     yyjson_mut_val* options = yyjson_mut_arr(doc.doc);
     yyjson_mut_val* opt = yyjson_mut_obj(doc.doc);
-    yyjson_mut_obj_add_int(doc.doc, opt, "type", 3);
+    yyjson_mut_obj_add_int(doc.doc, opt, "type", (int64_t)3);
     yyjson_mut_obj_add_strcpy(doc.doc, opt, "name", option_name);
     yyjson_mut_obj_add_strcpy(doc.doc, opt, "description", option_description);
-    yyjson_mut_obj_add_bool(doc.doc, opt, "required", option_required ? 1 : 0);
+    yyjson_mut_obj_add_bool(doc.doc, opt, "required", option_required != 0);
     yyjson_mut_arr_add_val(options, opt);
     yyjson_mut_obj_add(root, yyjson_mut_strcpy(doc.doc, "options"), options);
 
@@ -6065,7 +6058,7 @@ static dc_status_t dc_client_create_context_command_simple(dc_client_t* client,
     dc_status_t st = dc_json_mut_doc_create(&doc);
     if (st != DC_OK) return st;
     yyjson_mut_val* root = doc.root;
-    yyjson_mut_obj_add_int(doc.doc, root, "type", command_type);
+    yyjson_mut_obj_add_int(doc.doc, root, "type", (int64_t)command_type);
     yyjson_mut_obj_add_strcpy(doc.doc, root, "name", name);
 
     dc_string_t json_body;

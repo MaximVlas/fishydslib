@@ -334,8 +334,8 @@ static dc_http_rate_limit_scope_t dc_http_rate_limit_scope_from_str(const char* 
 }
 
 dc_status_t dc_http_rate_limit_parse(
-    dc_status_t (*get_header)(void* userdata, const char* name, const char** value),
-    void* userdata,
+    dc_status_t (*get_header)(const void* userdata, const char* name, const char** value),
+    const void* userdata,
     dc_http_rate_limit_t* rl) {
     
     if (!get_header || !rl) return DC_ERROR_NULL_POINTER;

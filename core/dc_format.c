@@ -35,7 +35,7 @@ fail:
     return st;
 }
 
-int dc_format_timestamp_style_is_valid(char style) {
+int dc_format_timestamp_style_is_valid(int style) {
     if (style == '\0') return 1;
     switch (style) {
         case 't':
@@ -148,7 +148,7 @@ fail:
     return st;
 }
 
-dc_status_t dc_format_timestamp(int64_t unix_seconds, char style, dc_string_t* out) {
+dc_status_t dc_format_timestamp(int64_t unix_seconds, int style, dc_string_t* out) {
     if (!out) return DC_ERROR_NULL_POINTER;
     if (unix_seconds < 0) return DC_ERROR_INVALID_PARAM;
     if (!dc_format_timestamp_style_is_valid(style)) return DC_ERROR_INVALID_PARAM;
@@ -160,7 +160,7 @@ dc_status_t dc_format_timestamp(int64_t unix_seconds, char style, dc_string_t* o
     if (style == '\0') {
         st = dc_string_printf(&tmp, "<t:%" PRId64 ">", unix_seconds);
     } else {
-        st = dc_string_printf(&tmp, "<t:%" PRId64 ":%c>", unix_seconds, style);
+        st = dc_string_printf(&tmp, "<t:%" PRId64 ":%c>", unix_seconds, (char)style);
     }
     if (st != DC_OK) {
         dc_string_free(&tmp);
@@ -171,14 +171,14 @@ dc_status_t dc_format_timestamp(int64_t unix_seconds, char style, dc_string_t* o
     return DC_OK;
 }
 
-dc_status_t dc_format_timestamp_ms(int64_t unix_ms, char style, dc_string_t* out) {
+dc_status_t dc_format_timestamp_ms(int64_t unix_ms, int style, dc_string_t* out) {
     if (!out) return DC_ERROR_NULL_POINTER;
     if (unix_ms < 0) return DC_ERROR_INVALID_PARAM;
     int64_t seconds = unix_ms / 1000;
     return dc_format_timestamp(seconds, style, out);
 }
 
-static int dc_format_should_escape(char c) {
+static int dc_format_should_escape(int c) {
     switch (c) {
         case '\\':
         case '*':

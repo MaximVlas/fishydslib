@@ -19,7 +19,8 @@ int dc_platform_now_monotonic_ms(uint64_t* out_ms) {
 #else
     struct timespec ts;
     if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return 0;
-    *out_ms = (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+    if (ts.tv_sec < 0 || ts.tv_nsec < 0) return 0;
+    *out_ms = (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000L);
     return 1;
 #endif
 }
@@ -39,7 +40,8 @@ int dc_platform_now_epoch_ms(uint64_t* out_ms) {
 #else
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) != 0) return 0;
-    *out_ms = (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+    if (ts.tv_sec < 0 || ts.tv_nsec < 0) return 0;
+    *out_ms = (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000L);
     return 1;
 #endif
 }

@@ -6,7 +6,7 @@
 #include "dc_data_uri.h"
 #include <string.h>
 
-static int dc_data_uri_is_base64_char(unsigned char c) {
+static int dc_data_uri_is_base64_char(int c) {
     if (c >= 'A' && c <= 'Z') return 1;
     if (c >= 'a' && c <= 'z') return 1;
     if (c >= '0' && c <= '9') return 1;
@@ -29,7 +29,7 @@ static int dc_data_uri_base64_is_valid(const char* s) {
             if (padding > 2) return 0;
             continue;
         }
-        if (!dc_data_uri_is_base64_char(c)) return 0;
+        if (!dc_data_uri_is_base64_char((int)c)) return 0;
         if (padding_started) return 0;
     }
     if (len % 4 != 0) return 0;

@@ -30,7 +30,7 @@ static const dc_bench_header_kv_t kRateLimitHeaders[] = {
     {NULL, NULL}
 };
 
-static dc_status_t dc_bench_get_header(void* userdata, const char* name, const char** value) {
+static dc_status_t dc_bench_get_header(const void* userdata, const char* name, const char** value) {
     const dc_bench_header_kv_t* headers = (const dc_bench_header_kv_t*)userdata;
     if (!headers || !name || !value) return DC_ERROR_NULL_POINTER;
     for (size_t i = 0; headers[i].name != NULL; i++) {
@@ -69,7 +69,8 @@ static void BM_HTTP_Format_UserAgent(benchmark::State& state) {
     dc_user_agent_t ua = {
         "fishydslib",
         "0.1.0",
-        "https://example.com"
+        "https://example.com",
+        NULL
     };
     size_t total_bytes = 0;
     for (auto _ : state) {
@@ -174,7 +175,7 @@ static void BM_HTTP_JSON_Validate(benchmark::State& state) {
     const char* json = "{\"content\":\"hello\",\"tts\":false,\"embeds\":[]}";
     size_t total_bytes = 0;
     for (auto _ : state) {
-        dc_status_t st = dc_http_validate_json_body(json, 0);
+        dc_status_t st = dc_http_validate_json_body(json, (size_t)0);
         benchmark::DoNotOptimize(st);
         total_bytes += strlen(json);
     }
@@ -190,7 +191,7 @@ static void BM_HTTP_RateLimit_Parse(benchmark::State& state) {
         return;
     }
     for (auto _ : state) {
-        dc_status_t st = dc_http_rate_limit_parse(dc_bench_get_header, (void*)kRateLimitHeaders, &rl);
+        dc_status_t st = dc_http_rate_limit_parse(dc_bench_get_header, kRateLimitHeaders, &rl);
         benchmark::DoNotOptimize(st);
         benchmark::DoNotOptimize(rl.remaining);
     }

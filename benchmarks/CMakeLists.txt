@@ -147,13 +147,16 @@ target_link_libraries(bench_multipart_opt
 )
 
 # Debug benchmark compile options
-target_compile_options(bench_core PRIVATE ${FISHYDS_COMPILE_FLAGS})
-target_compile_options(bench_http PRIVATE ${FISHYDS_COMPILE_FLAGS})
-target_compile_options(bench_json PRIVATE ${FISHYDS_COMPILE_FLAGS})
-target_compile_options(bench_gateway PRIVATE ${FISHYDS_COMPILE_FLAGS})
-target_compile_options(bench_format PRIVATE ${FISHYDS_COMPILE_FLAGS})
-target_compile_options(bench_cdn PRIVATE ${FISHYDS_COMPILE_FLAGS})
-target_compile_options(bench_multipart PRIVATE ${FISHYDS_COMPILE_FLAGS})
+set(FISHYDS_BENCHMARK_COMPILE_FLAGS ${FISHYDS_COMPILE_FLAGS})
+list(REMOVE_ITEM FISHYDS_BENCHMARK_COMPILE_FLAGS -Wtraditional-conversion)
+
+target_compile_options(bench_core PRIVATE ${FISHYDS_BENCHMARK_COMPILE_FLAGS})
+target_compile_options(bench_http PRIVATE ${FISHYDS_BENCHMARK_COMPILE_FLAGS})
+target_compile_options(bench_json PRIVATE ${FISHYDS_BENCHMARK_COMPILE_FLAGS})
+target_compile_options(bench_gateway PRIVATE ${FISHYDS_BENCHMARK_COMPILE_FLAGS})
+target_compile_options(bench_format PRIVATE ${FISHYDS_BENCHMARK_COMPILE_FLAGS})
+target_compile_options(bench_cdn PRIVATE ${FISHYDS_BENCHMARK_COMPILE_FLAGS})
+target_compile_options(bench_multipart PRIVATE ${FISHYDS_BENCHMARK_COMPILE_FLAGS})
 
 # Optimized benchmark compile options
 target_compile_options(bench_core_opt PRIVATE -O3 -DNDEBUG -march=native -flto)

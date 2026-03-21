@@ -219,8 +219,8 @@ void dc_http_rate_limit_free(dc_http_rate_limit_t* rl);
  * @return DC_OK on success, error code on failure
  */
 dc_status_t dc_http_rate_limit_parse(
-    dc_status_t (*get_header)(void* userdata, const char* name, const char** value),
-    void* userdata,
+    dc_status_t (*get_header)(const void* userdata, const char* name, const char** value),
+    const void* userdata,
     dc_http_rate_limit_t* rl);
 
 /**

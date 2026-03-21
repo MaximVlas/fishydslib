@@ -8,7 +8,7 @@
 #include "json/dc_json_model.h"
 #include <string.h>
 
-static int dc_user_avatar_size_valid(uint16_t size) {
+static int dc_user_avatar_size_valid(unsigned int size) {
     if (size < 16 || size > 4096) return 0;
     return (size & (size - 1)) == 0;
 }
