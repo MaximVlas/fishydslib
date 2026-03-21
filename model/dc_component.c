@@ -138,6 +138,8 @@ dc_status_t dc_component_init(dc_component_t* component) {
     if (st != DC_OK) goto fail;
     st = dc_vec_init(&component->default_values, sizeof(dc_select_default_value_t));
     if (st != DC_OK) goto fail;
+    st = dc_vec_init(&component->values, sizeof(dc_string_t));
+    if (st != DC_OK) goto fail;
     st = dc_vec_init(&component->channel_types, sizeof(int));
     if (st != DC_OK) goto fail;
     st = dc_vec_init(&component->components, sizeof(dc_component_t));
@@ -149,17 +151,20 @@ dc_status_t dc_component_init(dc_component_t* component) {
     dc_optional_i32_clear(&component->style);
     dc_optional_snowflake_clear(&component->sku_id);
     dc_optional_bool_clear(&component->disabled);
+    dc_optional_bool_clear(&component->default_val);
     dc_optional_i32_clear(&component->min_values);
     dc_optional_i32_clear(&component->max_values);
     dc_optional_bool_clear(&component->required);
     dc_optional_i32_clear(&component->min_length);
     dc_optional_i32_clear(&component->max_length);
+    dc_optional_bool_clear(&component->value_bool);
     dc_optional_bool_clear(&component->spoiler);
     dc_optional_i32_clear(&component->accent_color);
     dc_optional_bool_clear(&component->divider);
     dc_optional_i32_clear(&component->spacing);
     component->spacing.value = 1;
     dc_optional_i32_clear(&component->size);
+    component->has_values = 0;
 
     component->emoji = NULL;
     component->accessory = NULL;
@@ -204,6 +209,12 @@ void dc_component_free(dc_component_t* component) {
         dc_select_default_value_free(default_val);
     }
     dc_vec_free(&component->default_values);
+
+    for (i = 0; i < dc_vec_length(&component->values); i++) {
+        dc_string_t* value = (dc_string_t*)dc_vec_at(&component->values, i);
+        if (value) dc_string_free(value);
+    }
+    dc_vec_free(&component->values);
 
     dc_vec_free(&component->channel_types);
 

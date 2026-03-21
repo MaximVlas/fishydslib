@@ -1162,6 +1162,11 @@ Use this router setup with client config like:
 | `dc_media_gallery_item_init(dc_media_gallery_item_t* item)` | `item`: Media gallery item to initialize | `dc_status_t`: `DC_OK` on success, error code on failure | Initialize media gallery item |
 | `dc_media_gallery_item_free(dc_media_gallery_item_t* item)` | `item`: Media gallery item to free | `void` | Free media gallery item |
 
+**Notes**
+- `dc_component_type_t` now includes modal component types `DC_COMPONENT_TYPE_RADIO_GROUP` (`21`), `DC_COMPONENT_TYPE_CHECKBOX_GROUP` (`22`), and `DC_COMPONENT_TYPE_CHECKBOX` (`23`).
+- `dc_component_t.default_val` stores the top-level checkbox `default` field.
+- `dc_component_t.value` stores string-valued component responses (for example, radio groups), `dc_component_t.value_bool` stores checkbox boolean responses, and `dc_component_t.values` stores checkbox-group response arrays when `has_values` is set.
+
 ### Attachment Model (`model/dc_attachment.h`)
 
 | Function | Parameters | Return Value | Description |

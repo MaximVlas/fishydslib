@@ -5,6 +5,7 @@
 
 #include "test_utils.h"
 #include "json/dc_json.h"
+#include "json/dc_json_model.h"
 #include "core/dc_string.h"
 #include "model/dc_user.h"
 #include "model/dc_guild.h"
@@ -641,6 +642,103 @@ int test_json_main(void) {
     dc_json_doc_free(&doc);
     dc_string_free(&serialized_message);
     dc_message_free(&message);
+
+    const char* radio_group_json =
+        "{\"type\":21,\"custom_id\":\"class_radio\",\"required\":true,\"options\":["
+        "{\"value\":\"warrior\",\"label\":\"Warrior\",\"description\":\"Strong and brave\",\"default\":true},"
+        "{\"value\":\"rogue\",\"label\":\"Rogue\"}"
+        "]}";
+    dc_component_t component;
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(radio_group_json, &doc), "parse radio group json");
+    TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init radio group component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
+                   "parse radio group component");
+    TEST_ASSERT_EQ(DC_COMPONENT_TYPE_RADIO_GROUP, component.type, "radio group type");
+    TEST_ASSERT_EQ(1, component.required.is_set, "radio group required set");
+    TEST_ASSERT_EQ(1, component.required.value, "radio group required value");
+    TEST_ASSERT_EQ(2u, dc_vec_length(&component.options), "radio group option count");
+    {
+        const dc_select_option_t* option = dc_vec_at(&component.options, 0);
+        TEST_ASSERT_NEQ(NULL, option, "radio group first option exists");
+        TEST_ASSERT_STR_EQ("warrior", dc_string_cstr(&option->value), "radio group first option value");
+        TEST_ASSERT_EQ(1, option->default_val.is_set, "radio group first option default set");
+        TEST_ASSERT_EQ(1, option->default_val.value, "radio group first option default value");
+    }
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for radio group");
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&serialized_message), "init serialized radio group");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_to_mut(&mut_doc, mut_doc.root, &component),
+                   "serialize radio group component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_serialize(&mut_doc, &serialized_message),
+                   "serialize radio group json");
+    dc_json_doc_free(&doc);
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
+                   "parse serialized radio group");
+    TEST_ASSERT_EQ(21, (int)yyjson_get_sint(yyjson_obj_get(doc.root, "type")), "serialized radio group type");
+    TEST_ASSERT_EQ(2u, yyjson_arr_size(yyjson_obj_get(doc.root, "options")),
+                   "serialized radio group option count");
+    dc_json_doc_free(&doc);
+    dc_string_free(&serialized_message);
+    dc_json_mut_doc_free(&mut_doc);
+    dc_component_free(&component);
+
+    const char* checkbox_group_json =
+        "{\"type\":22,\"id\":2,\"custom_id\":\"event_checkbox\",\"values\":[\"march-5\",\"march-10\",\"march-4\"]}";
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(checkbox_group_json, &doc), "parse checkbox group json");
+    TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init checkbox group component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
+                   "parse checkbox group component");
+    TEST_ASSERT_EQ(DC_COMPONENT_TYPE_CHECKBOX_GROUP, component.type, "checkbox group type");
+    TEST_ASSERT_EQ(1, component.has_values, "checkbox group has values");
+    TEST_ASSERT_EQ(3u, dc_vec_length(&component.values), "checkbox group selected values count");
+    {
+        const dc_string_t* selected = dc_vec_at(&component.values, 1);
+        TEST_ASSERT_NEQ(NULL, selected, "checkbox group selected value exists");
+        TEST_ASSERT_STR_EQ("march-10", dc_string_cstr(selected), "checkbox group selected value");
+    }
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for checkbox group");
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&serialized_message), "init serialized checkbox group");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_to_mut(&mut_doc, mut_doc.root, &component),
+                   "serialize checkbox group component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_serialize(&mut_doc, &serialized_message),
+                   "serialize checkbox group json");
+    dc_json_doc_free(&doc);
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
+                   "parse serialized checkbox group");
+    TEST_ASSERT_EQ(3u, yyjson_arr_size(yyjson_obj_get(doc.root, "values")),
+                   "serialized checkbox group values count");
+    dc_json_doc_free(&doc);
+    dc_string_free(&serialized_message);
+    dc_json_mut_doc_free(&mut_doc);
+    dc_component_free(&component);
+
+    const char* checkbox_json =
+        "{\"type\":23,\"custom_id\":\"like_checkbox\",\"default\":true,\"value\":true}";
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(checkbox_json, &doc), "parse checkbox json");
+    TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init checkbox component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
+                   "parse checkbox component");
+    TEST_ASSERT_EQ(DC_COMPONENT_TYPE_CHECKBOX, component.type, "checkbox type");
+    TEST_ASSERT_EQ(1, component.default_val.is_set, "checkbox default set");
+    TEST_ASSERT_EQ(1, component.default_val.value, "checkbox default value");
+    TEST_ASSERT_EQ(1, component.value_bool.is_set, "checkbox bool value set");
+    TEST_ASSERT_EQ(1, component.value_bool.value, "checkbox bool value");
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for checkbox");
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&serialized_message), "init serialized checkbox");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_to_mut(&mut_doc, mut_doc.root, &component),
+                   "serialize checkbox component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_serialize(&mut_doc, &serialized_message),
+                   "serialize checkbox json");
+    dc_json_doc_free(&doc);
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
+                   "parse serialized checkbox");
+    TEST_ASSERT_EQ(1, yyjson_get_bool(yyjson_obj_get(doc.root, "default")),
+                   "serialized checkbox default");
+    TEST_ASSERT_EQ(1, yyjson_get_bool(yyjson_obj_get(doc.root, "value")),
+                   "serialized checkbox value");
+    dc_json_doc_free(&doc);
+    dc_string_free(&serialized_message);
+    dc_json_mut_doc_free(&mut_doc);
+    dc_component_free(&component);
 
     const char* message_with_extended_fields =
         "{\"id\":\"3001\",\"channel_id\":\"3002\",\"author\":{\"id\":\"123\",\"username\":\"alice\"},"

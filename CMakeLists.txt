@@ -102,9 +102,9 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Build options
 option(FISHYDS_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(FISHYDS_ENABLE_TESTS "Build tests" ON)
-option(FISHYDS_ENABLE_EXAMPLES "Build examples" OFF)
-option(FISHYDS_ENABLE_BENCHMARKS "Build benchmarks" OFF)
-option(FISHYDS_USE_GLIB_ALLOC "Use GLib allocators for dc_alloc" OFF)
+option(FISHYDS_ENABLE_EXAMPLES "Build examples" ON)
+option(FISHYDS_ENABLE_BENCHMARKS "Build benchmarks" ON)
+option(FISHYDS_USE_GLIB_ALLOC "Use GLib allocators for dc_alloc" ON)
 
 include(CheckCCompilerFlag)
 

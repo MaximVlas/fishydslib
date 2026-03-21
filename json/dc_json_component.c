@@ -421,6 +421,35 @@ static dc_status_t dc_json_parse_select_default_values_array(yyjson_val* arr, dc
     return DC_OK;
 }
 
+static dc_status_t dc_json_parse_string_array(yyjson_val* arr, dc_vec_t* out) {
+    if (!arr || !out) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_arr(arr)) return DC_ERROR_INVALID_FORMAT;
+
+    yyjson_arr_iter iter = yyjson_arr_iter_with(arr);
+    yyjson_val* item = NULL;
+    while ((item = yyjson_arr_iter_next(&iter))) {
+        if (!yyjson_is_str(item)) return DC_ERROR_INVALID_FORMAT;
+
+        dc_string_t value;
+        dc_status_t st = dc_string_init(&value);
+        if (st != DC_OK) return st;
+
+        st = dc_json_copy_cstr(&value, yyjson_get_str(item));
+        if (st != DC_OK) {
+            dc_string_free(&value);
+            return st;
+        }
+
+        st = dc_vec_push(out, &value);
+        if (st != DC_OK) {
+            dc_string_free(&value);
+            return st;
+        }
+    }
+
+    return DC_OK;
+}
+
 static dc_status_t dc_json_parse_component_array(yyjson_val* arr, dc_vec_t* out) {
     if (!arr || !out) return DC_ERROR_NULL_POINTER;
     if (!yyjson_is_arr(arr)) return DC_ERROR_INVALID_FORMAT;
@@ -569,6 +598,27 @@ static dc_status_t dc_json_mut_add_channel_types_array(dc_json_mut_doc_t* doc, y
     return DC_OK;
 }
 
+static dc_status_t dc_json_mut_add_string_array(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
+                                                const char* key, const dc_vec_t* values,
+                                                int include_empty) {
+    if (!doc || !doc->doc || !obj || !key || !values) return DC_ERROR_NULL_POINTER;
+    if (!include_empty && dc_vec_is_empty(values)) return DC_OK;
+    if (!yyjson_mut_is_obj(obj)) return DC_ERROR_INVALID_PARAM;
+
+    yyjson_mut_val* arr = yyjson_mut_obj_add_arr(doc->doc, obj, key);
+    if (!arr) return DC_ERROR_OUT_OF_MEMORY;
+
+    for (size_t i = 0; i < dc_vec_length(values); i++) {
+        const dc_string_t* value = dc_vec_at(values, i);
+        if (!value) return DC_ERROR_INVALID_PARAM;
+        if (!yyjson_mut_arr_add_strcpy(doc->doc, arr, dc_string_cstr(value))) {
+            return DC_ERROR_OUT_OF_MEMORY;
+        }
+    }
+
+    return DC_OK;
+}
+
 static dc_status_t dc_json_mut_add_media_gallery_items_array(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
                                                               const dc_vec_t* items) {
     if (!doc || !doc->doc || !obj || !items) return DC_ERROR_NULL_POINTER;
@@ -619,6 +669,8 @@ dc_status_t dc_json_model_component_from_val(yyjson_val* val, dc_component_t* co
     if (st != DC_OK) return st;
     st = dc_json_get_optional_bool_field(val, "disabled", &component->disabled);
     if (st != DC_OK) return st;
+    st = dc_json_get_optional_bool_field(val, "default", &component->default_val);
+    if (st != DC_OK) return st;
     st = dc_json_get_optional_string_field(val, "placeholder", &component->placeholder);
     if (st != DC_OK) return st;
     st = dc_json_get_optional_i32_field(val, "min_values", &component->min_values);
@@ -630,8 +682,6 @@ dc_status_t dc_json_model_component_from_val(yyjson_val* val, dc_component_t* co
     st = dc_json_get_optional_i32_field(val, "min_length", &component->min_length);
     if (st != DC_OK) return st;
     st = dc_json_get_optional_i32_field(val, "max_length", &component->max_length);
-    if (st != DC_OK) return st;
-    st = dc_json_get_optional_string_field(val, "value", &component->value);
     if (st != DC_OK) return st;
     st = dc_json_get_optional_string_field(val, "description", &component->description);
     if (st != DC_OK) return st;
@@ -649,6 +699,27 @@ dc_status_t dc_json_model_component_from_val(yyjson_val* val, dc_component_t* co
     if (st != DC_OK) return st;
     st = dc_json_get_optional_string_field(val, "name", &component->name);
     if (st != DC_OK) return st;
+
+    yyjson_val* value = yyjson_obj_get(val, "value");
+    if (value) {
+        dc_optional_bool_clear(&component->value_bool);
+        component->value.is_set = 0;
+        st = dc_string_clear(&component->value.value);
+        if (st != DC_OK) return st;
+
+        if (yyjson_is_null(value)) {
+            /* Leave both representations unset for null. */
+        } else if (yyjson_is_bool(value)) {
+            component->value_bool.is_set = 1;
+            component->value_bool.value = yyjson_get_bool(value) ? 1 : 0;
+        } else if (yyjson_is_str(value)) {
+            component->value.is_set = 1;
+            st = dc_json_copy_cstr(&component->value.value, yyjson_get_str(value));
+            if (st != DC_OK) return st;
+        } else {
+            return DC_ERROR_INVALID_FORMAT;
+        }
+    }
 
     yyjson_val* options = yyjson_obj_get(val, "options");
     if (options && !yyjson_is_null(options)) {
@@ -677,6 +748,13 @@ dc_status_t dc_json_model_component_from_val(yyjson_val* val, dc_component_t* co
     yyjson_val* items = yyjson_obj_get(val, "items");
     if (items && !yyjson_is_null(items)) {
         st = dc_json_parse_media_gallery_items_array(items, &component->items);
+        if (st != DC_OK) return st;
+    }
+
+    yyjson_val* values = yyjson_obj_get(val, "values");
+    if (values && !yyjson_is_null(values)) {
+        component->has_values = 1;
+        st = dc_json_parse_string_array(values, &component->values);
         if (st != DC_OK) return st;
     }
 
@@ -716,6 +794,8 @@ dc_status_t dc_json_model_component_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_va
     if (st != DC_OK) return st;
     st = dc_json_mut_add_optional_bool_field(doc, obj, "disabled", &component->disabled);
     if (st != DC_OK) return st;
+    st = dc_json_mut_add_optional_bool_field(doc, obj, "default", &component->default_val);
+    if (st != DC_OK) return st;
     st = dc_json_mut_add_optional_string_field(doc, obj, "placeholder", &component->placeholder);
     if (st != DC_OK) return st;
     st = dc_json_mut_add_optional_i32_field(doc, obj, "min_values", &component->min_values);
@@ -728,7 +808,12 @@ dc_status_t dc_json_model_component_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_va
     if (st != DC_OK) return st;
     st = dc_json_mut_add_optional_i32_field(doc, obj, "max_length", &component->max_length);
     if (st != DC_OK) return st;
-    st = dc_json_mut_add_optional_string_field(doc, obj, "value", &component->value);
+    if (component->value.is_set && component->value_bool.is_set) return DC_ERROR_INVALID_PARAM;
+    if (component->value_bool.is_set) {
+        st = dc_json_mut_set_bool(doc, obj, "value", component->value_bool.value);
+    } else {
+        st = dc_json_mut_add_optional_string_field(doc, obj, "value", &component->value);
+    }
     if (st != DC_OK) return st;
     st = dc_json_mut_add_optional_string_field(doc, obj, "description", &component->description);
     if (st != DC_OK) return st;
@@ -756,6 +841,9 @@ dc_status_t dc_json_model_component_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_va
     st = dc_json_mut_add_component_array(doc, obj, "components", &component->components);
     if (st != DC_OK) return st;
     st = dc_json_mut_add_media_gallery_items_array(doc, obj, &component->items);
+    if (st != DC_OK) return st;
+    st = dc_json_mut_add_string_array(doc, obj, "values", &component->values,
+                                      component->has_values || !dc_vec_is_empty(&component->values));
     if (st != DC_OK) return st;
 
     if (component->accessory) {

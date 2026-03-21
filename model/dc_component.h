@@ -35,7 +35,10 @@ typedef enum {
     DC_COMPONENT_TYPE_SEPARATOR = 14,
     DC_COMPONENT_TYPE_CONTAINER = 17,
     DC_COMPONENT_TYPE_LABEL = 18,
-    DC_COMPONENT_TYPE_FILE_UPLOAD = 19
+    DC_COMPONENT_TYPE_FILE_UPLOAD = 19,
+    DC_COMPONENT_TYPE_RADIO_GROUP = 21,
+    DC_COMPONENT_TYPE_CHECKBOX_GROUP = 22,
+    DC_COMPONENT_TYPE_CHECKBOX = 23
 } dc_component_type_t;
 
 // Button styles
@@ -113,6 +116,7 @@ struct dc_component {
     dc_optional_string_t url;
     dc_optional_snowflake_t sku_id;
     dc_optional_bool_t disabled;
+    dc_optional_bool_t default_val;  // For checkbox default state
     dc_optional_string_t placeholder;
     dc_vec_t options;  // dc_select_option_t
     dc_vec_t default_values;  // dc_select_default_value_t
@@ -122,6 +126,9 @@ struct dc_component {
     dc_optional_i32_t min_length;
     dc_optional_i32_t max_length;
     dc_optional_string_t value;
+    dc_optional_bool_t value_bool;  // For checkbox interaction responses
+    int has_values;
+    dc_vec_t values;  // dc_string_t (for checkbox group interaction responses)
     dc_vec_t channel_types;  // int (channel types)
     dc_vec_t components;  // dc_component_t (child components)
     dc_component_t* accessory;  /**< Heap-allocated; freed by dc_component_free */
