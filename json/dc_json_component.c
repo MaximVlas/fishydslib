@@ -705,9 +705,28 @@ dc_status_t dc_json_model_component_from_val(yyjson_val* val, dc_component_t* co
     if (!val || !component) return DC_ERROR_NULL_POINTER;
     if (!yyjson_is_obj(val)) return DC_ERROR_INVALID_FORMAT;
 
+    yyjson_val* type_val = yyjson_obj_get(val, "type");
+    yyjson_val* component_type_val = yyjson_obj_get(val, "component_type");
     int64_t type_i64 = 0;
-    dc_status_t st = dc_json_get_int64(val, "type", &type_i64);
-    if (st != DC_OK) return st;
+    dc_status_t st = DC_OK;
+    component->uses_component_type = 0;
+
+    if (type_val && !yyjson_is_null(type_val)) {
+        if (!yyjson_is_int(type_val)) return DC_ERROR_INVALID_FORMAT;
+        type_i64 = yyjson_get_sint(type_val);
+    } else if (component_type_val && !yyjson_is_null(component_type_val)) {
+        if (!yyjson_is_int(component_type_val)) return DC_ERROR_INVALID_FORMAT;
+        type_i64 = yyjson_get_sint(component_type_val);
+        component->uses_component_type = 1;
+    } else {
+        return DC_ERROR_NOT_FOUND;
+    }
+
+    if (type_val && !yyjson_is_null(type_val) && component_type_val && !yyjson_is_null(component_type_val)) {
+        if (!yyjson_is_int(component_type_val)) return DC_ERROR_INVALID_FORMAT;
+        if (yyjson_get_sint(component_type_val) != type_i64) return DC_ERROR_INVALID_FORMAT;
+    }
+
     int type_int = 0;
     st = dc_int64_to_int_checked(type_i64, &type_int);
     if (st != DC_OK) return st;
@@ -838,7 +857,8 @@ dc_status_t dc_json_model_component_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_va
     if (!doc || !doc->doc || !obj || !component) return DC_ERROR_NULL_POINTER;
     if (!yyjson_mut_is_obj(obj)) return DC_ERROR_INVALID_PARAM;
 
-    dc_status_t st = dc_json_mut_set_int64(doc, obj, "type", (int64_t)component->type);
+    const char* type_key = component->uses_component_type ? "component_type" : "type";
+    dc_status_t st = dc_json_mut_set_int64(doc, obj, type_key, (int64_t)component->type);
     if (st != DC_OK) return st;
 
     st = dc_json_mut_add_optional_i32_field(doc, obj, "id", &component->id);

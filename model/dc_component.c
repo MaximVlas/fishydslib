@@ -166,6 +166,7 @@ dc_status_t dc_component_init(dc_component_t* component) {
     dc_optional_i32_clear(&component->spacing);
     component->spacing.value = 1;
     dc_optional_i32_clear(&component->size);
+    component->uses_component_type = 0;
     component->has_values = 0;
     component->has_snowflake_values = 0;
 

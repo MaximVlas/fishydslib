@@ -1168,6 +1168,7 @@ Use this router setup with client config like:
 - `dc_component_t.value` stores string-valued single-value component responses (for example, radio groups), and `dc_component_t.value_bool` stores checkbox boolean responses.
 - `dc_component_t.values` stores string-valued interaction response arrays (for example, string selects and checkbox groups) when `has_values` is set.
 - `dc_component_t.snowflake_values` stores snowflake-valued interaction response arrays (user/role/mentionable/channel selects and file uploads) when `has_snowflake_values` is set.
+- `dc_component_t.uses_component_type` preserves the Discord response shape difference between message interaction responses (`component_type`) and modal responses / create payloads (`type`).
 
 ### Attachment Model (`model/dc_attachment.h`)
 

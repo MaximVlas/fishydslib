@@ -741,12 +741,13 @@ int test_json_main(void) {
     dc_component_free(&component);
 
     const char* string_select_response_json =
-        "{\"type\":3,\"custom_id\":\"flavor_select\",\"values\":[\"vanilla\",\"strawberry\"]}";
+        "{\"component_type\":3,\"custom_id\":\"flavor_select\",\"values\":[\"vanilla\",\"strawberry\"]}";
     TEST_ASSERT_EQ(DC_OK, dc_json_parse(string_select_response_json, &doc), "parse string select response json");
     TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init string select response component");
     TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
                    "parse string select response component");
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_STRING_SELECT, component.type, "string select response type");
+    TEST_ASSERT_EQ(1, component.uses_component_type, "string select response uses component_type");
     TEST_ASSERT_EQ(1, component.has_values, "string select response has string values");
     TEST_ASSERT_EQ(0, component.has_snowflake_values, "string select response has no snowflake values");
     TEST_ASSERT_EQ(2u, dc_vec_length(&component.values), "string select response values count");
@@ -764,6 +765,9 @@ int test_json_main(void) {
     dc_json_doc_free(&doc);
     TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
                    "parse serialized string select response");
+    TEST_ASSERT_EQ(3, (int)yyjson_get_sint(yyjson_obj_get(doc.root, "component_type")),
+                   "serialized string select response component_type");
+    TEST_ASSERT_NULL(yyjson_obj_get(doc.root, "type"), "serialized string select response omits type");
     TEST_ASSERT_EQ(2u, yyjson_arr_size(yyjson_obj_get(doc.root, "values")),
                    "serialized string select response values count");
     TEST_ASSERT_STR_EQ("strawberry", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 1)),
@@ -774,12 +778,13 @@ int test_json_main(void) {
     dc_component_free(&component);
 
     const char* user_select_response_json =
-        "{\"type\":5,\"custom_id\":\"user_select\",\"values\":[\"123456789012345678\",\"234567890123456789\"]}";
+        "{\"component_type\":5,\"custom_id\":\"user_select\",\"values\":[\"123456789012345678\",\"234567890123456789\"]}";
     TEST_ASSERT_EQ(DC_OK, dc_json_parse(user_select_response_json, &doc), "parse user select response json");
     TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init user select response component");
     TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
                    "parse user select response component");
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_USER_SELECT, component.type, "user select response type");
+    TEST_ASSERT_EQ(1, component.uses_component_type, "user select response uses component_type");
     TEST_ASSERT_EQ(0, component.has_values, "user select response has no string values");
     TEST_ASSERT_EQ(1, component.has_snowflake_values, "user select response has snowflake values");
     TEST_ASSERT_EQ(2u, dc_vec_length(&component.snowflake_values),
@@ -798,6 +803,9 @@ int test_json_main(void) {
     dc_json_doc_free(&doc);
     TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
                    "parse serialized user select response");
+    TEST_ASSERT_EQ(5, (int)yyjson_get_sint(yyjson_obj_get(doc.root, "component_type")),
+                   "serialized user select response component_type");
+    TEST_ASSERT_NULL(yyjson_obj_get(doc.root, "type"), "serialized user select response omits type");
     TEST_ASSERT_EQ(2u, yyjson_arr_size(yyjson_obj_get(doc.root, "values")),
                    "serialized user select response values count");
     TEST_ASSERT_STR_EQ("123456789012345678", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
@@ -814,6 +822,7 @@ int test_json_main(void) {
     TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
                    "parse file upload response component");
     TEST_ASSERT_EQ(DC_COMPONENT_TYPE_FILE_UPLOAD, component.type, "file upload response type");
+    TEST_ASSERT_EQ(0, component.uses_component_type, "file upload response keeps type");
     TEST_ASSERT_EQ(1, component.has_snowflake_values, "file upload response has snowflake values");
     TEST_ASSERT_EQ(1u, dc_vec_length(&component.snowflake_values),
                    "file upload response snowflake values count");
@@ -831,6 +840,10 @@ int test_json_main(void) {
     dc_json_doc_free(&doc);
     TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
                    "parse serialized file upload response");
+    TEST_ASSERT_EQ(19, (int)yyjson_get_sint(yyjson_obj_get(doc.root, "type")),
+                   "serialized file upload response type");
+    TEST_ASSERT_NULL(yyjson_obj_get(doc.root, "component_type"),
+                     "serialized file upload response omits component_type");
     TEST_ASSERT_STR_EQ("345678901234567890",
                        yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
                        "serialized file upload response value");

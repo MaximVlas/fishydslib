@@ -108,6 +108,7 @@ typedef struct dc_component dc_component_t;
 
 struct dc_component {
     dc_component_type_t type;
+    int uses_component_type;  // For message interaction responses that return component_type
     dc_optional_i32_t id;  // 32-bit integer identifier
     dc_optional_string_t custom_id;
     dc_optional_i32_t style;  // For buttons and text inputs
