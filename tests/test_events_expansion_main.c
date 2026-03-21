@@ -3,10 +3,18 @@
 
 void test_parse_ready(void);
 void test_parse_guild_create(void);
+void test_parse_guild_update(void);
+void test_parse_guild_delete(void);
 
 void test_parse_message_create(void);
 void test_parse_message_create_full(void);
 void test_parse_message_create_dm(void);
+void test_parse_channel_create(void);
+void test_parse_channel_update(void);
+void test_parse_channel_delete(void);
+void test_parse_message_update_partial(void);
+void test_parse_message_delete(void);
+void test_parse_message_delete_bulk(void);
 void test_parse_message_with_extra_fields(void);
 void test_parse_ready_with_extended_user_fields(void);
 void test_parse_message_with_documented_extended_fields(void);
@@ -19,9 +27,17 @@ int main(void) {
 
     test_parse_ready();
     test_parse_guild_create();
+    test_parse_guild_update();
+    test_parse_guild_delete();
     test_parse_message_create();
     test_parse_message_create_full();
     test_parse_message_create_dm();
+    test_parse_channel_create();
+    test_parse_channel_update();
+    test_parse_channel_delete();
+    test_parse_message_update_partial();
+    test_parse_message_delete();
+    test_parse_message_delete_bulk();
     test_parse_message_with_extra_fields();
     test_parse_ready_with_extended_user_fields();
     test_parse_message_with_documented_extended_fields();

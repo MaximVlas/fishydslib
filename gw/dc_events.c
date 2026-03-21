@@ -7,14 +7,21 @@
 #include "json/dc_json.h"
 #include "json/dc_json_model.h"
 #include "core/dc_snowflake.h"
+#include "core/dc_time.h"
 #include "model/dc_guild.h"
 #include "model/dc_message.h"
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <yyjson.h>
 
 dc_gateway_event_kind_t dc_gateway_event_kind_from_name(const char* name) {
     if (!name) return DC_GATEWAY_EVENT_UNKNOWN;
+    if (strcmp(name, "GUILD_UPDATE") == 0) return DC_GATEWAY_EVENT_GUILD_UPDATE;
+    if (strcmp(name, "GUILD_DELETE") == 0) return DC_GATEWAY_EVENT_GUILD_DELETE;
+    if (strcmp(name, "CHANNEL_CREATE") == 0) return DC_GATEWAY_EVENT_CHANNEL_CREATE;
+    if (strcmp(name, "CHANNEL_UPDATE") == 0) return DC_GATEWAY_EVENT_CHANNEL_UPDATE;
+    if (strcmp(name, "CHANNEL_DELETE") == 0) return DC_GATEWAY_EVENT_CHANNEL_DELETE;
     if (strcmp(name, "THREAD_CREATE") == 0) return DC_GATEWAY_EVENT_THREAD_CREATE;
     if (strcmp(name, "THREAD_UPDATE") == 0) return DC_GATEWAY_EVENT_THREAD_UPDATE;
     if (strcmp(name, "THREAD_DELETE") == 0) return DC_GATEWAY_EVENT_THREAD_DELETE;
@@ -24,6 +31,9 @@ dc_gateway_event_kind_t dc_gateway_event_kind_from_name(const char* name) {
     if (strcmp(name, "READY") == 0) return DC_GATEWAY_EVENT_READY;
     if (strcmp(name, "GUILD_CREATE") == 0) return DC_GATEWAY_EVENT_GUILD_CREATE;
     if (strcmp(name, "MESSAGE_CREATE") == 0) return DC_GATEWAY_EVENT_MESSAGE_CREATE;
+    if (strcmp(name, "MESSAGE_UPDATE") == 0) return DC_GATEWAY_EVENT_MESSAGE_UPDATE;
+    if (strcmp(name, "MESSAGE_DELETE") == 0) return DC_GATEWAY_EVENT_MESSAGE_DELETE;
+    if (strcmp(name, "MESSAGE_DELETE_BULK") == 0) return DC_GATEWAY_EVENT_MESSAGE_DELETE_BULK;
     if (strcmp(name, "INTERACTION_CREATE") == 0) return DC_GATEWAY_EVENT_INTERACTION_CREATE;
     return DC_GATEWAY_EVENT_UNKNOWN;
 }
@@ -72,6 +82,104 @@ static dc_status_t dc_gateway_parse_optional_snowflake(yyjson_val* obj,
 
 static dc_status_t dc_gateway_copy_raw_json(yyjson_val* val, dc_string_t* out) {
     return dc_json_write_value_to_string(val, YYJSON_WRITE_NOFLAG, out);
+}
+
+static dc_status_t dc_gateway_int64_to_int_checked(int64_t val, int* out) {
+    if (!out) return DC_ERROR_NULL_POINTER;
+    if (val < INT_MIN || val > INT_MAX) return DC_ERROR_INVALID_FORMAT;
+    *out = (int)val;
+    return DC_OK;
+}
+
+static dc_status_t dc_gateway_int64_to_u32_checked(int64_t val, uint32_t* out) {
+    if (!out) return DC_ERROR_NULL_POINTER;
+    if (val < 0 || val > (int64_t)UINT32_MAX) return DC_ERROR_INVALID_FORMAT;
+    *out = (uint32_t)val;
+    return DC_OK;
+}
+
+static dc_status_t dc_gateway_copy_optional_string(yyjson_val* obj,
+                                                   const char* key,
+                                                   dc_optional_string_t* out) {
+    if (!obj || !key || !out) return DC_ERROR_NULL_POINTER;
+
+    dc_optional_cstr_t str_opt = {0};
+    dc_status_t st = dc_json_get_string_optional(obj, key, &str_opt);
+    if (st != DC_OK) return st;
+    if (!str_opt.is_set) return DC_OK;
+
+    st = dc_string_set_cstr(&out->value, str_opt.value);
+    if (st != DC_OK) return st;
+    out->is_set = 1;
+    return DC_OK;
+}
+
+static dc_status_t dc_gateway_copy_optional_iso8601_string(yyjson_val* obj,
+                                                           const char* key,
+                                                           dc_optional_string_t* out) {
+    if (!obj || !key || !out) return DC_ERROR_NULL_POINTER;
+
+    dc_optional_cstr_t str_opt = {0};
+    dc_status_t st = dc_json_get_string_optional(obj, key, &str_opt);
+    if (st != DC_OK) return st;
+    if (!str_opt.is_set) return DC_OK;
+
+    dc_iso8601_t ts;
+    st = dc_iso8601_parse(str_opt.value, &ts);
+    if (st != DC_OK) return st;
+
+    st = dc_string_set_cstr(&out->value, str_opt.value);
+    if (st != DC_OK) return st;
+    out->is_set = 1;
+    return DC_OK;
+}
+
+static dc_status_t dc_gateway_copy_present_nullable_iso8601_string(yyjson_val* obj,
+                                                                   const char* key,
+                                                                   int* has_field,
+                                                                   dc_nullable_string_t* out) {
+    if (!obj || !key || !has_field || !out) return DC_ERROR_NULL_POINTER;
+
+    yyjson_val* field = yyjson_obj_get(obj, key);
+    if (!field) return DC_OK;
+
+    *has_field = 1;
+    if (yyjson_is_null(field)) {
+        out->is_null = 1;
+        return DC_OK;
+    }
+    if (!yyjson_is_str(field)) return DC_ERROR_INVALID_FORMAT;
+
+    const char* str = yyjson_get_str(field);
+    if (!str) return DC_ERROR_INVALID_FORMAT;
+
+    dc_iso8601_t ts;
+    dc_status_t st = dc_iso8601_parse(str, &ts);
+    if (st != DC_OK) return st;
+
+    st = dc_string_set_cstr(&out->value, str);
+    if (st != DC_OK) return st;
+    out->is_null = 0;
+    return DC_OK;
+}
+
+static dc_status_t dc_gateway_parse_message_guild_context(yyjson_val* obj,
+                                                          dc_optional_snowflake_t* guild_id,
+                                                          dc_guild_member_t* member,
+                                                          int* has_member) {
+    if (!obj || !guild_id || !member || !has_member) return DC_ERROR_NULL_POINTER;
+
+    dc_status_t st = dc_gateway_parse_optional_snowflake(obj, "guild_id", guild_id);
+    if (st != DC_OK) return st;
+
+    yyjson_val* member_val = yyjson_obj_get(obj, "member");
+    if (!member_val || yyjson_is_null(member_val)) return DC_OK;
+    if (!yyjson_is_obj(member_val)) return DC_ERROR_INVALID_FORMAT;
+
+    st = dc_json_model_guild_member_from_val(member_val, member);
+    if (st != DC_OK) return st;
+    *has_member = 1;
+    return DC_OK;
 }
 
 static dc_status_t dc_gateway_parse_interaction_data(yyjson_val* data_val,
@@ -226,7 +334,7 @@ static dc_status_t dc_gateway_parse_thread_channel_array(yyjson_val* arr, dc_vec
     return DC_OK;
 }
 
-dc_status_t dc_gateway_event_parse_thread_channel(const char* event_data, dc_channel_t* channel) {
+static dc_status_t dc_gateway_parse_channel_payload(const char* event_data, dc_channel_t* channel) {
     if (!event_data || !channel) return DC_ERROR_NULL_POINTER;
     dc_json_doc_t doc;
     dc_status_t st = dc_json_parse(event_data, &doc);
@@ -247,6 +355,43 @@ dc_status_t dc_gateway_event_parse_thread_channel(const char* event_data, dc_cha
     }
     *channel = tmp;
     return DC_OK;
+}
+
+static dc_status_t dc_gateway_parse_guild_payload(const char* event_data, dc_guild_t* guild) {
+    if (!event_data || !guild) return DC_ERROR_NULL_POINTER;
+
+    dc_json_doc_t doc;
+    dc_status_t st = dc_json_parse(event_data, &doc);
+    if (st != DC_OK) return st;
+
+    dc_guild_t tmp;
+    st = dc_guild_init(&tmp);
+    if (st != DC_OK) {
+        dc_json_doc_free(&doc);
+        return st;
+    }
+
+    st = dc_json_model_guild_from_val(doc.root, &tmp);
+    dc_json_doc_free(&doc);
+    if (st != DC_OK) {
+        dc_guild_free(&tmp);
+        return st;
+    }
+
+    *guild = tmp;
+    return DC_OK;
+}
+
+dc_status_t dc_gateway_event_parse_channel(const char* event_data, dc_channel_t* channel) {
+    return dc_gateway_parse_channel_payload(event_data, channel);
+}
+
+dc_status_t dc_gateway_event_parse_thread_channel(const char* event_data, dc_channel_t* channel) {
+    return dc_gateway_parse_channel_payload(event_data, channel);
+}
+
+dc_status_t dc_gateway_event_parse_guild_update(const char* event_data, dc_guild_t* guild) {
+    return dc_gateway_parse_guild_payload(event_data, guild);
 }
 
 dc_status_t dc_gateway_event_parse_thread_member(const char* event_data,
@@ -674,7 +819,7 @@ dc_status_t dc_gateway_event_parse_guild_create(const char* event_data, dc_gatew
     if (st != DC_OK) goto fail;
 
     int64_t member_count = 0;
-    st = dc_json_get_int64_opt(doc.root, "member_count", &member_count, 0);
+    st = dc_json_get_int64_opt(doc.root, "member_count", &member_count, 0LL);
     if (st != DC_OK) goto fail;
     tmp.member_count = (int)member_count;
 
@@ -806,6 +951,56 @@ fail:
     return st;
 }
 
+dc_status_t dc_gateway_guild_delete_init(dc_gateway_guild_delete_t* guild_delete) {
+    if (!guild_delete) return DC_ERROR_NULL_POINTER;
+    memset(guild_delete, 0, sizeof(*guild_delete));
+    dc_optional_bool_clear(&guild_delete->unavailable);
+    return DC_OK;
+}
+
+void dc_gateway_guild_delete_free(dc_gateway_guild_delete_t* guild_delete) {
+    if (!guild_delete) return;
+    memset(guild_delete, 0, sizeof(*guild_delete));
+}
+
+dc_status_t dc_gateway_event_parse_guild_delete(const char* event_data,
+                                                dc_gateway_guild_delete_t* guild_delete) {
+    if (!event_data || !guild_delete) return DC_ERROR_NULL_POINTER;
+
+    dc_json_doc_t doc;
+    dc_status_t st = dc_json_parse(event_data, &doc);
+    if (st != DC_OK) return st;
+
+    dc_gateway_guild_delete_t tmp;
+    st = dc_gateway_guild_delete_init(&tmp);
+    if (st != DC_OK) {
+        dc_json_doc_free(&doc);
+        return st;
+    }
+
+    uint64_t id = 0;
+    st = dc_json_get_snowflake(doc.root, "id", &id);
+    if (st != DC_OK) goto fail;
+    tmp.id = (dc_snowflake_t)id;
+
+    dc_optional_int_t unavailable = {0};
+    st = dc_json_get_bool_optional(doc.root, "unavailable", &unavailable);
+    if (st != DC_OK) goto fail;
+    if (unavailable.is_set) {
+        tmp.unavailable.is_set = 1;
+        tmp.unavailable.value = unavailable.value;
+    }
+
+    dc_json_doc_free(&doc);
+    *guild_delete = tmp;
+    return DC_OK;
+
+fail:
+    dc_json_doc_free(&doc);
+    dc_gateway_guild_delete_free(&tmp);
+    return st;
+}
+
 /* MESSAGE_CREATE event */
 
 dc_status_t dc_gateway_event_parse_message_create(const char* event_data, dc_message_t* message) {
@@ -879,17 +1074,8 @@ dc_status_t dc_gateway_event_parse_message_create_full(const char* event_data,
     st = dc_json_model_message_from_val(doc.root, &tmp.message);
     if (st != DC_OK) goto fail;
 
-    // Parse guild_id (optional, gateway-specific)
-    st = dc_gateway_parse_optional_snowflake(doc.root, "guild_id", &tmp.guild_id);
+    st = dc_gateway_parse_message_guild_context(doc.root, &tmp.guild_id, &tmp.member, &tmp.has_member);
     if (st != DC_OK) goto fail;
-
-    // Parse member (optional partial guild member, gateway-specific)
-    yyjson_val* member_val = yyjson_obj_get(doc.root, "member");
-    if (member_val && yyjson_is_obj(member_val)) {
-        st = dc_json_model_guild_member_from_val(member_val, &tmp.member);
-        if (st != DC_OK) goto fail;
-        tmp.has_member = 1;
-    }
 
     dc_json_doc_free(&doc);
     *msg = tmp;
@@ -898,6 +1084,256 @@ dc_status_t dc_gateway_event_parse_message_create_full(const char* event_data,
 fail:
     dc_json_doc_free(&doc);
     dc_gateway_message_create_free(&tmp);
+    return st;
+}
+
+dc_status_t dc_gateway_message_update_init(dc_gateway_message_update_t* update) {
+    if (!update) return DC_ERROR_NULL_POINTER;
+    memset(update, 0, sizeof(*update));
+
+    dc_status_t st = dc_user_init(&update->author);
+    if (st != DC_OK) return st;
+
+    st = dc_optional_string_init(&update->content);
+    if (st != DC_OK) goto fail;
+
+    st = dc_optional_string_init(&update->timestamp);
+    if (st != DC_OK) goto fail;
+
+    st = dc_nullable_string_init(&update->edited_timestamp);
+    if (st != DC_OK) goto fail;
+
+    st = dc_guild_member_init(&update->member);
+    if (st != DC_OK) goto fail;
+
+    st = dc_string_init(&update->raw_json);
+    if (st != DC_OK) goto fail;
+
+    return DC_OK;
+
+fail:
+    dc_gateway_message_update_free(update);
+    return st;
+}
+
+void dc_gateway_message_update_free(dc_gateway_message_update_t* update) {
+    if (!update) return;
+    dc_user_free(&update->author);
+    dc_optional_string_free(&update->content);
+    dc_optional_string_free(&update->timestamp);
+    dc_nullable_string_free(&update->edited_timestamp);
+    dc_guild_member_free(&update->member);
+    dc_string_free(&update->raw_json);
+    memset(update, 0, sizeof(*update));
+}
+
+dc_status_t dc_gateway_event_parse_message_update(const char* event_data,
+                                                  dc_gateway_message_update_t* update) {
+    if (!event_data || !update) return DC_ERROR_NULL_POINTER;
+
+    dc_json_doc_t doc;
+    dc_status_t st = dc_json_parse(event_data, &doc);
+    if (st != DC_OK) return st;
+
+    dc_gateway_message_update_t tmp;
+    st = dc_gateway_message_update_init(&tmp);
+    if (st != DC_OK) {
+        dc_json_doc_free(&doc);
+        return st;
+    }
+
+    uint64_t sf = 0;
+    st = dc_json_get_snowflake(doc.root, "id", &sf);
+    if (st != DC_OK) goto fail;
+    tmp.id = (dc_snowflake_t)sf;
+
+    st = dc_json_get_snowflake(doc.root, "channel_id", &sf);
+    if (st != DC_OK) goto fail;
+    tmp.channel_id = (dc_snowflake_t)sf;
+
+    st = dc_gateway_parse_message_guild_context(doc.root, &tmp.guild_id, &tmp.member, &tmp.has_member);
+    if (st != DC_OK) goto fail;
+
+    yyjson_val* author_val = yyjson_obj_get(doc.root, "author");
+    if (author_val && !yyjson_is_null(author_val)) {
+        if (!yyjson_is_obj(author_val)) {
+            st = DC_ERROR_INVALID_FORMAT;
+            goto fail;
+        }
+        st = dc_json_model_user_from_val(author_val, &tmp.author);
+        if (st != DC_OK) goto fail;
+        tmp.has_author = 1;
+    }
+
+    st = dc_gateway_copy_optional_string(doc.root, "content", &tmp.content);
+    if (st != DC_OK) goto fail;
+
+    st = dc_gateway_copy_optional_iso8601_string(doc.root, "timestamp", &tmp.timestamp);
+    if (st != DC_OK) goto fail;
+
+    st = dc_gateway_copy_present_nullable_iso8601_string(doc.root,
+                                                         "edited_timestamp",
+                                                         &tmp.has_edited_timestamp,
+                                                         &tmp.edited_timestamp);
+    if (st != DC_OK) goto fail;
+
+    dc_optional_int_t bool_opt = {0};
+    st = dc_json_get_bool_optional(doc.root, "tts", &bool_opt);
+    if (st != DC_OK) goto fail;
+    if (bool_opt.is_set) {
+        tmp.tts.is_set = 1;
+        tmp.tts.value = bool_opt.value;
+    }
+
+    bool_opt = (dc_optional_int_t){0};
+    st = dc_json_get_bool_optional(doc.root, "mention_everyone", &bool_opt);
+    if (st != DC_OK) goto fail;
+    if (bool_opt.is_set) {
+        tmp.mention_everyone.is_set = 1;
+        tmp.mention_everyone.value = bool_opt.value;
+    }
+
+    bool_opt = (dc_optional_int_t){0};
+    st = dc_json_get_bool_optional(doc.root, "pinned", &bool_opt);
+    if (st != DC_OK) goto fail;
+    if (bool_opt.is_set) {
+        tmp.pinned.is_set = 1;
+        tmp.pinned.value = bool_opt.value;
+    }
+
+    dc_optional_i64_t i64_opt = {0};
+    st = dc_json_get_int64_optional(doc.root, "type", &i64_opt);
+    if (st != DC_OK) goto fail;
+    if (i64_opt.is_set) {
+        int type_int = 0;
+        st = dc_gateway_int64_to_int_checked(i64_opt.value, &type_int);
+        if (st != DC_OK) goto fail;
+        tmp.type = (dc_message_type_t)type_int;
+        tmp.has_type = 1;
+    }
+
+    i64_opt = (dc_optional_i64_t){0};
+    st = dc_json_get_int64_optional(doc.root, "flags", &i64_opt);
+    if (st != DC_OK) goto fail;
+    if (i64_opt.is_set) {
+        uint32_t flags_u32 = 0;
+        st = dc_gateway_int64_to_u32_checked(i64_opt.value, &flags_u32);
+        if (st != DC_OK) goto fail;
+        tmp.flags.is_set = 1;
+        tmp.flags.value = flags_u32;
+    }
+
+    st = dc_gateway_copy_raw_json(doc.root, &tmp.raw_json);
+    if (st != DC_OK) goto fail;
+
+    dc_json_doc_free(&doc);
+    *update = tmp;
+    return DC_OK;
+
+fail:
+    dc_json_doc_free(&doc);
+    dc_gateway_message_update_free(&tmp);
+    return st;
+}
+
+dc_status_t dc_gateway_message_delete_init(dc_gateway_message_delete_t* message_delete) {
+    if (!message_delete) return DC_ERROR_NULL_POINTER;
+    memset(message_delete, 0, sizeof(*message_delete));
+    return DC_OK;
+}
+
+void dc_gateway_message_delete_free(dc_gateway_message_delete_t* message_delete) {
+    if (!message_delete) return;
+    memset(message_delete, 0, sizeof(*message_delete));
+}
+
+dc_status_t dc_gateway_event_parse_message_delete(const char* event_data,
+                                                  dc_gateway_message_delete_t* message_delete) {
+    if (!event_data || !message_delete) return DC_ERROR_NULL_POINTER;
+
+    dc_json_doc_t doc;
+    dc_status_t st = dc_json_parse(event_data, &doc);
+    if (st != DC_OK) return st;
+
+    dc_gateway_message_delete_t tmp;
+    st = dc_gateway_message_delete_init(&tmp);
+    if (st != DC_OK) {
+        dc_json_doc_free(&doc);
+        return st;
+    }
+
+    uint64_t sf = 0;
+    st = dc_json_get_snowflake(doc.root, "id", &sf);
+    if (st != DC_OK) goto fail;
+    tmp.id = (dc_snowflake_t)sf;
+
+    st = dc_json_get_snowflake(doc.root, "channel_id", &sf);
+    if (st != DC_OK) goto fail;
+    tmp.channel_id = (dc_snowflake_t)sf;
+
+    st = dc_gateway_parse_optional_snowflake(doc.root, "guild_id", &tmp.guild_id);
+    if (st != DC_OK) goto fail;
+
+    dc_json_doc_free(&doc);
+    *message_delete = tmp;
+    return DC_OK;
+
+fail:
+    dc_json_doc_free(&doc);
+    dc_gateway_message_delete_free(&tmp);
+    return st;
+}
+
+dc_status_t dc_gateway_message_delete_bulk_init(dc_gateway_message_delete_bulk_t* bulk_delete) {
+    if (!bulk_delete) return DC_ERROR_NULL_POINTER;
+    memset(bulk_delete, 0, sizeof(*bulk_delete));
+    return dc_vec_init(&bulk_delete->ids, sizeof(dc_snowflake_t));
+}
+
+void dc_gateway_message_delete_bulk_free(dc_gateway_message_delete_bulk_t* bulk_delete) {
+    if (!bulk_delete) return;
+    dc_vec_free(&bulk_delete->ids);
+    memset(bulk_delete, 0, sizeof(*bulk_delete));
+}
+
+dc_status_t dc_gateway_event_parse_message_delete_bulk(const char* event_data,
+                                                       dc_gateway_message_delete_bulk_t* bulk_delete) {
+    if (!event_data || !bulk_delete) return DC_ERROR_NULL_POINTER;
+
+    dc_json_doc_t doc;
+    dc_status_t st = dc_json_parse(event_data, &doc);
+    if (st != DC_OK) return st;
+
+    dc_gateway_message_delete_bulk_t tmp;
+    st = dc_gateway_message_delete_bulk_init(&tmp);
+    if (st != DC_OK) {
+        dc_json_doc_free(&doc);
+        return st;
+    }
+
+    yyjson_val* ids_val = yyjson_obj_get(doc.root, "ids");
+    if (!ids_val) {
+        st = DC_ERROR_NOT_FOUND;
+        goto fail;
+    }
+    st = dc_gateway_parse_snowflake_array(ids_val, &tmp.ids);
+    if (st != DC_OK) goto fail;
+
+    uint64_t sf = 0;
+    st = dc_json_get_snowflake(doc.root, "channel_id", &sf);
+    if (st != DC_OK) goto fail;
+    tmp.channel_id = (dc_snowflake_t)sf;
+
+    st = dc_gateway_parse_optional_snowflake(doc.root, "guild_id", &tmp.guild_id);
+    if (st != DC_OK) goto fail;
+
+    dc_json_doc_free(&doc);
+    *bulk_delete = tmp;
+    return DC_OK;
+
+fail:
+    dc_json_doc_free(&doc);
+    dc_gateway_message_delete_bulk_free(&tmp);
     return st;
 }
 

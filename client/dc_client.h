@@ -508,6 +508,19 @@ dc_status_t dc_client_get_pinned_messages_json(dc_client_t* client,
                                                dc_string_t* messages_json);
 
 /**
+ * @brief Search guild messages and return the raw search response JSON object
+ * @param client Discord client
+ * @param guild_id Guild ID
+ * @param encoded_query URL-encoded query string without a leading `?` (NULL or empty to omit)
+ * @param search_json Output JSON string (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_search_guild_messages_json(dc_client_t* client,
+                                                 dc_snowflake_t guild_id,
+                                                 const char* encoded_query,
+                                                 dc_string_t* search_json);
+
+/**
  * @brief Modify guild using JSON patch body
  * @param client Discord client
  * @param guild_id Guild ID
@@ -1529,6 +1542,21 @@ dc_status_t dc_client_interaction_respond_message(dc_client_t* client,
                                                   int ephemeral);
 
 /**
+ * @brief Get the original interaction response message as raw JSON
+ * @param client Discord client
+ * @param application_id Application ID
+ * @param interaction_token Interaction token
+ * @param thread_id Optional thread ID (0 to omit)
+ * @param message_json Output message JSON (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_get_original_response_json(dc_client_t* client,
+                                                             dc_snowflake_t application_id,
+                                                             const char* interaction_token,
+                                                             dc_snowflake_t thread_id,
+                                                             dc_string_t* message_json);
+
+/**
  * @brief Edit the original interaction response using raw JSON
  * @param client Discord client
  * @param application_id Application ID
@@ -1596,6 +1624,23 @@ dc_status_t dc_client_interaction_create_followup_message(dc_client_t* client,
                                                           const char* content,
                                                           int ephemeral,
                                                           dc_snowflake_t* message_id);
+
+/**
+ * @brief Get an interaction follow-up message as raw JSON
+ * @param client Discord client
+ * @param application_id Application ID
+ * @param interaction_token Interaction token
+ * @param message_id Follow-up message ID
+ * @param thread_id Optional thread ID (0 to omit)
+ * @param message_json Output message JSON (overwritten)
+ * @return DC_OK on success, error code on failure
+ */
+dc_status_t dc_client_interaction_get_followup_message_json(dc_client_t* client,
+                                                            dc_snowflake_t application_id,
+                                                            const char* interaction_token,
+                                                            dc_snowflake_t message_id,
+                                                            dc_snowflake_t thread_id,
+                                                            dc_string_t* message_json);
 
 /**
  * @brief Edit an interaction followup message using raw JSON

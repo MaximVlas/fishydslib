@@ -573,6 +573,15 @@ static dc_status_t dc_client_append_query_u32(dc_string_t* path, const char* key
     return dc_string_append_cstr(path, value_buf);
 }
 
+static dc_status_t dc_client_append_query_raw(dc_string_t* path, const char* raw_query) {
+    if (!path || !raw_query) return DC_ERROR_NULL_POINTER;
+    if (raw_query[0] == '\0') return DC_OK;
+    if (raw_query[0] == '?' || raw_query[0] == '&') return DC_ERROR_INVALID_PARAM;
+    dc_status_t st = dc_client_append_query_separator(path);
+    if (st != DC_OK) return st;
+    return dc_string_append_cstr(path, raw_query);
+}
+
 dc_status_t dc_gateway_info_init(dc_gateway_info_t* info) {
     if (!info) return DC_ERROR_NULL_POINTER;
     memset(info, 0, sizeof(*info));
@@ -1866,6 +1875,33 @@ dc_status_t dc_client_get_pinned_messages_json(dc_client_t* client,
     }
 
     dc_rest_response_free(&resp);
+    dc_string_free(&path);
+    return st;
+}
+
+dc_status_t dc_client_search_guild_messages_json(dc_client_t* client,
+                                                 dc_snowflake_t guild_id,
+                                                 const char* encoded_query,
+                                                 dc_string_t* search_json) {
+    if (!client || !client->rest || !search_json) return DC_ERROR_NULL_POINTER;
+
+    char guild_buf[32];
+    dc_status_t st = dc_client_snowflake_to_buf(guild_id, guild_buf);
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+
+    st = dc_string_printf(&path, "/guilds/%s/messages/search", guild_buf);
+    if (st == DC_OK && encoded_query) {
+        st = dc_client_append_query_raw(&path, encoded_query);
+    }
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                search_json);
+    }
+
     dc_string_free(&path);
     return st;
 }
@@ -6173,6 +6209,36 @@ dc_status_t dc_client_interaction_respond_message(dc_client_t* client,
     return st;
 }
 
+dc_status_t dc_client_interaction_get_original_response_json(dc_client_t* client,
+                                                             dc_snowflake_t application_id,
+                                                             const char* interaction_token,
+                                                             dc_snowflake_t thread_id,
+                                                             dc_string_t* message_json) {
+    if (!client || !client->rest || !interaction_token || !message_json) return DC_ERROR_NULL_POINTER;
+    if (!dc_snowflake_is_valid(application_id)) return DC_ERROR_INVALID_PARAM;
+    if (interaction_token[0] == '\0') return DC_ERROR_INVALID_PARAM;
+
+    char app_buf[32];
+    dc_status_t st = dc_snowflake_to_cstr(application_id, app_buf, sizeof(app_buf));
+    if (st != DC_OK) return st;
+
+    dc_string_t path;
+    st = dc_string_init(&path);
+    if (st != DC_OK) return st;
+
+    st = dc_string_printf(&path, "/webhooks/%s/%s/messages/@original", app_buf, interaction_token);
+    if (st == DC_OK && dc_snowflake_is_valid(thread_id)) {
+        st = dc_client_append_query_snowflake(&path, "thread_id", thread_id);
+    }
+    if (st == DC_OK) {
+        st = dc_client_execute_json_request_out(client, DC_HTTP_GET, dc_string_cstr(&path), NULL, 0,
+                                                message_json);
+    }
+
+    dc_string_free(&path);
+    return st;
+}
+
 dc_status_t dc_client_interaction_edit_original_response_json(dc_client_t* client,
                                                               dc_snowflake_t application_id,
                                                               const char* interaction_token,
@@ -6314,6 +6380,16 @@ dc_status_t dc_client_interaction_create_followup_message(dc_client_t* client,
     }
     dc_string_free(&json_body);
     return st;
+}
+
+dc_status_t dc_client_interaction_get_followup_message_json(dc_client_t* client,
+                                                            dc_snowflake_t application_id,
+                                                            const char* interaction_token,
+                                                            dc_snowflake_t message_id,
+                                                            dc_snowflake_t thread_id,
+                                                            dc_string_t* message_json) {
+    return dc_client_get_webhook_message_json(client, application_id, interaction_token, message_id, thread_id,
+                                              message_json);
 }
 
 dc_status_t dc_client_interaction_edit_followup_message_json(dc_client_t* client,

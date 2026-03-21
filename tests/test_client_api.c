@@ -150,6 +150,8 @@ static void test_client_symbol_surface(void) {
     TEST_ASSERT((&dc_client_interaction_edit_followup_message_json) != NULL, "symbol dc_client_interaction_edit_followup_message_json");
     TEST_ASSERT((&dc_client_interaction_edit_original_response) != NULL, "symbol dc_client_interaction_edit_original_response");
     TEST_ASSERT((&dc_client_interaction_edit_original_response_json) != NULL, "symbol dc_client_interaction_edit_original_response_json");
+    TEST_ASSERT((&dc_client_interaction_get_followup_message_json) != NULL, "symbol dc_client_interaction_get_followup_message_json");
+    TEST_ASSERT((&dc_client_interaction_get_original_response_json) != NULL, "symbol dc_client_interaction_get_original_response_json");
     TEST_ASSERT((&dc_client_interaction_respond_message) != NULL, "symbol dc_client_interaction_respond_message");
     TEST_ASSERT((&dc_client_interaction_respond_message_json) != NULL, "symbol dc_client_interaction_respond_message_json");
     TEST_ASSERT((&dc_client_interaction_show_modal_json) != NULL, "symbol dc_client_interaction_show_modal_json");
@@ -208,6 +210,7 @@ static void test_client_symbol_surface(void) {
     TEST_ASSERT((&dc_client_remove_thread_member) != NULL, "symbol dc_client_remove_thread_member");
     TEST_ASSERT((&dc_client_request_guild_members) != NULL, "symbol dc_client_request_guild_members");
     TEST_ASSERT((&dc_client_request_soundboard_sounds) != NULL, "symbol dc_client_request_soundboard_sounds");
+    TEST_ASSERT((&dc_client_search_guild_messages_json) != NULL, "symbol dc_client_search_guild_messages_json");
     TEST_ASSERT((&dc_client_search_guild_members_json) != NULL, "symbol dc_client_search_guild_members_json");
     TEST_ASSERT((&dc_client_send_soundboard_sound_json) != NULL, "symbol dc_client_send_soundboard_sound_json");
     TEST_ASSERT((&dc_client_set_logger) != NULL, "symbol dc_client_set_logger");
@@ -478,16 +481,19 @@ static void test_client_null_guard_coverage(void) {
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_update_message_json(NULL, (dc_snowflake_t)0, NULL, NULL), "dc_client_interaction_update_message_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_show_modal_json(NULL, (dc_snowflake_t)0, NULL, NULL), "dc_client_interaction_show_modal_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_respond_message(NULL, (dc_snowflake_t)0, NULL, NULL, 0), "dc_client_interaction_respond_message null client");
+    TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_get_original_response_json(NULL, (dc_snowflake_t)0, NULL, (dc_snowflake_t)0, NULL), "dc_client_interaction_get_original_response_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_edit_original_response_json(NULL, (dc_snowflake_t)0, NULL, NULL), "dc_client_interaction_edit_original_response_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_edit_original_response(NULL, (dc_snowflake_t)0, NULL, NULL), "dc_client_interaction_edit_original_response null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_delete_original_response(NULL, (dc_snowflake_t)0, NULL), "dc_client_interaction_delete_original_response null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_create_followup_message_json(NULL, (dc_snowflake_t)0, NULL, NULL, NULL), "dc_client_interaction_create_followup_message_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_create_followup_message(NULL, (dc_snowflake_t)0, NULL, NULL, 0, NULL), "dc_client_interaction_create_followup_message null client");
+    TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_get_followup_message_json(NULL, (dc_snowflake_t)0, NULL, (dc_snowflake_t)0, (dc_snowflake_t)0, NULL), "dc_client_interaction_get_followup_message_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_edit_followup_message_json(NULL, (dc_snowflake_t)0, NULL, (dc_snowflake_t)0, NULL), "dc_client_interaction_edit_followup_message_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_edit_followup_message(NULL, (dc_snowflake_t)0, NULL, (dc_snowflake_t)0, NULL), "dc_client_interaction_edit_followup_message null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_interaction_delete_followup_message(NULL, (dc_snowflake_t)0, NULL, (dc_snowflake_t)0), "dc_client_interaction_delete_followup_message null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_request_guild_members(NULL, (dc_snowflake_t)0, NULL, (uint32_t)0, 0, NULL, (size_t)0, NULL), "dc_client_request_guild_members null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_request_soundboard_sounds(NULL, NULL, (size_t)0), "dc_client_request_soundboard_sounds null client");
+    TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_search_guild_messages_json(NULL, (dc_snowflake_t)0, NULL, NULL), "dc_client_search_guild_messages_json null client");
     TEST_ASSERT_EQ(DC_ERROR_NULL_POINTER, dc_client_update_voice_state(NULL, (dc_snowflake_t)0, (dc_snowflake_t)0, 0, 0), "dc_client_update_voice_state null client");
 }
 

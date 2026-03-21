@@ -1,0 +1,1337 @@
+-- The C compiler identification is GNU 15.2.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- fishydslib detected C compiler candidates: clang, gcc, cc, zig-cc, clang-cl
+-- fishydslib selected C compiler: /usr/bin/cc  (GNU, frontend: GNU)
+-- The CXX compiler identification is GNU 15.2.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (2.3s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/max/DcChamb/fishydslib/build
+[  6%] Building C object CMakeFiles/discordc.dir/json/dc_json.c.o
+[  5%] Building C object CMakeFiles/discordc.dir/core/dc_status.c.o
+[  7%] Building C object CMakeFiles/discordc.dir/core/dc_env.c.o
+[  5%] Building C object CMakeFiles/discordc.dir/core/dc_alloc.c.o
+[  8%] Building C object CMakeFiles/discordc.dir/core/dc_format.c.o
+[  9%] Building C object CMakeFiles/discordc.dir/core/dc_data_uri.c.o
+[  5%] Building C object CMakeFiles/discordc.dir/core/dc_attachments.c.o
+[ 10%] Building C object CMakeFiles/discordc.dir/core/dc_cdn.c.o
+[ 11%] Building C object CMakeFiles/discordc.dir/core/dc_string.c.o
+[  5%] Building C object CMakeFiles/discordc.dir/core/dc_allowed_mentions.c.o
+[  5%] Building C object CMakeFiles/discordc.dir/core/dc_log.c.o
+[ 11%] Building C object CMakeFiles/discordc.dir/core/dc_platform.c.o
+[ 12%] Building C object CMakeFiles/discordc.dir/http/dc_http_compliance.c.o
+[ 13%] Building C object CMakeFiles/discordc.dir/http/dc_http.c.o
+[ 13%] Building C object CMakeFiles/discordc.dir/core/dc_time.c.o
+[ 14%] Building C object CMakeFiles/discordc.dir/core/dc_snowflake.c.o
+[ 17%] Building C object CMakeFiles/discordc.dir/json/dc_json_component.c.o
+[ 19%] Building C object CMakeFiles/discordc.dir/http/dc_multipart.c.o
+[ 19%] Building C object CMakeFiles/discordc.dir/core/dc_vec.c.o
+[ 19%] Building C object CMakeFiles/discordc.dir/gw/dc_gateway.c.o
+[ 18%] Building C object CMakeFiles/discordc.dir/gw/dc_events.c.o
+[ 19%] Building C object CMakeFiles/discordc.dir/http/dc_rest.c.o
+[ 20%] Building C object CMakeFiles/discordc.dir/json/dc_json_model.c.o
+[ 21%] Building C object CMakeFiles/discordc.dir/gw/dc_gateway_codes.c.o
+/home/max/DcChamb/fishydslib/core/dc_data_uri.c: In function 'dc_data_uri_base64_is_valid':
+/home/max/DcChamb/fishydslib/core/dc_data_uri.c:32:41: warning: passing argument 1 of 'dc_data_uri_is_base64_char' with different width due to prototype [-Wtraditional-conversion]
+   32 |         if (!dc_data_uri_is_base64_char(c)) return 0;
+      |                                         ^
+[ 21%] Building C object CMakeFiles/discordc.dir/client/dc_client.c.o
+[ 22%] Building C object CMakeFiles/discordc.dir/model/dc_embed.c.o
+[ 23%] Building C object CMakeFiles/discordc.dir/model/dc_role.c.o
+[ 24%] Building C object CMakeFiles/discordc.dir/model/dc_guild.c.o
+[ 25%] Building C object CMakeFiles/discordc.dir/model/dc_component.c.o
+[ 26%] Building C object CMakeFiles/discordc.dir/client/dc_commands.c.o
+[ 26%] Building C object CMakeFiles/discordc.dir/model/dc_attachment.c.o
+[ 27%] Building C object CMakeFiles/discordc.dir/model/dc_guild_member.c.o
+[ 28%] Building C object CMakeFiles/discordc.dir/model/dc_permissions.c.o
+[ 29%] Building C object CMakeFiles/discordc.dir/model/dc_user.c.o
+[ 30%] Building C object CMakeFiles/discordc.dir/model/dc_voice_state.c.o
+[ 31%] Building C object CMakeFiles/discordc.dir/model/dc_message.c.o
+[ 32%] Building C object CMakeFiles/discordc.dir/model/dc_presence.c.o
+/home/max/DcChamb/fishydslib/client/dc_commands.c: In function 'dc_cmd_message_from_json':
+/home/max/DcChamb/fishydslib/client/dc_commands.c:110:56: warning: passing argument 4 of 'dc_json_get_snowflake_opt' with different width due to prototype [-Wtraditional-conversion]
+  110 |     if (dc_json_get_snowflake_opt(doc.root, "id", &id, 0) == DC_OK) {
+      |                                                        ^
+/home/max/DcChamb/fishydslib/core/dc_format.c: In function 'dc_format_timestamp':
+/home/max/DcChamb/fishydslib/core/dc_format.c:154:45: warning: passing argument 1 of 'dc_format_timestamp_style_is_valid' with different width due to prototype [-Wtraditional-conversion]
+  154 |     if (!dc_format_timestamp_style_is_valid(style)) return DC_ERROR_INVALID_PARAM;
+      |                                             ^~~~~
+/home/max/DcChamb/fishydslib/core/dc_format.c: In function 'dc_format_timestamp_ms':
+/home/max/DcChamb/fishydslib/core/dc_format.c:178:41: warning: passing argument 2 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+  178 |     return dc_format_timestamp(seconds, style, out);
+      |                                         ^~~~~
+/home/max/DcChamb/fishydslib/core/dc_format.c: In function 'dc_format_escape_content':
+/home/max/DcChamb/fishydslib/core/dc_format.c:209:37: warning: passing argument 1 of 'dc_format_should_escape' with different width due to prototype [-Wtraditional-conversion]
+  209 |         if (dc_format_should_escape(c)) {
+      |                                     ^
+/home/max/DcChamb/fishydslib/core/dc_format.c:210:46: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  210 |             st = dc_string_append_char(&tmp, '\\');
+      |                                              ^~~~
+/home/max/DcChamb/fishydslib/core/dc_format.c:213:42: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  213 |         st = dc_string_append_char(&tmp, c);
+      |                                          ^
+[ 33%] Building C object CMakeFiles/discordc.dir/model/dc_channel.c.o
+/home/max/DcChamb/fishydslib/model/dc_user.c: In function 'dc_user_get_avatar_url':
+/home/max/DcChamb/fishydslib/model/dc_user.c:181:36: warning: passing argument 1 of 'dc_user_avatar_size_valid' with different width due to prototype [-Wtraditional-conversion]
+  181 |     if (!dc_user_avatar_size_valid(size)) return DC_ERROR_INVALID_PARAM;
+      |                                    ^~~~
+/home/max/DcChamb/fishydslib/model/dc_user.c: In function 'dc_user_get_default_avatar_url':
+/home/max/DcChamb/fishydslib/model/dc_user.c:194:36: warning: passing argument 1 of 'dc_user_avatar_size_valid' with different width due to prototype [-Wtraditional-conversion]
+  194 |     if (!dc_user_avatar_size_valid(size)) return DC_ERROR_INVALID_PARAM;
+      |                                    ^~~~
+/home/max/DcChamb/fishydslib/model/dc_user.c: In function 'dc_user_get_banner_url':
+/home/max/DcChamb/fishydslib/model/dc_user.c:215:36: warning: passing argument 1 of 'dc_user_avatar_size_valid' with different width due to prototype [-Wtraditional-conversion]
+  215 |     if (!dc_user_avatar_size_valid(size)) return DC_ERROR_INVALID_PARAM;
+      |                                    ^~~~
+[ 34%] Building C object CMakeFiles/discordc.dir/model/dc_interaction.c.o
+/home/max/DcChamb/fishydslib/http/dc_multipart.c: In function 'dc_multipart_append_escaped':
+/home/max/DcChamb/fishydslib/http/dc_multipart.c:29:57: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+   29 |             dc_status_t st = dc_string_append_char(out, '\\');
+      |                                                         ^~~~
+/home/max/DcChamb/fishydslib/http/dc_multipart.c:32:53: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+   32 |         dc_status_t st = dc_string_append_char(out, *p);
+      |                                                     ^~
+/home/max/DcChamb/fishydslib/core/dc_cdn.c: In function 'dc_cdn_append_path':
+/home/max/DcChamb/fishydslib/core/dc_cdn.c:108:41: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  108 |         st = dc_string_append_char(out, '/');
+      |                                         ^~~
+/home/max/DcChamb/fishydslib/core/dc_cdn.c: In function 'dc_cdn_build_url':
+/home/max/DcChamb/fishydslib/core/dc_cdn.c:146:38: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  146 |     st = dc_string_append_char(&tmp, '.');
+      |                                      ^~~
+/home/max/DcChamb/fishydslib/http/dc_rest.c: In function 'dc_rest_headers_has':
+/home/max/DcChamb/fishydslib/http/dc_rest.c:133:72: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+  133 |         const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at((dc_vec_t*)headers, i);
+      |                                                                        ^
+/home/max/DcChamb/fishydslib/http/dc_rest.c: In function 'dc_rest_extract_path':
+/home/max/DcChamb/fishydslib/http/dc_rest.c:177:35: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  177 |     if (strncmp(input, "http://", 7) == 0) return DC_ERROR_INVALID_PARAM;
+      |                                   ^
+/home/max/DcChamb/fishydslib/http/dc_rest.c:178:36: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  178 |     if (strncmp(input, "https://", 8) == 0) {
+      |                                    ^
+/home/max/DcChamb/fishydslib/http/dc_rest.c: In function 'dc_rest_is_interaction_path':
+/home/max/DcChamb/fishydslib/http/dc_rest.c:207:45: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  207 |     return (strncmp(path, "/interactions/", 14) == 0);
+      |                                             ^~
+/home/max/DcChamb/fishydslib/http/dc_rest.c: In function 'dc_rest_build_route_key':
+/home/max/DcChamb/fishydslib/http/dc_rest.c:246:98: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  246 |         const int prev_is_channels = (prev_seg && prev_len == 8 && strncmp(prev_seg, "channels", 8) == 0);
+      |                                                                                                  ^
+/home/max/DcChamb/fishydslib/http/dc_rest.c:247:94: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  247 |         const int prev_is_guilds = (prev_seg && prev_len == 6 && strncmp(prev_seg, "guilds", 6) == 0);
+      |                                                                                              ^
+/home/max/DcChamb/fishydslib/http/dc_rest.c:248:98: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  248 |         const int prev_is_webhooks = (prev_seg && prev_len == 8 && strncmp(prev_seg, "webhooks", 8) == 0);
+      |                                                                                                  ^
+/home/max/DcChamb/fishydslib/http/dc_rest.c:249:107: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  249 |         const int prev_is_interactions = (prev_seg && prev_len == 12 && strncmp(prev_seg, "interactions", 12) == 0);
+      |                                                                                                           ^~
+/home/max/DcChamb/fishydslib/http/dc_rest.c: In function 'dc_rest_request_copy_headers':
+/home/max/DcChamb/fishydslib/http/dc_rest.c:438:72: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+  438 |         const dc_http_header_t* h = (const dc_http_header_t*)dc_vec_at((dc_vec_t*)&req->headers, i);
+      |                                                                        ^
+/home/max/DcChamb/fishydslib/http/dc_rest.c: In function 'dc_rest_request_set_json_body':
+/home/max/DcChamb/fishydslib/http/dc_rest.c:651:60: warning: passing argument 2 of 'dc_http_validate_json_body' with different width due to prototype [-Wtraditional-conversion]
+  651 |     dc_status_t st = dc_http_validate_json_body(json_body, 0);
+      |                                                            ^
+/home/max/DcChamb/fishydslib/core/dc_platform.c: In function 'dc_platform_now_monotonic_ms':
+/home/max/DcChamb/fishydslib/core/dc_platform.c:22:69: warning: conversion to 'long long unsigned int' from '__syscall_slong_t' {aka 'long int'} may change the sign of the result [-Wsign-conversion]
+   22 |     *out_ms = (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+      |                                                                     ^
+/home/max/DcChamb/fishydslib/core/dc_platform.c: In function 'dc_platform_now_epoch_ms':
+/home/max/DcChamb/fishydslib/core/dc_platform.c:42:69: warning: conversion to 'long long unsigned int' from '__syscall_slong_t' {aka 'long int'} may change the sign of the result [-Wsign-conversion]
+   42 |     *out_ms = (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+      |                                                                     ^
+/home/max/DcChamb/fishydslib/json/dc_json.c: In function 'dc_json_read_internal':
+/home/max/DcChamb/fishydslib/json/dc_json.c:64:40: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+   64 |     doc->doc = yyjson_read_opts((char*)(void*)json_data, json_len, flags, NULL, &err);
+      |                                        ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_user_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:461:72: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  461 |     st = dc_json_get_int64_opt(val, "accent_color", &accent_color_i64, 0);
+      |                                                                        ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:476:58: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  476 |     st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0);
+      |                                                          ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:483:67: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  483 |     st = dc_json_get_int64_opt(val, "premium_type", &premium_i64, 0);
+      |                                                                   ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:490:72: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  490 |     st = dc_json_get_int64_opt(val, "public_flags", &public_flags_i64, 0);
+      |                                                                        ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_role_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:734:71: warning: passing argument 4 of 'dc_json_get_permission_opt' with different width due to prototype [-Wtraditional-conversion]
+  734 |     st = dc_json_get_permission_opt(val, "permissions", &permissions, 0);
+      |                                                                       ^
+/home/max/DcChamb/fishydslib/http/dc_http.c: In function 'dc_curl_global_acquire':
+/home/max/DcChamb/fishydslib/http/dc_http.c:21:30: warning: passing argument 1 of 'curl_global_init' with different width due to prototype [-Wtraditional-conversion]
+   21 |         if (curl_global_init(CURL_GLOBAL_DEFAULT) != 0) {
+      |                              ^~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_channel_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:835:64: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  835 |     st = dc_json_get_int64_opt(val, "position", &position_i64, 0);
+      |                                                                ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:846:62: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  846 |     st = dc_json_get_int64_opt(val, "bitrate", &bitrate_i64, 0);
+      |                                                              ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:853:68: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  853 |     st = dc_json_get_int64_opt(val, "user_limit", &user_limit_i64, 0);
+      |                                                                    ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:860:77: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  860 |     st = dc_json_get_int64_opt(val, "rate_limit_per_user", &rate_limit_i64, 0);
+      |                                                                             ^
+/home/max/DcChamb/fishydslib/http/dc_http.c: In function 'dc_http_headers_get_value':
+/home/max/DcChamb/fishydslib/http/dc_http.c:103:60: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+  103 |         dc_http_header_t* h = (dc_http_header_t*)dc_vec_at((dc_vec_t*)headers, i);
+      |                                                            ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:867:97: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  867 |     st = dc_json_get_int64_opt(val, "default_auto_archive_duration", &default_auto_archive_i64, 0);
+      |                                                                                                 ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:875:64: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  875 |                                &default_thread_rate_limit_i64, 0);
+      |                                                                ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:882:79: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  882 |     st = dc_json_get_int64_opt(val, "video_quality_mode", &video_quality_i64, 0);
+      |                                                                               ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:889:74: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  889 |     st = dc_json_get_int64_opt(val, "message_count", &message_count_i64, 0);
+      |                                                                          ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:896:72: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  896 |     st = dc_json_get_int64_opt(val, "member_count", &member_count_i64, 0);
+      |                                                                        ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:903:58: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  903 |     st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0);
+      |                                                          ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:910:76: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  910 |     st = dc_json_get_int64_opt(val, "total_message_sent", &total_sent_i64, 0);
+      |                                                                            ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:996:78: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  996 |     st = dc_json_get_int64_opt(val, "default_sort_order", &default_sort_i64, 0);
+      |                                                                              ^
+/home/max/DcChamb/fishydslib/http/dc_http.c: In function 'dc_http_request_set_json_body':
+/home/max/DcChamb/fishydslib/http/dc_http.c:274:60: warning: passing argument 2 of 'dc_http_validate_json_body' with different width due to prototype [-Wtraditional-conversion]
+  274 |     dc_status_t st = dc_http_validate_json_body(json_body, 0);
+      |                                                            ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1004:82: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 1004 |     st = dc_json_get_int64_opt(val, "default_forum_layout", &default_layout_i64, 0);
+      |                                                                                  ^
+/home/max/DcChamb/fishydslib/http/dc_http.c: In function 'dc_http_header_cb':
+/home/max/DcChamb/fishydslib/http/dc_http.c:305:50: warning: passing argument 3 of 'memcmp' with different width due to prototype [-Wtraditional-conversion]
+  305 |     if ((total >= 5) && (memcmp(buffer, "HTTP/", 5) == 0)) return total;
+      |                                                  ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_message_reference_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1019:68: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 1019 |     dc_status_t st = dc_json_get_int64_opt(val, "type", &type_i64, 0);
+      |                                                                    ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_reaction_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1044:70: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 1044 |     dc_status_t st = dc_json_get_int64_opt(val, "count", &count_i64, 0);
+      |                                                                      ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1059:76: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 1059 |         st = dc_json_get_int64_opt(count_details_val, "burst", &burst_i64, 0);
+      |                                                                            ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1061:78: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 1061 |         st = dc_json_get_int64_opt(count_details_val, "normal", &normal_i64, 0);
+      |                                                                              ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_message_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1302:56: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 1302 |     st = dc_json_get_int64_opt(val, "type", &type_i64, 0);
+      |                                                        ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1309:58: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 1309 |     st = dc_json_get_int64_opt(val, "flags", &flags_i64, 0);
+      |                                                          ^
+/home/max/DcChamb/fishydslib/http/dc_http_compliance.c: In function 'dc_http_append_query_bool':
+/home/max/DcChamb/fishydslib/http/dc_http_compliance.c:185:55: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  185 |         dc_status_t st = dc_string_append_char(query, (char)'?');
+      |                                                       ^~~~~~~~~
+/home/max/DcChamb/fishydslib/http/dc_http_compliance.c:188:55: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  188 |         dc_status_t st = dc_string_append_char(query, (char)'&');
+      |                                                       ^~~~~~~~~
+/home/max/DcChamb/fishydslib/http/dc_http_compliance.c:194:39: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  194 |     st = dc_string_append_char(query, (char)'=');
+      |                                       ^~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_mut_add_forum_tags':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1646:86: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+ 1646 |         const dc_channel_forum_tag_t* tag = (const dc_channel_forum_tag_t*)dc_vec_at((dc_vec_t*)tags, i);
+      |                                                                                      ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_mut_add_snowflake_array':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1673:69: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+ 1673 |         const dc_snowflake_t* sf = (const dc_snowflake_t*)dc_vec_at((dc_vec_t*)arr_values, i);
+      |                                                                     ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_mut_add_thread_metadata':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1716:76: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 1716 |     st = dc_json_mut_set_int64(doc, meta_obj, "auto_archive_duration", meta->auto_archive_duration);
+      |                                                                        ~~~~^~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/client/dc_client.c: In function 'dc_client_snowflake_to_buf':
+/home/max/DcChamb/fishydslib/client/dc_client.c:525:42: warning: passing argument 3 of 'dc_snowflake_to_cstr' with different width due to prototype [-Wtraditional-conversion]
+  525 |     return dc_snowflake_to_cstr(id, out, 32);
+      |                                          ^~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_role_to_mut':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:1945:58: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 1945 |     st = dc_json_mut_set_int64(doc, obj, "position", role->position);
+      |                                                      ~~~~^~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_channel_to_mut':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2020:65: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2020 |         st = dc_json_mut_set_int64(doc, obj, "position", channel->position);
+      |                                                          ~~~~~~~^~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2028:64: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2028 |         st = dc_json_mut_set_int64(doc, obj, "bitrate", channel->bitrate);
+      |                                                         ~~~~~~~^~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2032:67: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2032 |         st = dc_json_mut_set_int64(doc, obj, "user_limit", channel->user_limit);
+      |                                                            ~~~~~~~^~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2036:76: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2036 |         st = dc_json_mut_set_int64(doc, obj, "rate_limit_per_user", channel->rate_limit_per_user);
+      |                                                                     ~~~~~~~^~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2040:86: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2040 |         st = dc_json_mut_set_int64(doc, obj, "default_auto_archive_duration", channel->default_auto_archive_duration);
+      |                                                                               ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2045:43: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2045 |                                    channel->default_thread_rate_limit_per_user);
+      |                                    ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2049:75: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2049 |         st = dc_json_mut_set_int64(doc, obj, "video_quality_mode", channel->video_quality_mode);
+      |                                                                    ~~~~~~~^~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2053:70: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2053 |         st = dc_json_mut_set_int64(doc, obj, "message_count", channel->message_count);
+      |                                                               ~~~~~~~^~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2057:69: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2057 |         st = dc_json_mut_set_int64(doc, obj, "member_count", channel->member_count);
+      |                                                              ~~~~~~~^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2065:75: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2065 |         st = dc_json_mut_set_int64(doc, obj, "total_message_sent", channel->total_message_sent);
+      |                                                                    ~~~~~~~^~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2089:75: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2089 |         st = dc_json_mut_set_int64(doc, obj, "default_sort_order", channel->default_sort_order);
+      |                                                                    ~~~~~~~^~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2093:77: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2093 |         st = dc_json_mut_set_int64(doc, obj, "default_forum_layout", channel->default_forum_layout);
+      |                                                                      ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_embed_image_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2501:46: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 2501 |     dc_json_get_int64_opt(val, "height", &h, 0);
+      |                                              ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2502:45: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 2502 |     dc_json_get_int64_opt(val, "width", &w, 0);
+      |                                             ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_embed_thumbnail_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2520:46: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 2520 |     dc_json_get_int64_opt(val, "height", &h, 0);
+      |                                              ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2521:45: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 2521 |     dc_json_get_int64_opt(val, "width", &w, 0);
+      |                                             ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_embed_video_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2535:46: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 2535 |     dc_json_get_int64_opt(val, "height", &h, 0);
+      |                                              ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2536:45: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 2536 |     dc_json_get_int64_opt(val, "width", &w, 0);
+      |                                             ^
+/home/max/DcChamb/fishydslib/json/dc_json_model.c: In function 'dc_json_model_embed_from_val':
+/home/max/DcChamb/fishydslib/json/dc_json_model.c:2603:54: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+ 2603 |     st = dc_json_get_int64_opt(val, "color", &color, 0);
+      |                                                      ^
+/home/max/DcChamb/fishydslib/client/dc_client.c: In function 'dc_client_create_command_simple':
+/home/max/DcChamb/fishydslib/client/dc_client.c:5968:51: warning: passing argument 4 of 'yyjson_mut_obj_add_int' with different width due to prototype [-Wtraditional-conversion]
+ 5968 |     yyjson_mut_obj_add_int(doc.doc, root, "type", 1);
+      |                                                   ^
+/home/max/DcChamb/fishydslib/client/dc_client.c:5972:50: warning: passing argument 4 of 'yyjson_mut_obj_add_int' with different width due to prototype [-Wtraditional-conversion]
+ 5972 |     yyjson_mut_obj_add_int(doc.doc, opt, "type", 3);
+      |                                                  ^
+/home/max/DcChamb/fishydslib/client/dc_client.c:5975:75: warning: passing argument 4 of 'yyjson_mut_obj_add_bool' with different width due to prototype [-Wtraditional-conversion]
+ 5975 |     yyjson_mut_obj_add_bool(doc.doc, opt, "required", option_required ? 1 : 0);
+      |                                                       ~~~~~~~~~~~~~~~~~~~~^~~
+/home/max/DcChamb/fishydslib/client/dc_client.c: In function 'dc_client_create_context_command_simple':
+/home/max/DcChamb/fishydslib/client/dc_client.c:6068:51: warning: passing argument 4 of 'yyjson_mut_obj_add_int' with different width due to prototype [-Wtraditional-conversion]
+ 6068 |     yyjson_mut_obj_add_int(doc.doc, root, "type", command_type);
+      |                                                   ^~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/http/dc_http.c: In function 'dc_http_client_execute':
+/home/max/DcChamb/fishydslib/http/dc_http.c:425:60: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+  425 |         dc_http_header_t* h = (dc_http_header_t*)dc_vec_at((dc_vec_t*)&request->headers, i);
+      |                                                            ^
+/home/max/DcChamb/fishydslib/http/dc_http.c: In function 'dc_http_response_get_header':
+/home/max/DcChamb/fishydslib/http/dc_http.c:485:60: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+  485 |         dc_http_header_t* h = (dc_http_header_t*)dc_vec_at((dc_vec_t*)&response->headers, i);
+      |                                                            ^
+/home/max/DcChamb/fishydslib/http/dc_http.c: In function 'dc_http_response_parse_rate_limit':
+/home/max/DcChamb/fishydslib/http/dc_http.c:501:69: warning: cast discards 'const' qualifier from pointer target type [-Wcast-qual]
+  501 |     return dc_http_rate_limit_parse(dc_http_response_get_header_cb, (void*)response, rl);
+      |                                                                     ^
+/home/max/DcChamb/fishydslib/client/dc_client.c: At top level:
+/home/max/DcChamb/fishydslib/client/dc_client.c:56:20: warning: 'dc_client_i64_to_u32' defined but not used [-Wunused-function]
+   56 | static dc_status_t dc_client_i64_to_u32(int64_t val, uint32_t* out) {
+      |                    ^~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c: In function 'dc_gateway_schedule_reconnect':
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:155:58: warning: conversion to 'uint32_t' {aka 'unsigned int'} from 'int' may change the sign of the result [-Wsign-conversion]
+  155 |     uint32_t jitter_add = jitter > 0 ? (uint32_t)(rand() % (jitter + 1u)) : 0u;
+      |                                                          ^
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c: In function 'dc_gateway_build_voice_state_payload':
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:540:54: warning: passing argument 4 of 'yyjson_mut_obj_add_bool' with different width due to prototype [-Wtraditional-conversion]
+  540 |     yyjson_mut_obj_add_bool(doc.doc, d, "self_mute", (bool)(self_mute != 0));
+      |                                                      ^~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:541:54: warning: passing argument 4 of 'yyjson_mut_obj_add_bool' with different width due to prototype [-Wtraditional-conversion]
+  541 |     yyjson_mut_obj_add_bool(doc.doc, d, "self_deaf", (bool)(self_deaf != 0));
+      |                                                      ^~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c: In function 'dc_gateway_client_create':
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:29:35: warning: passing argument 2 of 'dc_string_reserve' with different width due to prototype [-Wtraditional-conversion]
+   29 | #define DC_GATEWAY_RX_INITIAL_CAP 8192u
+      |                                   ^~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:1124:40: note: in expansion of macro 'DC_GATEWAY_RX_INITIAL_CAP'
+ 1124 |     st = dc_string_reserve(&c->rx_buf, DC_GATEWAY_RX_INITIAL_CAP);
+      |                                        ^~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:30:43: warning: passing argument 2 of 'dc_string_reserve' with different width due to prototype [-Wtraditional-conversion]
+   30 | #define DC_GATEWAY_COMPRESSED_INITIAL_CAP 8192u
+      |                                           ^~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:1129:48: note: in expansion of macro 'DC_GATEWAY_COMPRESSED_INITIAL_CAP'
+ 1129 |     st = dc_string_reserve(&c->compressed_buf, DC_GATEWAY_COMPRESSED_INITIAL_CAP);
+      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:31:38: warning: passing argument 2 of 'dc_string_reserve' with different width due to prototype [-Wtraditional-conversion]
+   31 | #define DC_GATEWAY_EVENT_INITIAL_CAP 4096u
+      |                                      ^~~~~
+/home/max/DcChamb/fishydslib/gw/dc_gateway.c:1134:43: note: in expansion of macro 'DC_GATEWAY_EVENT_INITIAL_CAP'
+ 1134 |     st = dc_string_reserve(&c->event_buf, DC_GATEWAY_EVENT_INITIAL_CAP);
+      |                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 35%] Linking C static library libdiscordc.a
+[ 35%] Built target discordc
+[ 37%] Building CXX object benchmarks/CMakeFiles/bench_core.dir/bench_core.cc.o
+[ 39%] Building CXX object benchmarks/CMakeFiles/bench_format_opt.dir/bench_format.cc.o
+[ 40%] Building C object examples/CMakeFiles/simple_bot.dir/simple_bot.c.o
+[ 37%] Building C object examples/CMakeFiles/simple_bot_2.dir/simple_bot_2.c.o
+[ 41%] Building CXX object benchmarks/CMakeFiles/bench_gateway_opt.dir/bench_gateway.cc.o
+[ 42%] Building CXX object benchmarks/CMakeFiles/bench_http_opt.dir/bench_http.cc.o
+[ 43%] Building C object examples/CMakeFiles/upd_simple_bot.dir/upd_simple_bot.c.o
+[ 44%] Building C object examples/CMakeFiles/economy_bot.dir/economy_bot.c.o
+[ 44%] Building CXX object benchmarks/CMakeFiles/bench_cdn.dir/bench_cdn.cc.o
+[ 44%] Building CXX object benchmarks/CMakeFiles/bench_format.dir/bench_format.cc.o
+[ 45%] Building C object tests/CMakeFiles/test_utils.dir/test_utils.c.o
+[ 47%] Building CXX object benchmarks/CMakeFiles/bench_cdn_opt.dir/bench_cdn.cc.o
+[ 47%] Building CXX object benchmarks/CMakeFiles/bench_json_opt.dir/bench_json.cc.o
+[ 47%] Building CXX object benchmarks/CMakeFiles/bench_http.dir/bench_http.cc.o
+[ 48%] Building CXX object benchmarks/CMakeFiles/bench_gateway.dir/bench_gateway.cc.o
+cc1plus: warning: command-line option '-Wtraditional-conversion' is valid for C/ObjC but not for C++
+[ 49%] Building CXX object benchmarks/CMakeFiles/bench_core_opt.dir/bench_core.cc.o
+cc1plus: warning: command-line option '-Wtraditional-conversion' is valid for C/ObjC but not for C++
+cc1plus: warning: command-line option '-Wtraditional-conversion' is valid for C/ObjC but not for C++
+[ 49%] Building CXX object benchmarks/CMakeFiles/bench_multipart.dir/bench_multipart.cc.o
+cc1plus: warning: command-line option '-Wtraditional-conversion' is valid for C/ObjC but not for C++
+[ 39%] Building CXX object benchmarks/CMakeFiles/bench_multipart_opt.dir/bench_multipart.cc.o
+[ 51%] Building C object examples/CMakeFiles/simple_bot_3.dir/simple_bot_3.c.o
+[ 51%] Building CXX object benchmarks/CMakeFiles/bench_json.dir/bench_json.cc.o
+cc1plus: warning: command-line option '-Wtraditional-conversion' is valid for C/ObjC but not for C++
+cc1plus: warning: command-line option '-Wtraditional-conversion' is valid for C/ObjC but not for C++
+cc1plus: warning: command-line option '-Wtraditional-conversion' is valid for C/ObjC but not for C++
+[ 52%] Linking C static library libtest_utils.a
+/home/max/DcChamb/fishydslib/examples/simple_bot_2.c: In function 'bot2_build_env_paths':
+/home/max/DcChamb/fishydslib/examples/simple_bot_2.c:42:48: warning: '%.*s' directive output may be truncated writing up to 52 bytes into a region of size 1 [-Wformat-truncation=]
+   42 |     int n1 = snprintf(env_path, env_path_len, "%.*s/.env", (int)dir_len, src_file);
+      |                                                ^~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot_2.c:42:14: note: 'snprintf' output between 6 and 58 bytes into a destination of size 1
+   42 |     int n1 = snprintf(env_path, env_path_len, "%.*s/.env", (int)dir_len, src_file);
+      |              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot_2.c:45:54: warning: '%.*s' directive output may be truncated writing up to 52 bytes into a region of size 1 [-Wformat-truncation=]
+   45 |     int n2 = snprintf(env_ex_path, env_ex_path_len, "%.*s/.env.ex", (int)dir_len, src_file);
+      |                                                      ^~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot_2.c:45:14: note: 'snprintf' output between 9 and 61 bytes into a destination of size 1
+   45 |     int n2 = snprintf(env_ex_path, env_ex_path_len, "%.*s/.env.ex", (int)dir_len, src_file);
+      |              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'get_cpu_cores':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:136:40: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  136 |         if (strncmp(line, "processor", 9) == 0) {
+      |                                        ^
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c: In function 'cmd_profile':
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1336:40: warning: passing argument 2 of 'dc_user_get_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1336 |     st = dc_user_get_avatar_url(&user, (uint16_t)1024, "png", &avatar_url);
+      |                                        ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1338:47: warning: passing argument 2 of 'dc_user_get_default_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1338 |         dc_user_get_default_avatar_url(&user, (uint16_t)256, &avatar_url);
+      |                                               ^~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1343:35: warning: passing argument 2 of 'dc_user_get_banner_url' with different width due to prototype [-Wtraditional-conversion]
+ 1343 |     dc_user_get_banner_url(&user, (uint16_t)1024, "png", &banner_url);
+      |                                   ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'get_cpu_temp_c':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:153:50: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  153 |         if (strncmp(ent->d_name, "thermal_zone", 12) != 0) continue;
+      |                                                  ^~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:158:40: warning: conversion from 'long int' to 'double' may change value [-Wconversion]
+  158 |         double c = (val > 1000) ? (val / 1000.0) : (double)val;
+      |                                        ^
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c: In function 'cmd_pfp':
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1515:39: warning: passing argument 2 of 'dc_user_get_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1515 |         dc_user_get_avatar_url(&user, (uint16_t)128,  fmt, &url_128);
+      |                                       ^~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1516:39: warning: passing argument 2 of 'dc_user_get_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1516 |         dc_user_get_avatar_url(&user, (uint16_t)512,  fmt, &url_512);
+      |                                       ^~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1517:39: warning: passing argument 2 of 'dc_user_get_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1517 |         dc_user_get_avatar_url(&user, (uint16_t)1024, fmt, &url_1024);
+      |                                       ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1518:39: warning: passing argument 2 of 'dc_user_get_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1518 |         dc_user_get_avatar_url(&user, (uint16_t)4096, fmt, &url_4096);
+      |                                       ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1520:47: warning: passing argument 2 of 'dc_user_get_default_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1520 |         dc_user_get_default_avatar_url(&user, (uint16_t)128,  &url_128);
+      |                                               ^~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1521:47: warning: passing argument 2 of 'dc_user_get_default_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1521 |         dc_user_get_default_avatar_url(&user, (uint16_t)256,  &url_512);
+      |                                               ^~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1522:47: warning: passing argument 2 of 'dc_user_get_default_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1522 |         dc_user_get_default_avatar_url(&user, (uint16_t)256,  &url_1024);
+      |                                               ^~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/upd_simple_bot.c:1523:47: warning: passing argument 2 of 'dc_user_get_default_avatar_url' with different width due to prototype [-Wtraditional-conversion]
+ 1523 |         dc_user_get_default_avatar_url(&user, (uint16_t)256,  &url_4096);
+      |                                               ^~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'run_bench_format':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:294:33: warning: passing argument 1 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+  294 |         if (dc_format_timestamp(1700000000, 'R', &out) != DC_OK) break;
+      |                                 ^~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:294:45: warning: passing argument 2 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+  294 |         if (dc_format_timestamp(1700000000, 'R', &out) != DC_OK) break;
+      |                                             ^~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'run_bench_string':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:311:35: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+  311 |         dc_string_append_char(&s, ' ');
+      |                                   ^~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'handle_interaction_wrmess':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:726:60: warning: passing argument 4 of 'dc_json_get_int64_opt' with different width due to prototype [-Wtraditional-conversion]
+  726 |     if (dc_json_get_int64_opt(doc.root, "type", &type_i64, 0) != DC_OK) {
+      |                                                            ^
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:765:51: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  765 |         yyjson_val* opt = yyjson_arr_get(options, 0);
+      |                                                   ^
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'cmd_components2_demo':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:1119:9: warning: string length '4148' is greater than the length '4095' ISO C99 compilers are required to support [-Woverlength-strings]
+ 1119 |         "}";
+      |         ^~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'cmd_guildmkchan':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:2697:70: warning: passing argument 4 of 'dc_json_mut_set_int64' with different width due to prototype [-Wtraditional-conversion]
+ 2697 |         st = dc_json_mut_set_int64(&body_doc, body_doc.root, "type", 0);
+      |                                                                      ^
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'dispatch_command_event_async':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:3327:56: warning: passing argument 1 of 'calloc' with different width due to prototype [-Wtraditional-conversion]
+ 3327 |     bot_async_task_t* task = (bot_async_task_t*)calloc(1, sizeof(bot_async_task_t));
+      |                                                        ^
+[ 52%] Built target test_utils
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'get_cpu_model':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:117:35: warning: 'snprintf' output may be truncated before the last format character [-Wformat-truncation=]
+  117 |         snprintf(out, out_len, "%s", val);
+      |                                   ^
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:117:9: note: 'snprintf' output 1 or more bytes (assuming 2) into a destination of size 1
+  117 |         snprintf(out, out_len, "%s", val);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'parse_bench_args':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:215:43: warning: 'all' directive output truncated writing 3 bytes into a region of size 1 [-Wformat-truncation=]
+  215 |         snprintf(bench_name, bench_len, "all");
+      |                                          ~^~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:215:9: note: 'snprintf' output 4 bytes into a destination of size 1
+  215 |         snprintf(bench_name, bench_len, "all");
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'send_bench_output':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:403:26: warning: '%.*s' directive output may be truncated writing up to 2147483647 bytes into a region of size between 2005 and 2022 [-Wformat-truncation=]
+  403 |                          "**Benchrun** `%s` (%zu/%zu)\n"
+      |                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:404:32: note: format string is defined here
+  404 |                          "```\n%.*s\n```\n",
+      |                                ^~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:403:26: note: assuming directive output of 1 byte
+  403 |                          "**Benchrun** `%s` (%zu/%zu)\n"
+      |                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:402:17: note: 'snprintf' output 32 or more bytes (assuming 50) into a destination of size 2048
+  402 |         int n = snprintf(response, sizeof(response),
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  403 |                          "**Benchrun** `%s` (%zu/%zu)\n"
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  404 |                          "```\n%.*s\n```\n",
+      |                          ~~~~~~~~~~~~~~~~~~~
+  405 |                          name,
+      |                          ~~~~~
+  406 |                          part,
+      |                          ~~~~~
+  407 |                          total_parts,
+      |                          ~~~~~~~~~~~~
+  408 |                          (int)chunk_len,
+      |                          ~~~~~~~~~~~~~~~
+  409 |                          data + offset);
+      |                          ~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c: In function 'cmd_data':
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:795:18: warning: '%.1f' directive output may be truncated writing between 3 and 312 bytes into a region of size between 191 and 456 [-Wformat-truncation=]
+  795 |                  "**System Stats**\n"
+      |                  ^~~~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:798:31: note: format string is defined here
+  798 |                  "> **Temp:** %.1f C\n",
+      |                               ^~~~
+/home/max/DcChamb/fishydslib/examples/simple_bot.c:794:9: note: 'snprintf' output between 63 and 637 bytes into a destination of size 512
+  794 |         snprintf(response, sizeof(response),
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  795 |                  "**System Stats**\n"
+      |                  ~~~~~~~~~~~~~~~~~~~~
+  796 |                  "> **CPU:** %s\n"
+      |                  ~~~~~~~~~~~~~~~~~
+  797 |                  "> **Cores:** %d\n"
+      |                  ~~~~~~~~~~~~~~~~~~~
+  798 |                  "> **Temp:** %.1f C\n",
+      |                  ~~~~~~~~~~~~~~~~~~~~~~~
+  799 |                  cpu_model,
+      |                  ~~~~~~~~~~
+  800 |                  cores,
+      |                  ~~~~~~
+  801 |                  temp_c);
+      |                  ~~~~~~~
+[ 53%] Building C object tests/CMakeFiles/test_json.dir/test_json.c.o
+[ 54%] Linking C executable simple_bot_2
+[ 56%] Building C object tests/CMakeFiles/test_gateway.dir/test_gateway_main.c.o
+[ 57%] Building C object tests/CMakeFiles/test_core.dir/test_core_main.c.o
+[ 57%] Building C object tests/CMakeFiles/test_core.dir/test_attachments.c.o
+[ 59%] Building C object tests/CMakeFiles/test_http.dir/test_http_main.c.o
+[ 60%] Building C object tests/CMakeFiles/test_client_api.dir/test_client_api.c.o
+[ 61%] Building C object tests/CMakeFiles/test_core.dir/test_optional.c.o
+[ 61%] Building C object tests/CMakeFiles/test_core.dir/test_vec.c.o
+[ 62%] Building C object tests/CMakeFiles/test_core.dir/test_string.c.o
+[ 63%] Building C object tests/CMakeFiles/test_events_expansion.dir/test_events_expansion_main.c.o
+[ 64%] Building C object tests/CMakeFiles/test_http.dir/test_multipart.c.o
+[ 65%] Building C object tests/CMakeFiles/test_core.dir/test_allowed_mentions.c.o
+[ 65%] Building C object tests/CMakeFiles/test_gateway.dir/test_gateway.c.o
+[ 66%] Building C object tests/CMakeFiles/test_core.dir/test_format.c.o
+[ 67%] Building C object tests/CMakeFiles/test_core.dir/test_snowflake.c.o
+[ 69%] Building C object tests/CMakeFiles/test_rest.dir/test_rest.c.o
+[ 69%] Building C object tests/CMakeFiles/test_core.dir/test_cdn.c.o
+In file included from /home/max/DcChamb/fishydslib/tests/test_attachments.c:6:
+/home/max/DcChamb/fishydslib/tests/test_attachments.c: In function 'test_attachments_main':
+[ 69%] Building C object tests/CMakeFiles/test_json.dir/test_json_main.c.o
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:26:45: warning: passing argument 1 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   26 |     TEST_ASSERT(dc_attachment_size_is_valid(10, 100), "size valid");
+      |                                             ^~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:26:5: note: in expansion of macro 'TEST_ASSERT'
+   26 |     TEST_ASSERT(dc_attachment_size_is_valid(10, 100), "size valid");
+      |     ^~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:26:49: warning: passing argument 2 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   26 |     TEST_ASSERT(dc_attachment_size_is_valid(10, 100), "size valid");
+      |                                                 ^~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:26:5: note: in expansion of macro 'TEST_ASSERT'
+   26 |     TEST_ASSERT(dc_attachment_size_is_valid(10, 100), "size valid");
+      |     ^~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:27:45: warning: passing argument 1 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   27 |     TEST_ASSERT(dc_attachment_size_is_valid(0, 100), "size zero valid");
+      |                                             ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:27:48: warning: passing argument 2 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   27 |     TEST_ASSERT(dc_attachment_size_is_valid(0, 100), "size zero valid");
+      |                                                ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:28:46: warning: passing argument 1 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   28 |     TEST_ASSERT(!dc_attachment_size_is_valid(200, 100), "size too large invalid");
+      |                                              ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:28:51: warning: passing argument 2 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   28 |     TEST_ASSERT(!dc_attachment_size_is_valid(200, 100), "size too large invalid");
+      |                                                   ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:29:45: warning: passing argument 1 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   29 |     TEST_ASSERT(dc_attachment_size_is_valid(200, 0), "size unlimited valid");
+      |                                             ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+[ 70%] Building C object tests/CMakeFiles/test_core.dir/test_alloc.c.o
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:29:50: warning: passing argument 2 of 'dc_attachment_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   29 |     TEST_ASSERT(dc_attachment_size_is_valid(200, 0), "size unlimited valid");
+      |                                                  ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:31:51: warning: passing argument 1 of 'dc_attachment_total_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   31 |     TEST_ASSERT(dc_attachment_total_size_is_valid(100, 1000), "total size valid");
+      |                                                   ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:31:56: warning: passing argument 2 of 'dc_attachment_total_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   31 |     TEST_ASSERT(dc_attachment_total_size_is_valid(100, 1000), "total size valid");
+      |                                                        ^~~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:32:52: warning: passing argument 1 of 'dc_attachment_total_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   32 |     TEST_ASSERT(!dc_attachment_total_size_is_valid(2000, 1000), "total size too large");
+      |                                                    ^~~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:32:58: warning: passing argument 2 of 'dc_attachment_total_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   32 |     TEST_ASSERT(!dc_attachment_total_size_is_valid(2000, 1000), "total size too large");
+      |                                                          ^~~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:33:51: warning: passing argument 1 of 'dc_attachment_total_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   33 |     TEST_ASSERT(dc_attachment_total_size_is_valid(2000, 0), "total size unlimited");
+      |                                                   ^~~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_attachments.c:33:57: warning: passing argument 2 of 'dc_attachment_total_size_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   33 |     TEST_ASSERT(dc_attachment_total_size_is_valid(2000, 0), "total size unlimited");
+      |                                                         ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+In file included from /home/max/DcChamb/fishydslib/tests/test_string.c:6:
+/home/max/DcChamb/fishydslib/tests/test_string.c: In function 'test_string_main':
+/home/max/DcChamb/fishydslib/tests/test_string.c:21:55: warning: passing argument 2 of 'dc_string_append_char' with different width due to prototype [-Wtraditional-conversion]
+   21 |     TEST_ASSERT_EQ(DC_OK, dc_string_append_char(&str, ' '), "append char");
+      |                                                       ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_string.c:21:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   21 |     TEST_ASSERT_EQ(DC_OK, dc_string_append_char(&str, ' '), "append char");
+      |     ^~~~~~~~~~~~~~
+[ 55%] Building C object tests/CMakeFiles/test_http.dir/test_http.c.o
+[ 73%] Building C object tests/CMakeFiles/test_core.dir/test_status.c.o
+[ 73%] Building C object tests/CMakeFiles/test_core.dir/test_permissions.c.o
+[ 74%] Building C object tests/CMakeFiles/test_core.dir/test_env.c.o
+[ 75%] Building C object tests/CMakeFiles/test_rest.dir/test_rest_main.c.o
+[ 75%] Building C object tests/CMakeFiles/test_core.dir/test_data_uri.c.o
+[ 58%] Building C object tests/CMakeFiles/test_core.dir/test_time.c.o
+[ 55%] Building C object tests/CMakeFiles/test_events_expansion.dir/test_events_expansion.c.o
+In file included from /home/max/DcChamb/fishydslib/tests/test_status.c:6:
+/home/max/DcChamb/fishydslib/tests/test_status.c: In function 'test_status_from_http':
+/home/max/DcChamb/fishydslib/tests/test_status.c:27:47: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   27 |     TEST_ASSERT_EQ(DC_OK, dc_status_from_http(200), "HTTP 200 OK");
+      |                                               ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:27:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   27 |     TEST_ASSERT_EQ(DC_OK, dc_status_from_http(200), "HTTP 200 OK");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:28:63: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   28 |     TEST_ASSERT_EQ(DC_ERROR_NOT_MODIFIED, dc_status_from_http(304), "HTTP 304 not modified");
+      |                                                               ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:28:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   28 |     TEST_ASSERT_EQ(DC_ERROR_NOT_MODIFIED, dc_status_from_http(304), "HTTP 304 not modified");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:29:62: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   29 |     TEST_ASSERT_EQ(DC_ERROR_BAD_REQUEST, dc_status_from_http(400), "HTTP 400 bad request");
+      |                                                              ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:29:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   29 |     TEST_ASSERT_EQ(DC_ERROR_BAD_REQUEST, dc_status_from_http(400), "HTTP 400 bad request");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:30:63: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   30 |     TEST_ASSERT_EQ(DC_ERROR_UNAUTHORIZED, dc_status_from_http(401), "HTTP 401 unauthorized");
+      |                                                               ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:30:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   30 |     TEST_ASSERT_EQ(DC_ERROR_UNAUTHORIZED, dc_status_from_http(401), "HTTP 401 unauthorized");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:31:60: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   31 |     TEST_ASSERT_EQ(DC_ERROR_FORBIDDEN, dc_status_from_http(403), "HTTP 403 forbidden");
+      |                                                            ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:31:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   31 |     TEST_ASSERT_EQ(DC_ERROR_FORBIDDEN, dc_status_from_http(403), "HTTP 403 forbidden");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:32:60: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   32 |     TEST_ASSERT_EQ(DC_ERROR_NOT_FOUND, dc_status_from_http(404), "HTTP 404 not found");
+      |                                                            ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:32:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   32 |     TEST_ASSERT_EQ(DC_ERROR_NOT_FOUND, dc_status_from_http(404), "HTTP 404 not found");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:33:69: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   33 |     TEST_ASSERT_EQ(DC_ERROR_METHOD_NOT_ALLOWED, dc_status_from_http(405), "HTTP 405 method not allowed");
+      |                                                                     ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:33:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   33 |     TEST_ASSERT_EQ(DC_ERROR_METHOD_NOT_ALLOWED, dc_status_from_http(405), "HTTP 405 method not allowed");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:34:63: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   34 |     TEST_ASSERT_EQ(DC_ERROR_RATE_LIMITED, dc_status_from_http(429), "HTTP 429 rate limited");
+      |                                                               ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:34:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   34 |     TEST_ASSERT_EQ(DC_ERROR_RATE_LIMITED, dc_status_from_http(429), "HTTP 429 rate limited");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:35:62: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   35 |     TEST_ASSERT_EQ(DC_ERROR_UNAVAILABLE, dc_status_from_http(502), "HTTP 502 unavailable");
+      |                                                              ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:35:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   35 |     TEST_ASSERT_EQ(DC_ERROR_UNAVAILABLE, dc_status_from_http(502), "HTTP 502 unavailable");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:36:57: warning: passing argument 1 of 'dc_status_from_http' with different width due to prototype [-Wtraditional-conversion]
+   36 |     TEST_ASSERT_EQ(DC_ERROR_SERVER, dc_status_from_http(500), "HTTP 500 server error");
+      |                                                         ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_status.c:36:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   36 |     TEST_ASSERT_EQ(DC_ERROR_SERVER, dc_status_from_http(500), "HTTP 500 server error");
+      |     ^~~~~~~~~~~~~~
+In file included from /home/max/DcChamb/fishydslib/tests/test_http.c:6:
+/home/max/DcChamb/fishydslib/tests/test_http.c: In function 'test_http_main':
+/home/max/DcChamb/fishydslib/tests/test_http.c:127:57: warning: passing argument 2 of 'dc_http_error_parse' with different width due to prototype [-Wtraditional-conversion]
+  127 |     TEST_ASSERT_EQ(DC_OK, dc_http_error_parse(err_json, 0, &err), "parse error");
+      |                                                         ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_http.c:127:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+  127 |     TEST_ASSERT_EQ(DC_OK, dc_http_error_parse(err_json, 0, &err), "parse error");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_http.c:134:67: warning: passing argument 2 of 'dc_http_validate_json_body' with different width due to prototype [-Wtraditional-conversion]
+  134 |     TEST_ASSERT_EQ(DC_OK, dc_http_validate_json_body("{\"a\":1}", 0), "validate json ok");
+      |                                                                   ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_http.c:134:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+  134 |     TEST_ASSERT_EQ(DC_OK, dc_http_validate_json_body("{\"a\":1}", 0), "validate json ok");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_http.c:135:66: warning: passing argument 2 of 'dc_http_validate_json_body' with different width due to prototype [-Wtraditional-conversion]
+  135 |     TEST_ASSERT_NEQ(DC_OK, dc_http_validate_json_body("{\"a\":", 0), "validate json invalid");
+      |                                                                  ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_http.c:135:5: note: in expansion of macro 'TEST_ASSERT_NEQ'
+  135 |     TEST_ASSERT_NEQ(DC_OK, dc_http_validate_json_body("{\"a\":", 0), "validate json invalid");
+      |     ^~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_http.c:182:70: warning: passing argument 2 of 'dc_http_rate_limit_response_parse' with different width due to prototype [-Wtraditional-conversion]
+  182 |     TEST_ASSERT_EQ(DC_OK, dc_http_rate_limit_response_parse(rl_json, 0, &rlr), "parse rl response");
+      |                                                                      ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_http.c:182:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+  182 |     TEST_ASSERT_EQ(DC_OK, dc_http_rate_limit_response_parse(rl_json, 0, &rlr), "parse rl response");
+      |     ^~~~~~~~~~~~~~
+In file included from /home/max/DcChamb/fishydslib/tests/test_rest.c:9:
+/home/max/DcChamb/fishydslib/tests/test_rest.c: In function 'test_rest_auth_header_injection':
+/home/max/DcChamb/fishydslib/tests/test_rest.c:500:68: warning: passing argument 3 of 'strncmp' with different width due to prototype [-Wtraditional-conversion]
+  500 |             TEST_ASSERT(strncmp(dc_string_cstr(&h->value), "Bot ", 4) == 0,
+      |                                                                    ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+In file included from /home/max/DcChamb/fishydslib/tests/test_format.c:6:
+/home/max/DcChamb/fishydslib/tests/test_format.c: In function 'test_format_main':
+/home/max/DcChamb/fishydslib/tests/test_format.c:15:50: warning: passing argument 1 of 'dc_format_mention_user' with different width due to prototype [-Wtraditional-conversion]
+   15 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_user(123, &out), "mention user");
+      |                                                  ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:15:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   15 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_user(123, &out), "mention user");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:18:55: warning: passing argument 1 of 'dc_format_mention_user_nick' with different width due to prototype [-Wtraditional-conversion]
+   18 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_user_nick(123, &out), "mention user nick");
+      |                                                       ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:18:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   18 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_user_nick(123, &out), "mention user nick");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:21:53: warning: passing argument 1 of 'dc_format_mention_channel' with different width due to prototype [-Wtraditional-conversion]
+   21 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_channel(456, &out), "mention channel");
+      |                                                     ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:21:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   21 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_channel(456, &out), "mention channel");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:24:50: warning: passing argument 1 of 'dc_format_mention_role' with different width due to prototype [-Wtraditional-conversion]
+   24 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_role(789, &out), "mention role");
+      |                                                  ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:24:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   24 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_role(789, &out), "mention role");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:27:67: warning: passing argument 1 of 'dc_format_mention_user' with different width due to prototype [-Wtraditional-conversion]
+   27 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_format_mention_user(0, &out), "mention invalid id");
+      |                                                                   ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:27:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   27 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_format_mention_user(0, &out), "mention invalid id");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:29:67: warning: passing argument 2 of 'dc_format_slash_command_mention' with different width due to prototype [-Wtraditional-conversion]
+   29 |     TEST_ASSERT_EQ(DC_OK, dc_format_slash_command_mention("ping", 42, &out), "slash mention");
+      |                                                                   ^~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:29:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   29 |     TEST_ASSERT_EQ(DC_OK, dc_format_slash_command_mention("ping", 42, &out), "slash mention");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:31:72: warning: passing argument 2 of 'dc_format_slash_command_mention' with different width due to prototype [-Wtraditional-conversion]
+   31 |     TEST_ASSERT_EQ(DC_OK, dc_format_slash_command_mention("ping pong", 42, &out), "slash mention space");
+      |                                                                        ^~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:31:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   31 |     TEST_ASSERT_EQ(DC_OK, dc_format_slash_command_mention("ping pong", 42, &out), "slash mention space");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:35:64: warning: passing argument 2 of 'dc_format_slash_command_mention' with different width due to prototype [-Wtraditional-conversion]
+   35 |                    dc_format_slash_command_mention("bad:name", 42, &out),
+      |                                                                ^~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:34:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   34 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM,
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:38:52: warning: passing argument 1 of 'dc_format_timestamp_style_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   38 |     TEST_ASSERT(dc_format_timestamp_style_is_valid('R'), "timestamp style valid");
+      |                                                    ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:39:53: warning: passing argument 1 of 'dc_format_timestamp_style_is_valid' with different width due to prototype [-Wtraditional-conversion]
+   39 |     TEST_ASSERT(!dc_format_timestamp_style_is_valid('x'), "timestamp style invalid");
+      |                                                     ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:41:47: warning: passing argument 1 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+   41 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, '\0', &out), "timestamp default");
+      |                                               ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:41:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   41 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, '\0', &out), "timestamp default");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:41:52: warning: passing argument 2 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+   41 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, '\0', &out), "timestamp default");
+      |                                                    ^~~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:41:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   41 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, '\0', &out), "timestamp default");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:44:47: warning: passing argument 1 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+   44 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, 'R', &out), "timestamp style");
+      |                                               ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:44:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   44 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, 'R', &out), "timestamp style");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:44:52: warning: passing argument 2 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+   44 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, 'R', &out), "timestamp style");
+      |                                                    ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:44:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   44 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp(123, 'R', &out), "timestamp style");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:47:50: warning: passing argument 1 of 'dc_format_timestamp_ms' with different width due to prototype [-Wtraditional-conversion]
+   47 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp_ms(123456, '\0', &out), "timestamp ms");
+      |                                                  ^~~~~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:47:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   47 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp_ms(123456, '\0', &out), "timestamp ms");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:47:58: warning: passing argument 2 of 'dc_format_timestamp_ms' with different width due to prototype [-Wtraditional-conversion]
+   47 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp_ms(123456, '\0', &out), "timestamp ms");
+      |                                                          ^~~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:47:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   47 |     TEST_ASSERT_EQ(DC_OK, dc_format_timestamp_ms(123456, '\0', &out), "timestamp ms");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:49:64: warning: passing argument 1 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+   49 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_format_timestamp(123, 'x', &out), "timestamp invalid style");
+      |                                                                ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:49:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   49 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_format_timestamp(123, 'x', &out), "timestamp invalid style");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:49:69: warning: passing argument 2 of 'dc_format_timestamp' with different width due to prototype [-Wtraditional-conversion]
+   49 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_format_timestamp(123, 'x', &out), "timestamp invalid style");
+      |                                                                     ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:49:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   49 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM, dc_format_timestamp(123, 'x', &out), "timestamp invalid style");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:51:60: warning: passing argument 2 of 'dc_format_mention_emoji' with different width due to prototype [-Wtraditional-conversion]
+   51 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_emoji("smile", 555, 0, &out), "emoji mention");
+      |                                                            ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:51:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   51 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_emoji("smile", 555, 0, &out), "emoji mention");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:53:59: warning: passing argument 2 of 'dc_format_mention_emoji' with different width due to prototype [-Wtraditional-conversion]
+   53 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_emoji("wave", 777, 1, &out), "emoji mention animated");
+      |                                                           ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:53:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   53 |     TEST_ASSERT_EQ(DC_OK, dc_format_mention_emoji("wave", 777, 1, &out), "emoji mention animated");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:56:56: warning: passing argument 2 of 'dc_format_mention_emoji' with different width due to prototype [-Wtraditional-conversion]
+   56 |                    dc_format_mention_emoji("bad:name", 777, 0, &out),
+      |                                                        ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:55:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   55 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM,
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:59:53: warning: passing argument 2 of 'dc_format_mention_emoji' with different width due to prototype [-Wtraditional-conversion]
+   59 |                    dc_format_mention_emoji("smile", 0, 0, &out),
+      |                                                     ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_format.c:58:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   58 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM,
+      |     ^~~~~~~~~~~~~~
+In file included from /home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:6:
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c: In function 'test_allowed_mentions_main':
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:24:67: warning: passing argument 2 of 'dc_allowed_mentions_add_user' with different width due to prototype [-Wtraditional-conversion]
+   24 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_user(&mentions, 123), "allowed mentions add user");
+      |                                                                   ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:24:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   24 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_user(&mentions, 123), "allowed mentions add user");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:25:67: warning: passing argument 2 of 'dc_allowed_mentions_add_role' with different width due to prototype [-Wtraditional-conversion]
+   25 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_role(&mentions, 456), "allowed mentions add role");
+      |                                                                   ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:25:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   25 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_role(&mentions, 456), "allowed mentions add role");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:27:60: warning: passing argument 2 of 'dc_allowed_mentions_add_user' with different width due to prototype [-Wtraditional-conversion]
+   27 |                    dc_allowed_mentions_add_user(&mentions, 0),
+      |                                                            ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:26:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   26 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM,
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:30:60: warning: passing argument 2 of 'dc_allowed_mentions_add_role' with different width due to prototype [-Wtraditional-conversion]
+   30 |                    dc_allowed_mentions_add_role(&mentions, 0),
+      |                                                            ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_allowed_mentions.c:29:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   29 |     TEST_ASSERT_EQ(DC_ERROR_INVALID_PARAM,
+      |     ^~~~~~~~~~~~~~
+In file included from /home/max/DcChamb/fishydslib/tests/test_cdn.c:6:
+/home/max/DcChamb/fishydslib/tests/test_cdn.c: In function 'test_cdn_main':
+/home/max/DcChamb/fishydslib/tests/test_cdn.c:53:39: warning: passing argument 1 of 'dc_cdn_user_avatar' with different width due to prototype [-Wtraditional-conversion]
+   53 |                    dc_cdn_user_avatar(123, "a_hash", DC_CDN_IMAGE_PNG, 64, 1, &url),
+      |                                       ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_cdn.c:52:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   52 |     TEST_ASSERT_EQ(DC_OK,
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_cdn.c:59:33: warning: passing argument 1 of 'dc_cdn_emoji' with different width due to prototype [-Wtraditional-conversion]
+   59 |                    dc_cdn_emoji(42, 1, DC_CDN_IMAGE_PNG, 64, &url),
+      |                                 ^~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_cdn.c:58:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+   58 |     TEST_ASSERT_EQ(DC_OK,
+      |     ^~~~~~~~~~~~~~
+In file included from /home/max/DcChamb/fishydslib/tests/test_json.c:6:
+/home/max/DcChamb/fishydslib/tests/test_json.c: In function 'test_json_main':
+/home/max/DcChamb/fishydslib/tests/test_json.c:115:67: warning: passing argument 2 of 'dc_allowed_mentions_add_user' with different width due to prototype [-Wtraditional-conversion]
+  115 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_user(&mentions, 123), "allowed mentions add user");
+      |                                                                   ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:115:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+  115 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_user(&mentions, 123), "allowed mentions add user");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:116:67: warning: passing argument 2 of 'dc_allowed_mentions_add_role' with different width due to prototype [-Wtraditional-conversion]
+  116 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_role(&mentions, 456), "allowed mentions add role");
+      |                                                                   ^~~
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:116:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+  116 |     TEST_ASSERT_EQ(DC_OK, dc_allowed_mentions_add_role(&mentions, 456), "allowed mentions add role");
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:131:70: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  131 |     TEST_ASSERT_STR_EQ("users", yyjson_get_str(yyjson_arr_get(parse, 0)), "allowed mentions parse users");
+      |                                                                      ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:131:5: note: in expansion of macro 'TEST_ASSERT_STR_EQ'
+  131 |     TEST_ASSERT_STR_EQ("users", yyjson_get_str(yyjson_arr_get(parse, 0)), "allowed mentions parse users");
+      |     ^~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:132:73: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  132 |     TEST_ASSERT_STR_EQ("everyone", yyjson_get_str(yyjson_arr_get(parse, 1)), "allowed mentions parse everyone");
+      |                                                                         ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:132:5: note: in expansion of macro 'TEST_ASSERT_STR_EQ'
+  132 |     TEST_ASSERT_STR_EQ("everyone", yyjson_get_str(yyjson_arr_get(parse, 1)), "allowed mentions parse everyone");
+      |     ^~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:135:68: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  135 |     TEST_ASSERT_STR_EQ("123", yyjson_get_str(yyjson_arr_get(users, 0)), "allowed mentions users value");
+      |                                                                    ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:135:5: note: in expansion of macro 'TEST_ASSERT_STR_EQ'
+  135 |     TEST_ASSERT_STR_EQ("123", yyjson_get_str(yyjson_arr_get(users, 0)), "allowed mentions users value");
+      |     ^~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:138:68: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  138 |     TEST_ASSERT_STR_EQ("456", yyjson_get_str(yyjson_arr_get(roles, 0)), "allowed mentions roles value");
+      |                                                                    ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:138:5: note: in expansion of macro 'TEST_ASSERT_STR_EQ'
+  138 |     TEST_ASSERT_STR_EQ("456", yyjson_get_str(yyjson_arr_get(roles, 0)), "allowed mentions roles value");
+      |     ^~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:159:100: warning: passing argument 5 of 'dc_json_mut_add_attachments' with different width due to prototype [-Wtraditional-conversion]
+  159 |                    dc_json_mut_add_attachments(&mut_doc, mut_doc.root, "attachments", attachments, 2),
+      |                                                                                                    ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:158:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+  158 |     TEST_ASSERT_EQ(DC_OK,
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:167:48: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  167 |     yyjson_val* att0 = yyjson_arr_get(att_arr, 0);
+      |                                                ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:168:48: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  168 |     yyjson_val* att1 = yyjson_arr_get(att_arr, 1);
+      |                                                ^
+[ 76%] Linking C executable test_gateway
+/home/max/DcChamb/fishydslib/tests/test_json.c:485:70: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  485 |     TEST_ASSERT_EQ(22ULL, *(dc_snowflake_t*)dc_vec_at(&member.roles, 1),
+      |                                                                      ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:485:5: note: in expansion of macro 'TEST_ASSERT_EQ'
+  485 |     TEST_ASSERT_EQ(22ULL, *(dc_snowflake_t*)dc_vec_at(&member.roles, 1),
+      |     ^~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:585:71: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  585 |     const dc_component_t* legacy_row = dc_vec_at(&message.components, 0);
+      |                                                                       ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:588:78: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  588 |     const dc_component_t* legacy_button = dc_vec_at(&legacy_row->components, 0);
+      |                                                                              ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:609:73: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  609 |     const dc_component_t* text_display = dc_vec_at(&message.components, 0);
+      |                                                                         ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:614:80: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  614 |     const dc_component_t* container_component = dc_vec_at(&message.components, 1);
+      |                                                                                ^
+[ 77%] Linking C executable test_core
+/home/max/DcChamb/fishydslib/tests/test_json.c:619:78: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  619 |     const dc_component_t* gallery_component = dc_vec_at(&message.components, 2);
+      |                                                                              ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:622:88: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  622 |     const dc_media_gallery_item_t* gallery_item = dc_vec_at(&gallery_component->items, 0);
+      |                                                                                        ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:635:74: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  635 |     yyjson_val* serialized_first = yyjson_arr_get(serialized_components, 0);
+      |                                                                          ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:661:74: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  661 |         const dc_select_option_t* option = dc_vec_at(&component.options, 0);
+      |                                                                          ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:694:68: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  694 |         const dc_string_t* selected = dc_vec_at(&component.values, 1);
+      |                                                                    ^
+[ 78%] Linking C executable simple_bot_3
+/home/max/DcChamb/fishydslib/tests/test_json.c:755:68: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  755 |         const dc_string_t* selected = dc_vec_at(&component.values, 0);
+      |                                                                    ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:773:104: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  773 |     TEST_ASSERT_STR_EQ("strawberry", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 1)),
+      |                                                                                                        ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:773:5: note: in expansion of macro 'TEST_ASSERT_STR_EQ'
+  773 |     TEST_ASSERT_STR_EQ("strawberry", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 1)),
+      |     ^~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:793:81: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  793 |         const dc_snowflake_t* selected = dc_vec_at(&component.snowflake_values, 1);
+      |                                                                                 ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:811:112: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  811 |     TEST_ASSERT_STR_EQ("123456789012345678", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
+      |                                                                                                                ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:811:5: note: in expansion of macro 'TEST_ASSERT_STR_EQ'
+  811 |     TEST_ASSERT_STR_EQ("123456789012345678", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
+      |     ^~~~~~~~~~~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:830:81: warning: passing argument 2 of 'dc_vec_at' with different width due to prototype [-Wtraditional-conversion]
+  830 |         const dc_snowflake_t* uploaded = dc_vec_at(&component.snowflake_values, 0);
+      |                                                                                 ^
+/home/max/DcChamb/fishydslib/tests/test_json.c:848:90: warning: passing argument 2 of 'yyjson_arr_get' with different width due to prototype [-Wtraditional-conversion]
+  848 |                        yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
+      |                                                                                          ^
+/home/max/DcChamb/fishydslib/tests/test_utils.h:26:13: note: in definition of macro 'TEST_ASSERT'
+   26 |         if (condition) { \
+      |             ^~~~~~~~~
+/home/max/DcChamb/fishydslib/tests/test_json.c:847:5: note: in expansion of macro 'TEST_ASSERT_STR_EQ'
+  847 |     TEST_ASSERT_STR_EQ("345678901234567890",
+      |     ^~~~~~~~~~~~~~~~~~
+[ 79%] Linking C executable test_http
+[ 80%] Linking C executable test_rest
+[ 81%] Linking C executable test_events_expansion
+[ 81%] Built target simple_bot_2
+[ 81%] Built target test_gateway
+[ 81%] Built target test_core
+[ 81%] Built target simple_bot_3
+[ 81%] Built target test_http
+[ 81%] Built target test_rest
+[ 81%] Built target test_events_expansion
+[ 82%] Linking C executable test_client_api
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc: In function 'void BM_JSON_Get_Optional_Nullable(benchmark::State&)':
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:382:44: warning: missing initializer for member 'dc_optional_cstr_t::value' [-Wmissing-field-initializers]
+  382 |         dc_optional_cstr_t opt_str_val = {0};
+      |                                            ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:383:43: warning: missing initializer for member 'dc_optional_i64_t::value' [-Wmissing-field-initializers]
+  383 |         dc_optional_i64_t opt_i64_val = {0};
+      |                                           ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:384:44: warning: missing initializer for member 'dc_optional_int_t::value' [-Wmissing-field-initializers]
+  384 |         dc_optional_int_t opt_bool_val = {0};
+      |                                            ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:385:49: warning: missing initializer for member 'dc_optional_double_t::value' [-Wmissing-field-initializers]
+  385 |         dc_optional_double_t opt_double_val = {0};
+      |                                                 ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:386:45: warning: missing initializer for member 'dc_nullable_cstr_t::value' [-Wmissing-field-initializers]
+  386 |         dc_nullable_cstr_t null_str_val = {0};
+      |                                             ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:387:44: warning: missing initializer for member 'dc_nullable_i64_t::value' [-Wmissing-field-initializers]
+  387 |         dc_nullable_i64_t null_i64_val = {0};
+      |                                            ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:388:45: warning: missing initializer for member 'dc_nullable_int_t::value' [-Wmissing-field-initializers]
+  388 |         dc_nullable_int_t null_bool_val = {0};
+      |                                             ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_json.cc:389:50: warning: missing initializer for member 'dc_nullable_double_t::value' [-Wmissing-field-initializers]
+  389 |         dc_nullable_double_t null_double_val = {0};
+      |                                                  ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_cdn.cc: In function 'void BM_CDN_ImageFormatValid(benchmark::State&)':
+/home/max/DcChamb/fishydslib/benchmarks/bench_cdn.cc:99:32: warning: the result of the conversion is unspecified because '99' is outside the range of type 'dc_cdn_image_format_t' [-Wconversion]
+   99 |         (dc_cdn_image_format_t)99
+      |                                ^~
+/home/max/DcChamb/fishydslib/benchmarks/bench_http.cc: In function 'void BM_HTTP_Format_UserAgent(benchmark::State&)':
+/home/max/DcChamb/fishydslib/benchmarks/bench_http.cc:73:5: warning: missing initializer for member 'dc_user_agent_t::extra' [-Wmissing-field-initializers]
+   73 |     };
+      |     ^
+/home/max/DcChamb/fishydslib/benchmarks/bench_http.cc: In function 'void BM_HTTP_RateLimit_Parse(benchmark::State&)':
+/home/max/DcChamb/fishydslib/benchmarks/bench_http.cc:193:72: warning: cast from type 'const dc_bench_header_kv_t*' to type 'void*' casts away qualifiers [-Wcast-qual]
+  193 |         dc_status_t st = dc_http_rate_limit_parse(dc_bench_get_header, (void*)kRateLimitHeaders, &rl);
+      |                                                                        ^~~~~~~~~~~~~~~~~~~~~~~~
+[ 83%] Linking C executable simple_bot
+[ 83%] Built target test_client_api
+[ 84%] Linking CXX executable bench_cdn_opt
+[ 85%] Linking CXX executable bench_format_opt
+[ 86%] Linking CXX executable bench_multipart_opt
+[ 87%] Linking CXX executable bench_multipart
+[ 88%] Linking CXX executable bench_gateway_opt
+[ 89%] Linking CXX executable bench_cdn
+[ 89%] Built target simple_bot
+[ 90%] Linking CXX executable bench_format
+[ 91%] Linking CXX executable bench_http_opt
+[ 92%] Linking CXX executable bench_core_opt
+[ 93%] Linking C executable economy_bot
+[ 94%] Linking CXX executable bench_gateway
+[ 95%] Linking CXX executable bench_json_opt
+[ 96%] Linking CXX executable bench_core
+[ 97%] Linking CXX executable bench_json
+[ 98%] Linking CXX executable bench_http
+[ 98%] Built target bench_multipart
+[ 99%] Linking C executable test_json
+[ 99%] Built target bench_cdn
+[100%] Linking C executable upd_simple_bot
+[100%] Built target economy_bot
+[100%] Built target bench_format
+[100%] Built target bench_gateway
+[100%] Built target bench_json
+[100%] Built target bench_http
+[100%] Built target bench_core
+[100%] Built target test_json
+[100%] Built target bench_format_opt
+[100%] Built target upd_simple_bot
+[100%] Built target bench_cdn_opt
+[100%] Built target bench_multipart_opt
+[100%] Built target bench_gateway_opt
+[100%] Built target bench_core_opt
+[100%] Built target bench_http_opt
+[100%] Built target bench_json_opt

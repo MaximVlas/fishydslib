@@ -27,6 +27,11 @@ extern "C" {
 
 typedef enum {
     DC_GATEWAY_EVENT_UNKNOWN = 0,
+    DC_GATEWAY_EVENT_GUILD_UPDATE,
+    DC_GATEWAY_EVENT_GUILD_DELETE,
+    DC_GATEWAY_EVENT_CHANNEL_CREATE,
+    DC_GATEWAY_EVENT_CHANNEL_UPDATE,
+    DC_GATEWAY_EVENT_CHANNEL_DELETE,
     DC_GATEWAY_EVENT_THREAD_CREATE,
     DC_GATEWAY_EVENT_THREAD_UPDATE,
     DC_GATEWAY_EVENT_THREAD_DELETE,
@@ -36,6 +41,9 @@ typedef enum {
     DC_GATEWAY_EVENT_READY,
     DC_GATEWAY_EVENT_GUILD_CREATE,
     DC_GATEWAY_EVENT_MESSAGE_CREATE,
+    DC_GATEWAY_EVENT_MESSAGE_UPDATE,
+    DC_GATEWAY_EVENT_MESSAGE_DELETE,
+    DC_GATEWAY_EVENT_MESSAGE_DELETE_BULK,
     DC_GATEWAY_EVENT_INTERACTION_CREATE
 } dc_gateway_event_kind_t;
 
@@ -89,6 +97,26 @@ void dc_gateway_guild_create_free(dc_gateway_guild_create_t* guild);
 dc_status_t dc_gateway_event_parse_guild_create(const char* event_data, dc_gateway_guild_create_t* guild);
 
 /**
+ * @brief Parse GUILD_UPDATE payload into a guild model.
+ * @param event_data JSON payload (event "d" object)
+ * @param guild Output guild model (replaces contents on success)
+ * @return DC_OK on success, error code on failure
+ *
+ * @note Caller owns the returned guild on success and must free it.
+ */
+dc_status_t dc_gateway_event_parse_guild_update(const char* event_data, dc_guild_t* guild);
+
+typedef struct {
+    dc_snowflake_t id;             /**< Guild ID */
+    dc_optional_bool_t unavailable; /**< Whether the guild is temporarily unavailable */
+} dc_gateway_guild_delete_t;
+
+dc_status_t dc_gateway_guild_delete_init(dc_gateway_guild_delete_t* guild_delete);
+void dc_gateway_guild_delete_free(dc_gateway_guild_delete_t* guild_delete);
+dc_status_t dc_gateway_event_parse_guild_delete(const char* event_data,
+                                                dc_gateway_guild_delete_t* guild_delete);
+
+/**
  * @brief Gateway MESSAGE_CREATE event data
  *
  * Wraps dc_message_t with gateway-specific extra fields (guild_id, member).
@@ -119,6 +147,60 @@ dc_status_t dc_gateway_event_parse_message_create_full(const char* event_data,
 dc_status_t dc_gateway_event_parse_message_create(const char* event_data, dc_message_t* message);
 
 /**
+ * @brief Gateway MESSAGE_UPDATE event data
+ *
+ * MESSAGE_UPDATE payloads may be partial. This model captures the stable identifiers,
+ * common typed fields, and the raw payload JSON for fields not yet lifted into typed members.
+ */
+typedef struct {
+    dc_snowflake_t id;                   /**< Message ID */
+    dc_snowflake_t channel_id;           /**< Channel ID */
+    dc_optional_snowflake_t guild_id;    /**< Guild ID when present */
+    int has_author;                      /**< Whether author is present */
+    dc_user_t author;                    /**< Author when present */
+    dc_optional_string_t content;        /**< Updated content when present */
+    dc_optional_string_t timestamp;      /**< Message timestamp when present */
+    int has_edited_timestamp;            /**< Whether edited_timestamp field is present */
+    dc_nullable_string_t edited_timestamp; /**< Edited timestamp, possibly null */
+    dc_optional_bool_t tts;              /**< tts when present (Discord sends false on updates) */
+    dc_optional_bool_t mention_everyone; /**< mention_everyone when present */
+    dc_optional_bool_t pinned;           /**< pinned when present */
+    int has_type;                        /**< Whether type is present */
+    dc_message_type_t type;              /**< Message type when present */
+    dc_optional_u64_field_t flags;       /**< Message flags when present */
+    int has_member;                      /**< Whether member is present */
+    dc_guild_member_t member;            /**< Partial guild member when present */
+    dc_string_t raw_json;                /**< Raw MESSAGE_UPDATE payload JSON */
+} dc_gateway_message_update_t;
+
+dc_status_t dc_gateway_message_update_init(dc_gateway_message_update_t* update);
+void dc_gateway_message_update_free(dc_gateway_message_update_t* update);
+dc_status_t dc_gateway_event_parse_message_update(const char* event_data,
+                                                  dc_gateway_message_update_t* update);
+
+typedef struct {
+    dc_snowflake_t id;                /**< Deleted message ID */
+    dc_snowflake_t channel_id;        /**< Channel ID */
+    dc_optional_snowflake_t guild_id; /**< Guild ID when present */
+} dc_gateway_message_delete_t;
+
+dc_status_t dc_gateway_message_delete_init(dc_gateway_message_delete_t* message_delete);
+void dc_gateway_message_delete_free(dc_gateway_message_delete_t* message_delete);
+dc_status_t dc_gateway_event_parse_message_delete(const char* event_data,
+                                                  dc_gateway_message_delete_t* message_delete);
+
+typedef struct {
+    dc_vec_t ids;                     /**< Deleted message IDs (dc_snowflake_t) */
+    dc_snowflake_t channel_id;        /**< Channel ID */
+    dc_optional_snowflake_t guild_id; /**< Guild ID when present */
+} dc_gateway_message_delete_bulk_t;
+
+dc_status_t dc_gateway_message_delete_bulk_init(dc_gateway_message_delete_bulk_t* bulk_delete);
+void dc_gateway_message_delete_bulk_free(dc_gateway_message_delete_bulk_t* bulk_delete);
+dc_status_t dc_gateway_event_parse_message_delete_bulk(const char* event_data,
+                                                       dc_gateway_message_delete_bulk_t* bulk_delete);
+
+/**
  * @brief Parse INTERACTION_CREATE event payload
  * @param event_data JSON payload (event "d" object)
  * @param interaction Output interaction model to populate
@@ -126,6 +208,16 @@ dc_status_t dc_gateway_event_parse_message_create(const char* event_data, dc_mes
  */
 dc_status_t dc_gateway_event_parse_interaction_create(const char* event_data,
                                                       dc_interaction_t* interaction);
+
+/**
+ * @brief Parse CHANNEL_CREATE/CHANNEL_UPDATE/CHANNEL_DELETE payload into a channel model.
+ * @param event_data JSON payload (event "d" object)
+ * @param channel Output channel model (replaces contents on success)
+ * @return DC_OK on success, error code on failure
+ *
+ * @note Caller owns the returned channel on success and must free it.
+ */
+dc_status_t dc_gateway_event_parse_channel(const char* event_data, dc_channel_t* channel);
 
 /**
  * @brief Parse THREAD_CREATE/THREAD_UPDATE/THREAD_DELETE payload into a channel model.
