@@ -1165,7 +1165,9 @@ Use this router setup with client config like:
 **Notes**
 - `dc_component_type_t` now includes modal component types `DC_COMPONENT_TYPE_RADIO_GROUP` (`21`), `DC_COMPONENT_TYPE_CHECKBOX_GROUP` (`22`), and `DC_COMPONENT_TYPE_CHECKBOX` (`23`).
 - `dc_component_t.default_val` stores the top-level checkbox `default` field.
-- `dc_component_t.value` stores string-valued component responses (for example, radio groups), `dc_component_t.value_bool` stores checkbox boolean responses, and `dc_component_t.values` stores checkbox-group response arrays when `has_values` is set.
+- `dc_component_t.value` stores string-valued single-value component responses (for example, radio groups), and `dc_component_t.value_bool` stores checkbox boolean responses.
+- `dc_component_t.values` stores string-valued interaction response arrays (for example, string selects and checkbox groups) when `has_values` is set.
+- `dc_component_t.snowflake_values` stores snowflake-valued interaction response arrays (user/role/mentionable/channel selects and file uploads) when `has_snowflake_values` is set.
 
 ### Attachment Model (`model/dc_attachment.h`)
 

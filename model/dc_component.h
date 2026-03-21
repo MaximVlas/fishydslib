@@ -128,7 +128,9 @@ struct dc_component {
     dc_optional_string_t value;
     dc_optional_bool_t value_bool;  // For checkbox interaction responses
     int has_values;
-    dc_vec_t values;  // dc_string_t (for checkbox group interaction responses)
+    dc_vec_t values;  // dc_string_t (for string-valued interaction responses)
+    int has_snowflake_values;
+    dc_vec_t snowflake_values;  // dc_snowflake_t (for snowflake-valued interaction responses)
     dc_vec_t channel_types;  // int (channel types)
     dc_vec_t components;  // dc_component_t (child components)
     dc_component_t* accessory;  /**< Heap-allocated; freed by dc_component_free */

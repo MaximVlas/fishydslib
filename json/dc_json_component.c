@@ -450,6 +450,29 @@ static dc_status_t dc_json_parse_string_array(yyjson_val* arr, dc_vec_t* out) {
     return DC_OK;
 }
 
+static dc_status_t dc_json_parse_snowflake_array(yyjson_val* arr, dc_vec_t* out) {
+    if (!arr || !out) return DC_ERROR_NULL_POINTER;
+    if (!yyjson_is_arr(arr)) return DC_ERROR_INVALID_FORMAT;
+
+    yyjson_arr_iter iter = yyjson_arr_iter_with(arr);
+    yyjson_val* item = NULL;
+    while ((item = yyjson_arr_iter_next(&iter))) {
+        if (!yyjson_is_str(item)) return DC_ERROR_INVALID_FORMAT;
+
+        const char* str = yyjson_get_str(item);
+        if (!str) return DC_ERROR_INVALID_FORMAT;
+
+        dc_snowflake_t snowflake = 0;
+        dc_status_t st = dc_snowflake_from_string(str, &snowflake);
+        if (st != DC_OK) return st;
+
+        st = dc_vec_push(out, &snowflake);
+        if (st != DC_OK) return st;
+    }
+
+    return DC_OK;
+}
+
 static dc_status_t dc_json_parse_component_array(yyjson_val* arr, dc_vec_t* out) {
     if (!arr || !out) return DC_ERROR_NULL_POINTER;
     if (!yyjson_is_arr(arr)) return DC_ERROR_INVALID_FORMAT;
@@ -619,6 +642,43 @@ static dc_status_t dc_json_mut_add_string_array(dc_json_mut_doc_t* doc, yyjson_m
     return DC_OK;
 }
 
+static dc_status_t dc_json_mut_add_snowflake_array(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
+                                                   const char* key, const dc_vec_t* values,
+                                                   int include_empty) {
+    if (!doc || !doc->doc || !obj || !key || !values) return DC_ERROR_NULL_POINTER;
+    if (!include_empty && dc_vec_is_empty(values)) return DC_OK;
+    if (!yyjson_mut_is_obj(obj)) return DC_ERROR_INVALID_PARAM;
+
+    yyjson_mut_val* arr = yyjson_mut_obj_add_arr(doc->doc, obj, key);
+    if (!arr) return DC_ERROR_OUT_OF_MEMORY;
+
+    for (size_t i = 0; i < dc_vec_length(values); i++) {
+        const dc_snowflake_t* value = dc_vec_at(values, i);
+        char buf[32];
+        dc_status_t st = DC_OK;
+
+        if (!value) return DC_ERROR_INVALID_PARAM;
+        st = dc_snowflake_to_cstr(*value, buf, sizeof(buf));
+        if (st != DC_OK) return st;
+        if (!yyjson_mut_arr_add_strcpy(doc->doc, arr, buf)) return DC_ERROR_OUT_OF_MEMORY;
+    }
+
+    return DC_OK;
+}
+
+static int dc_component_values_are_snowflakes(dc_component_type_t type) {
+    switch (type) {
+        case DC_COMPONENT_TYPE_USER_SELECT:
+        case DC_COMPONENT_TYPE_ROLE_SELECT:
+        case DC_COMPONENT_TYPE_MENTIONABLE_SELECT:
+        case DC_COMPONENT_TYPE_CHANNEL_SELECT:
+        case DC_COMPONENT_TYPE_FILE_UPLOAD:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 static dc_status_t dc_json_mut_add_media_gallery_items_array(dc_json_mut_doc_t* doc, yyjson_mut_val* obj,
                                                               const dc_vec_t* items) {
     if (!doc || !doc->doc || !obj || !items) return DC_ERROR_NULL_POINTER;
@@ -753,8 +813,13 @@ dc_status_t dc_json_model_component_from_val(yyjson_val* val, dc_component_t* co
 
     yyjson_val* values = yyjson_obj_get(val, "values");
     if (values && !yyjson_is_null(values)) {
-        component->has_values = 1;
-        st = dc_json_parse_string_array(values, &component->values);
+        if (dc_component_values_are_snowflakes(component->type)) {
+            component->has_snowflake_values = 1;
+            st = dc_json_parse_snowflake_array(values, &component->snowflake_values);
+        } else {
+            component->has_values = 1;
+            st = dc_json_parse_string_array(values, &component->values);
+        }
         if (st != DC_OK) return st;
     }
 
@@ -842,8 +907,18 @@ dc_status_t dc_json_model_component_to_mut(dc_json_mut_doc_t* doc, yyjson_mut_va
     if (st != DC_OK) return st;
     st = dc_json_mut_add_media_gallery_items_array(doc, obj, &component->items);
     if (st != DC_OK) return st;
-    st = dc_json_mut_add_string_array(doc, obj, "values", &component->values,
-                                      component->has_values || !dc_vec_is_empty(&component->values));
+    if (dc_component_values_are_snowflakes(component->type)) {
+        if (component->has_values || !dc_vec_is_empty(&component->values)) return DC_ERROR_INVALID_PARAM;
+        st = dc_json_mut_add_snowflake_array(doc, obj, "values", &component->snowflake_values,
+                                             component->has_snowflake_values ||
+                                             !dc_vec_is_empty(&component->snowflake_values));
+    } else {
+        if (component->has_snowflake_values || !dc_vec_is_empty(&component->snowflake_values)) {
+            return DC_ERROR_INVALID_PARAM;
+        }
+        st = dc_json_mut_add_string_array(doc, obj, "values", &component->values,
+                                          component->has_values || !dc_vec_is_empty(&component->values));
+    }
     if (st != DC_OK) return st;
 
     if (component->accessory) {

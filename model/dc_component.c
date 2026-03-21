@@ -140,6 +140,8 @@ dc_status_t dc_component_init(dc_component_t* component) {
     if (st != DC_OK) goto fail;
     st = dc_vec_init(&component->values, sizeof(dc_string_t));
     if (st != DC_OK) goto fail;
+    st = dc_vec_init(&component->snowflake_values, sizeof(dc_snowflake_t));
+    if (st != DC_OK) goto fail;
     st = dc_vec_init(&component->channel_types, sizeof(int));
     if (st != DC_OK) goto fail;
     st = dc_vec_init(&component->components, sizeof(dc_component_t));
@@ -165,6 +167,7 @@ dc_status_t dc_component_init(dc_component_t* component) {
     component->spacing.value = 1;
     dc_optional_i32_clear(&component->size);
     component->has_values = 0;
+    component->has_snowflake_values = 0;
 
     component->emoji = NULL;
     component->accessory = NULL;
@@ -215,6 +218,8 @@ void dc_component_free(dc_component_t* component) {
         if (value) dc_string_free(value);
     }
     dc_vec_free(&component->values);
+
+    dc_vec_free(&component->snowflake_values);
 
     dc_vec_free(&component->channel_types);
 

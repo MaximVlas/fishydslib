@@ -740,6 +740,105 @@ int test_json_main(void) {
     dc_json_mut_doc_free(&mut_doc);
     dc_component_free(&component);
 
+    const char* string_select_response_json =
+        "{\"type\":3,\"custom_id\":\"flavor_select\",\"values\":[\"vanilla\",\"strawberry\"]}";
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(string_select_response_json, &doc), "parse string select response json");
+    TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init string select response component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
+                   "parse string select response component");
+    TEST_ASSERT_EQ(DC_COMPONENT_TYPE_STRING_SELECT, component.type, "string select response type");
+    TEST_ASSERT_EQ(1, component.has_values, "string select response has string values");
+    TEST_ASSERT_EQ(0, component.has_snowflake_values, "string select response has no snowflake values");
+    TEST_ASSERT_EQ(2u, dc_vec_length(&component.values), "string select response values count");
+    {
+        const dc_string_t* selected = dc_vec_at(&component.values, 0);
+        TEST_ASSERT_NEQ(NULL, selected, "string select response first value exists");
+        TEST_ASSERT_STR_EQ("vanilla", dc_string_cstr(selected), "string select response first value");
+    }
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for string select response");
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&serialized_message), "init serialized string select response");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_to_mut(&mut_doc, mut_doc.root, &component),
+                   "serialize string select response component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_serialize(&mut_doc, &serialized_message),
+                   "serialize string select response json");
+    dc_json_doc_free(&doc);
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
+                   "parse serialized string select response");
+    TEST_ASSERT_EQ(2u, yyjson_arr_size(yyjson_obj_get(doc.root, "values")),
+                   "serialized string select response values count");
+    TEST_ASSERT_STR_EQ("strawberry", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 1)),
+                       "serialized string select response second value");
+    dc_json_doc_free(&doc);
+    dc_string_free(&serialized_message);
+    dc_json_mut_doc_free(&mut_doc);
+    dc_component_free(&component);
+
+    const char* user_select_response_json =
+        "{\"type\":5,\"custom_id\":\"user_select\",\"values\":[\"123456789012345678\",\"234567890123456789\"]}";
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(user_select_response_json, &doc), "parse user select response json");
+    TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init user select response component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
+                   "parse user select response component");
+    TEST_ASSERT_EQ(DC_COMPONENT_TYPE_USER_SELECT, component.type, "user select response type");
+    TEST_ASSERT_EQ(0, component.has_values, "user select response has no string values");
+    TEST_ASSERT_EQ(1, component.has_snowflake_values, "user select response has snowflake values");
+    TEST_ASSERT_EQ(2u, dc_vec_length(&component.snowflake_values),
+                   "user select response snowflake values count");
+    {
+        const dc_snowflake_t* selected = dc_vec_at(&component.snowflake_values, 1);
+        TEST_ASSERT_NEQ(NULL, selected, "user select response second snowflake exists");
+        TEST_ASSERT_EQ(234567890123456789ULL, *selected, "user select response second snowflake value");
+    }
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for user select response");
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&serialized_message), "init serialized user select response");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_to_mut(&mut_doc, mut_doc.root, &component),
+                   "serialize user select response component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_serialize(&mut_doc, &serialized_message),
+                   "serialize user select response json");
+    dc_json_doc_free(&doc);
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
+                   "parse serialized user select response");
+    TEST_ASSERT_EQ(2u, yyjson_arr_size(yyjson_obj_get(doc.root, "values")),
+                   "serialized user select response values count");
+    TEST_ASSERT_STR_EQ("123456789012345678", yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
+                       "serialized user select response first value");
+    dc_json_doc_free(&doc);
+    dc_string_free(&serialized_message);
+    dc_json_mut_doc_free(&mut_doc);
+    dc_component_free(&component);
+
+    const char* file_upload_response_json =
+        "{\"type\":19,\"custom_id\":\"avatar_upload\",\"values\":[\"345678901234567890\"]}";
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(file_upload_response_json, &doc), "parse file upload response json");
+    TEST_ASSERT_EQ(DC_OK, dc_component_init(&component), "init file upload response component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_from_val(doc.root, &component),
+                   "parse file upload response component");
+    TEST_ASSERT_EQ(DC_COMPONENT_TYPE_FILE_UPLOAD, component.type, "file upload response type");
+    TEST_ASSERT_EQ(1, component.has_snowflake_values, "file upload response has snowflake values");
+    TEST_ASSERT_EQ(1u, dc_vec_length(&component.snowflake_values),
+                   "file upload response snowflake values count");
+    {
+        const dc_snowflake_t* uploaded = dc_vec_at(&component.snowflake_values, 0);
+        TEST_ASSERT_NEQ(NULL, uploaded, "file upload response snowflake exists");
+        TEST_ASSERT_EQ(345678901234567890ULL, *uploaded, "file upload response snowflake value");
+    }
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_create(&mut_doc), "create mut doc for file upload response");
+    TEST_ASSERT_EQ(DC_OK, dc_string_init(&serialized_message), "init serialized file upload response");
+    TEST_ASSERT_EQ(DC_OK, dc_json_model_component_to_mut(&mut_doc, mut_doc.root, &component),
+                   "serialize file upload response component");
+    TEST_ASSERT_EQ(DC_OK, dc_json_mut_doc_serialize(&mut_doc, &serialized_message),
+                   "serialize file upload response json");
+    dc_json_doc_free(&doc);
+    TEST_ASSERT_EQ(DC_OK, dc_json_parse(dc_string_cstr(&serialized_message), &doc),
+                   "parse serialized file upload response");
+    TEST_ASSERT_STR_EQ("345678901234567890",
+                       yyjson_get_str(yyjson_arr_get(yyjson_obj_get(doc.root, "values"), 0)),
+                       "serialized file upload response value");
+    dc_json_doc_free(&doc);
+    dc_string_free(&serialized_message);
+    dc_json_mut_doc_free(&mut_doc);
+    dc_component_free(&component);
+
     const char* message_with_extended_fields =
         "{\"id\":\"3001\",\"channel_id\":\"3002\",\"author\":{\"id\":\"123\",\"username\":\"alice\"},"
         "\"content\":\"with extra\",\"timestamp\":\"2024-01-01T00:00:00.000Z\",\"tts\":false,"
