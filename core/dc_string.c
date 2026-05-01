@@ -27,7 +27,14 @@ static void dc_secure_zero(void* ptr, size_t len) {
         p[i] = 0;
     }
 #endif
-}
+
+#if defined(__JEMALLOC__)
+__attribute__((weak))
+const char *malloc_conf =
+    "background_thread:true,"
+    "dirty_decay_ms:500,"
+    "muzzy_decay_ms:500";
+#endif
 
 static dc_status_t dc_string_ensure_capacity(dc_string_t* str, size_t min_capacity) {
     if (!str) return DC_ERROR_NULL_POINTER;
